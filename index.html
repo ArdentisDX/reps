@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#12161d">
+<title>REPS</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <div class="eyebrow">Sistema diario · Luis Fernando</div>
+  <h1>REPS<span>.</span></h1>
+  <div class="fecha" id="fecha"></div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-panel="p-hoy" role="tab">Hoy</button>
+    <button class="tab" data-panel="p-dia" role="tab">Mi día</button>
+    <button class="tab" data-panel="p-ruta" role="tab">Ruta</button>
+  </div>
+
+  <div class="panel active" id="p-hoy">
+    <div class="streak" style="margin-top:16px">
+      <div><div class="num" id="streakNum">0</div></div>
+      <div>
+        <div class="lbl">Racha de días ganados</div>
+        <div class="sub" id="streakSub">Gana hoy para encenderla.</div>
+        <div class="warn" id="streakWarn" hidden>⚠ Ayer no cayó. No falles 2 seguidos.</div>
+      </div>
+    </div>
+    <div class="week" id="week"></div>
+    <div class="sec">
+      <div class="sec-head"><h2>Innegociables</h2><div class="tag">3/3 = día ganado</div></div>
+      <div id="coreList"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-head"><h2>Suman puntos</h2><div class="tag" style="color:var(--teal)">extra</div></div>
+      <div id="extraList"></div>
+    </div>
+    <div class="stamp-wrap"><div class="stamp" id="stamp">Día ganado</div></div>
+    <div class="prog">
+      <div class="p-row"><span>DÍA COMPLETO</span><span id="progPct">0%</span></div>
+      <div class="bar"><i id="progBar"></i></div>
+    </div>
+    <div class="regla">
+      <b>La regla:</b> un día malo es normal. <b>Dos seguidos</b> es volver al patrón viejo. Mínimo para ganar: despertar, correr y 1 hr de bloque.
+    </div>
+    <div class="reset"><button id="resetBtn">Borrar todo el historial</button></div>
+  </div>
+
+  <div class="panel" id="p-dia">
+    <div class="leyenda">
+      <span class="a"><i></i>Estructura (3 hrs)</span>
+      <span class="b"><i></i>Libre (~11 hrs)</span>
+    </div>
+    <div class="tl">
+      <div class="slot core"><div class="t">8:30</div><div class="n">Despertar</div><div class="d">Cama · dientes · sol 5 min. La PC NO se enciende todavía.</div></div>
+      <div class="slot core"><div class="t">9:00</div><div class="n">Correr + perrita 🐕</div><div class="d">20–30 min. Al volver: 10 min de calistenia (lagartijas, sentadillas, plancha).</div></div>
+      <div class="slot free"><div class="t">9:45</div><div class="n">Baño + desayuno</div><div class="d">Tranquilo, sin prisa.</div></div>
+      <div class="slot core"><div class="t">10:30</div><div class="n">Bloque de construcción (2 hrs)</div><div class="d">Proyecto actual: <b>la app REPS instalable</b>. Celular en otro cuarto. Mínimo 1 hr para que el día cuente.</div></div>
+      <div class="slot free"><div class="t">12:30</div><div class="n">Libre</div><div class="d">Juega, videos, cero culpa. Te lo ganaste.</div></div>
+      <div class="slot free"><div class="t">14:30</div><div class="n">Comida</div><div class="d">Sin celular = tiempo de familia gratis.</div></div>
+      <div class="slot core"><div class="t">15:00</div><div class="n">Bloque corto (1 hr)</div><div class="d">Hoy: seguirle a la app o leer/aprender. Futuro: aquí entra la Capa 2.</div></div>
+      <div class="slot free"><div class="t">16:00</div><div class="n">Libre total</div><div class="d">Juegos, amigos, salir, scroll con horario. 6 horas tuyas.</div></div>
+      <div class="slot free"><div class="t">22:00</div><div class="n">Bajando revoluciones</div><div class="d">Última sesión libre, ya sin empezar nada intenso.</div></div>
+      <div class="slot core"><div class="t">0:40</div><div class="n">Leer 20 min 📖</div><div class="d">En cama, celular cargando LEJOS. Te ayuda a dormir.</div></div>
+      <div class="slot core"><div class="t">1:00</div><div class="n">A dormir</div><div class="d">Meta actual: 1:00 am. En 2 semanas bajamos a 12:00.</div></div>
+    </div>
+    <div class="regla" style="margin-top:14px">
+      <b>Proporción:</b> 20% orden, 80% libertad. Un sistema que sobrevive a los días sin motivación.
+    </div>
+  </div>
+
+  <div class="panel" id="p-ruta">
+    <div class="capa activa">
+      <div class="c-head"><span class="c-num">Capa 1 · Ahora</span><span class="c-status on">Activa</span></div>
+      <div class="c-title">Base + primera obra</div>
+      <ul class="c-items">
+        <li>Rutina diaria completa (los 6 hábitos de Hoy)</li>
+        <li>Calistenia 10 min post-correr</li>
+        <li>Lectura 20 min pre-dormir</li>
+        <li>Proyecto del bloque: app REPS instalable (con Claude Code)</li>
+      </ul>
+      <div class="c-cond">Desbloquea Capa 2: ~2 semanas de rachas estables</div>
+    </div>
+    <div class="capa">
+      <div class="c-head"><span class="c-num">Capa 2 · ~Semana 3</span><span class="c-status wait">En fila</span></div>
+      <div class="c-title">Elegir UNO: idioma o contenido</div>
+      <ul class="c-items">
+        <li>Opción A: un idioma (uno solo)</li>
+        <li>Opción B: contenido YouTube — "construí mi app y arreglé mi rutina a los 19" ya es historia</li>
+        <li>Entra en el bloque corto de las 15:00</li>
+      </ul>
+      <div class="c-cond">Desbloquea Capa 3: Capa 2 automática (~3 semanas)</div>
+    </div>
+    <div class="capa">
+      <div class="c-head"><span class="c-num">Capa 3 · ~Mes 2</span><span class="c-status wait">En fila</span></div>
+      <div class="c-title">El que no elegiste + calistenia seria</div>
+      <ul class="c-items">
+        <li>La opción pendiente de Capa 2</li>
+        <li>Calistenia nivel 2: dominadas, fondos</li>
+        <li>Fase 2 de la app: notificaciones, gráficas, quizá WHOOP</li>
+      </ul>
+      <div class="c-cond">Desbloquea Capa 4: constancia de 2 meses</div>
+    </div>
+    <div class="capa">
+      <div class="c-head"><span class="c-num">Capa 4 · Mes 3+</span><span class="c-status wait">En fila</span></div>
+      <div class="c-title">Estudio de mercados + fotografía</div>
+      <ul class="c-items">
+        <li>Mercados y finanzas EN SERIO (ventaja de economista)</li>
+        <li>Fotografía como hobby creativo — combina con tu contenido</li>
+        <li>Ingresos: skills → servicios/contenido → después inversión</li>
+      </ul>
+      <div class="c-cond">Trading con dinero real: no antes de dominar teoría y tener ingresos por skills</div>
+    </div>
+    <div class="nota-ruta">
+      <b>Por qué en fila:</b> la motivación es un pico, no una meseta. Cada capa entra cuando la anterior ya no pide fuerza de voluntad.
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
