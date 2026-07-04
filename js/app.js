@@ -172,13 +172,25 @@
     renderTray();
   }
 
+  // "hoy", "ayer", "hace N días" o la fecha, según qué tan vieja sea la idea
+  function timeAgo(iso){
+    if(!iso) return '';
+    const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+    if(days <= 0) return 'hoy';
+    if(days === 1) return 'ayer';
+    if(days < 7) return 'hace ' + days + ' días';
+    return new Date(iso).toLocaleDateString('es-MX', {day:'numeric', month:'short'});
+  }
+
   function renderTray(){
-    // chips de filtro
+    // chips de filtro, cada uno con su número de ideas pendientes
+    const pendientes = id => ideas.filter(i => !i.done && (id === 'todas' || i.cat === id)).length;
     const wrap = $('trayFilters'); wrap.innerHTML = '';
     const mkChip = (id, label) => {
+      const n = pendientes(id);
       const b = document.createElement('button');
       b.className = 'chip' + (trayFilter === id ? ' active' : '');
-      b.textContent = label;
+      b.textContent = label + (n > 0 ? ' · ' + n : '');
       b.addEventListener('click', ()=>{ trayFilter = id; renderTray(); });
       wrap.appendChild(b);
     };
@@ -205,7 +217,8 @@
       const txt = document.createElement('span');
       txt.className = 'i-text'; txt.textContent = i.text; // textContent: el texto se muestra tal cual, sin interpretarse como HTML
       const meta = document.createElement('span');
-      meta.className = 'i-cat'; meta.textContent = (c ? c.name : '') + (i.done ? ' · hecha ✓' : '');
+      meta.className = 'i-cat';
+      meta.textContent = (c ? c.name : '') + ' · ' + timeAgo(i.created) + (i.done ? ' · hecha ✓' : '');
       body.append(txt, meta);
       main.append(emoji, body);
       main.addEventListener('click', ()=>{ i.done = !i.done; saveTray(); renderTray(); });
