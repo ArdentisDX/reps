@@ -132,8 +132,137 @@
     toast('Historial borrado. Día 0. A construir.');
   });
 
+  // ===== Bandeja: captura rápida de ideas =====
+  const CATS = [
+    {id:'ya',       emoji:'🔥', name:'Hacer ya'},
+    {id:'social',   emoji:'🎉', name:'Social'},
+    {id:'compras',  emoji:'🛒', name:'Compras'},
+    {id:'aprender', emoji:'📚', name:'Aprender'},
+    {id:'algundia', emoji:'💡', name:'Algún día'},
+  ];
+  const TRAY_KEY = 'reps-bandeja';
+  let ideas = [];
+  let trayFilter = 'todas';
+  let pendingText = null; // idea escrita que espera categoría
+
+  function loadTray(){
+    try{
+      const v = localStorage.getItem(TRAY_KEY);
+      if(v) ideas = JSON.parse(v);
+    }catch(e){ ideas = []; }
+  }
+  function saveTray(){
+    try{ localStorage.setItem(TRAY_KEY, JSON.stringify(ideas)); }
+    catch(e){ toast('No se pudo guardar. Reintenta.'); }
+  }
+  const catOf = id => CATS.find(c => c.id === id);
+
+  // Única puerta de entrada de ideas nuevas.
+  // Fase 2 (futuro): cuando haya internet, una IA podrá sugerir "cat"
+  // automáticamente; bastará llamar addIdea(texto, catSugerida) desde ahí.
+  function addIdea(text, catId){
+    ideas.unshift({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      text: text,
+      cat: catId,
+      done: false,
+      created: new Date().toISOString(),
+    });
+    saveTray();
+    renderTray();
+  }
+
+  function renderTray(){
+    // chips de filtro
+    const wrap = $('trayFilters'); wrap.innerHTML = '';
+    const mkChip = (id, label) => {
+      const b = document.createElement('button');
+      b.className = 'chip' + (trayFilter === id ? ' active' : '');
+      b.textContent = label;
+      b.addEventListener('click', ()=>{ trayFilter = id; renderTray(); });
+      wrap.appendChild(b);
+    };
+    mkChip('todas', 'Todas');
+    CATS.forEach(c => mkChip(c.id, c.emoji + ' ' + c.name));
+
+    // lista de ideas (las más nuevas arriba)
+    const list = $('trayList'); list.innerHTML = '';
+    const shown = ideas.filter(i => trayFilter === 'todas' || i.cat === trayFilter);
+    $('trayEmpty').hidden = shown.length > 0;
+
+    shown.forEach(i => {
+      const c = catOf(i.cat);
+      const card = document.createElement('div');
+      card.className = 'idea' + (i.done ? ' done' : '');
+
+      const main = document.createElement('button');
+      main.className = 'i-main';
+      main.setAttribute('aria-pressed', i.done);
+      const emoji = document.createElement('span');
+      emoji.className = 'i-emoji'; emoji.textContent = c ? c.emoji : '❔';
+      const body = document.createElement('span');
+      body.className = 'i-body';
+      const txt = document.createElement('span');
+      txt.className = 'i-text'; txt.textContent = i.text; // textContent: el texto se muestra tal cual, sin interpretarse como HTML
+      const meta = document.createElement('span');
+      meta.className = 'i-cat'; meta.textContent = (c ? c.name : '') + (i.done ? ' · hecha ✓' : '');
+      body.append(txt, meta);
+      main.append(emoji, body);
+      main.addEventListener('click', ()=>{ i.done = !i.done; saveTray(); renderTray(); });
+
+      const del = document.createElement('button');
+      del.className = 'i-del'; del.textContent = '✕';
+      del.setAttribute('aria-label', 'Borrar idea');
+      del.addEventListener('click', ()=>{
+        ideas = ideas.filter(x => x.id !== i.id);
+        saveTray(); renderTray();
+        toast('Idea borrada.');
+      });
+
+      card.append(main, del);
+      list.appendChild(card);
+    });
+  }
+
+  // capturar: Enter o botón ＋ → muestra el selector de categoría
+  $('trayForm').addEventListener('submit', (e)=>{
+    e.preventDefault(); // que el formulario no recargue la página
+    const t = $('trayInput').value.trim();
+    if(!t) return;
+    pendingText = t;
+    $('trayInput').value = '';
+    $('cpText').textContent = '«' + t + '»';
+    $('catPick').classList.add('show');
+  });
+
+  // botones de categoría (se crean una sola vez)
+  CATS.forEach(c => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'cp-opt';
+    b.textContent = c.emoji + ' ' + c.name;
+    b.addEventListener('click', ()=>{
+      if(pendingText == null) return;
+      addIdea(pendingText, c.id);
+      pendingText = null;
+      $('catPick').classList.remove('show');
+      toast('Guardada en ' + c.name + '.');
+    });
+    $('cpOpts').appendChild(b);
+  });
+
+  // cancelar: devuelve el texto al input para no perder lo escrito
+  $('cpCancel').addEventListener('click', ()=>{
+    $('trayInput').value = pendingText || '';
+    pendingText = null;
+    $('catPick').classList.remove('show');
+    $('trayInput').focus();
+  });
+
   load();
   render();
+  loadTray();
+  renderTray();
 
   // Registra el service worker (cache offline). Solo existe en http/https,
   // por eso el "if": abriendo el archivo con doble clic (file://) no corre.

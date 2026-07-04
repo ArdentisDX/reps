@@ -20,6 +20,7 @@
     <button class="tab active" data-panel="p-hoy" role="tab">Hoy</button>
     <button class="tab" data-panel="p-dia" role="tab">Mi día</button>
     <button class="tab" data-panel="p-ruta" role="tab">Ruta</button>
+    <button class="tab" data-panel="p-bandeja" role="tab">Bandeja</button>
   </div>
 
   <div class="panel active" id="p-hoy">
@@ -118,6 +119,23 @@
     </div>
     <div class="nota-ruta">
       <b>Por qué en fila:</b> la motivación es un pico, no una meseta. Cada capa entra cuando la anterior ya no pide fuerza de voluntad.
+    </div>
+  </div>
+
+  <div class="panel" id="p-bandeja">
+    <div class="chips" id="trayFilters"></div>
+    <div id="trayList"></div>
+    <div class="tray-empty" id="trayEmpty">Nada por aquí. Escribe abajo tu primera idea 👇</div>
+    <div class="composer">
+      <div class="catpick" id="catPick">
+        <div class="cp-q">¿Dónde va? <span id="cpText"></span></div>
+        <div class="cp-opts" id="cpOpts"></div>
+        <button type="button" class="cp-cancel" id="cpCancel">Cancelar</button>
+      </div>
+      <form id="trayForm">
+        <input id="trayInput" type="text" placeholder="Captura una idea…" autocomplete="off" maxlength="200">
+        <button class="send" type="submit" aria-label="Guardar idea">＋</button>
+      </form>
     </div>
   </div>
 
