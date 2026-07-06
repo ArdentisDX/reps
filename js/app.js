@@ -114,6 +114,8 @@
         (w?'✓':(partial?'·':'')) + '</div>';
       wk.appendChild(el);
     }
+
+    renderStats(); // mantiene la pestaña Stats al día con cada cambio
   }
 
   let toastT;
@@ -271,6 +273,82 @@
     $('catPick').classList.remove('show');
     $('trayInput').focus();
   });
+
+  // ===== Stats =====
+  let calY = null, calM = null; // año y mes que muestra el calendario
+
+  function statsData(){
+    // conjunto de fechas ganadas: buscar en un Set es instantáneo
+    const wonSet = new Set(Object.keys(dias).filter(k => isWon(dias[k])));
+
+    // mejor racha: desde cada día que INICIA una racha (su víspera no está
+    // ganada), avanza día a día contando hasta que se rompa
+    let best = 0;
+    wonSet.forEach(k => {
+      const d = new Date(k + 'T12:00:00'); // mediodía local: evita líos de zona horaria
+      d.setDate(d.getDate() - 1);
+      if(wonSet.has(localISO(d))) return;  // no es inicio de racha
+      let len = 0;
+      d.setDate(d.getDate() + 1);
+      while(wonSet.has(localISO(d))){ len++; d.setDate(d.getDate() + 1); }
+      if(len > best) best = len;
+    });
+
+    // % de días ganados en los últimos 30 días
+    let won30 = 0;
+    for(let i = 0; i < 30; i++){
+      const d = new Date(); d.setDate(d.getDate() - i);
+      if(wonSet.has(localISO(d))) won30++;
+    }
+
+    return { total: wonSet.size, best, now: streak(), pct30: Math.round(won30/30*100) };
+  }
+
+  function renderStats(){
+    const s = statsData();
+    $('stTotal').textContent = s.total;
+    $('stBest').textContent = s.best;
+    $('stNow').textContent = s.now;
+    $('stMonth').textContent = s.pct30 + '%';
+    renderCal();
+  }
+
+  function renderCal(){
+    const now = new Date();
+    if(calY === null){ calY = now.getFullYear(); calM = now.getMonth(); }
+    $('calTitle').textContent =
+      new Date(calY, calM, 1).toLocaleDateString('es-MX', {month:'long', year:'numeric'});
+    // la flecha ▶ se apaga en el mes actual: el futuro no existe todavía
+    $('calNext').disabled = (calY === now.getFullYear() && calM === now.getMonth());
+
+    const grid = $('calGrid'); grid.innerHTML = '';
+    ['D','L','M','M','J','V','S'].forEach(n => {
+      const el = document.createElement('div');
+      el.className = 'cal-dow'; el.textContent = n;
+      grid.appendChild(el);
+    });
+
+    const firstDow = new Date(calY, calM, 1).getDay();      // día de semana del 1°
+    const daysInMonth = new Date(calY, calM + 1, 0).getDate(); // "día 0" del mes siguiente = último de este
+    for(let i = 0; i < firstDow; i++) grid.appendChild(document.createElement('div')); // celdas vacías de alineación
+
+    const todayKey = today();
+    for(let day = 1; day <= daysInMonth; day++){
+      const key = localISO(new Date(calY, calM, day));
+      const r = dias[key];
+      const w = isWon(r);
+      const partial = !w && r && HABITS.some(h => r[h.id]);
+      const el = document.createElement('div');
+      el.className = 'cal-day'
+        + (w ? ' won' : '') + (partial ? ' partial' : '')
+        + (key === todayKey ? ' today' : '') + (key > todayKey ? ' future' : '');
+      el.textContent = day;
+      grid.appendChild(el);
+    }
+  }
+
+  $('calPrev').addEventListener('click', ()=>{ calM--; if(calM < 0){ calM = 11; calY--; } renderCal(); });
+  $('calNext').addEventListener('click', ()=>{ calM++; if(calM > 11){ calM = 0; calY++; } renderCal(); });
 
   // ===== Respaldo: exportar / importar =====
   function exportBackup(){

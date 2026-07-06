@@ -21,6 +21,7 @@
     <button class="tab" data-panel="p-dia" role="tab">Mi día</button>
     <button class="tab" data-panel="p-ruta" role="tab">Ruta</button>
     <button class="tab" data-panel="p-bandeja" role="tab">Bandeja</button>
+    <button class="tab" data-panel="p-stats" role="tab">Stats</button>
   </div>
 
   <div class="panel active" id="p-hoy">
@@ -124,6 +125,26 @@
     </div>
     <div class="nota-ruta">
       <b>Por qué en fila:</b> la motivación es un pico, no una meseta. Cada capa entra cuando la anterior ya no pide fuerza de voluntad.
+    </div>
+  </div>
+
+  <div class="panel" id="p-stats">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num" id="stTotal">0</div><div class="stat-lbl">Días ganados</div></div>
+      <div class="stat-card"><div class="stat-num" id="stBest">0</div><div class="stat-lbl">Mejor racha</div></div>
+      <div class="stat-card"><div class="stat-num" id="stNow">0</div><div class="stat-lbl">Racha actual</div></div>
+      <div class="stat-card"><div class="stat-num" id="stMonth">0%</div><div class="stat-lbl">Último mes</div></div>
+    </div>
+    <div class="cal">
+      <div class="cal-head">
+        <button class="cal-nav" id="calPrev" aria-label="Mes anterior">‹</button>
+        <div class="cal-title" id="calTitle"></div>
+        <button class="cal-nav" id="calNext" aria-label="Mes siguiente">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+    <div class="regla" style="margin-top:16px">
+      <b>Se lee así:</b> ámbar lleno = día ganado. Solo borde = algo cayó, pero no los 3 core. La constancia se ve.
     </div>
   </div>
 
