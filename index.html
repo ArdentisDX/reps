@@ -12,6 +12,7 @@
 </head>
 <body>
 
+  <button class="gear" id="themeBtn" aria-label="Cambiar tema">⚙</button>
   <div class="eyebrow">Sistema diario · Luis Fernando</div>
   <h1>REPS<span>.</span></h1>
   <div class="fecha" id="fecha"></div>
@@ -184,6 +185,17 @@
         <textarea id="trayInput" rows="1" placeholder="Captura una idea…" autocomplete="off"></textarea>
         <button class="send" type="submit" aria-label="Guardar idea">＋</button>
       </form>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="themeWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Tema</h2><button id="themeClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-list" id="themeList"></div>
+      <div class="t-sub">Personalizado</div>
+      <div class="t-row"><label for="pickAccent">Color de acento</label><input type="color" id="pickAccent" value="#ffb454"></div>
+      <div class="t-row"><label for="pickBg">Color de fondo</label><input type="color" id="pickBg" value="#12161d"></div>
+      <div class="t-note">Los demás tonos (tarjetas, texto, líneas) se calculan solos para que siempre se lea bien.</div>
     </div>
   </div>
 

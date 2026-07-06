@@ -450,13 +450,130 @@
     detailKey = key;
   }
 
+  // ===== Temas =====
+  // Cada tema es solo un juego de valores para las MISMAS variables CSS.
+  const THEMES = [
+    {id:'carbon',  name:'Carbón · ámbar',  vars:{bg:'#12161d', card:'#1a2029', card2:'#20262f', line:'#2a3340', text:'#e9edf3', muted:'#8b95a3', accent:'#ffb454', onAccent:'#191204', teal:'#4fd6be'}},
+    {id:'oceano',  name:'Océano · azul',   vars:{bg:'#0d141f', card:'#141d2b', card2:'#1a2536', line:'#243349', text:'#e8eef6', muted:'#8b98ab', accent:'#6ab8ff', onAccent:'#04182b', teal:'#57dbb1'}},
+    {id:'bosque',  name:'Bosque · verde',  vars:{bg:'#0f1613', card:'#16201b', card2:'#1c2822', line:'#28382f', text:'#e9f2ec', muted:'#8fa398', accent:'#7fd88f', onAccent:'#08210d', teal:'#ffd166'}},
+    {id:'claro',   name:'Claro · limpio',  vars:{bg:'#f2f4f7', card:'#ffffff', card2:'#e9edf2', line:'#d4dae2', text:'#1a2230', muted:'#66717f', accent:'#c76a04', onAccent:'#ffffff', teal:'#0c8a70'}},
+    {id:'violeta', name:'Violeta · neón',  vars:{bg:'#131020', card:'#1a1629', card2:'#211c34', line:'#2f2847', text:'#ece9f6', muted:'#968fae', accent:'#b795ff', onAccent:'#160b2b', teal:'#ff8ad8'}},
+  ];
+  const TEMA_KEY = 'reps-tema';
+  let themeSel = {modo:'preset', id:'carbon'};
+
+  // --- matemáticas de color (para el modo personalizado) ---
+  function hexToRgb(h){
+    h = h.replace('#','');
+    return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+  }
+  function rgbToHex(r,g,b){
+    return '#' + [r,g,b].map(x => Math.round(Math.max(0, Math.min(255, x))).toString(16).padStart(2,'0')).join('');
+  }
+  // mezcla dos colores: t=0 da A puro, t=1 da B puro
+  function mix(hexA, hexB, t){
+    const a = hexToRgb(hexA), b = hexToRgb(hexB);
+    return rgbToHex(a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t);
+  }
+  // luminancia percibida (0=negro, 1=blanco): el ojo pesa más el verde
+  function isLight(hex){
+    const [r,g,b] = hexToRgb(hex);
+    return (0.2126*r + 0.7152*g + 0.0722*b) / 255 > 0.55;
+  }
+
+  // Modo personalizado: de 2 colores elegidos se DERIVA la paleta entera,
+  // garantizando contraste: el texto se decide por la luz del fondo.
+  function customVars(accent, bg){
+    const light = isLight(bg);
+    return {
+      bg, accent,
+      card:  light ? mix(bg,'#ffffff',.75) : mix(bg,'#ffffff',.05),
+      card2: light ? mix(bg,'#ffffff',.35) : mix(bg,'#ffffff',.09),
+      line:  light ? mix(bg,'#000000',.12) : mix(bg,'#ffffff',.16),
+      text:  light ? '#1a2230' : '#e9edf3',
+      muted: light ? '#66717f' : '#98a1ad',
+      onAccent: isLight(accent) ? '#191204' : '#ffffff',
+      teal:  light ? '#0c8a70' : '#4fd6be',
+    };
+  }
+
+  // AQUÍ ocurre la magia: escribir las variables CSS en el elemento raíz.
+  // Todas las reglas con var(--x) se repintan solas, sin tocar el CSS.
+  function applyVars(v){
+    const root = document.documentElement.style;
+    root.setProperty('--bg', v.bg);
+    root.setProperty('--card', v.card);
+    root.setProperty('--card-2', v.card2);
+    root.setProperty('--line', v.line);
+    root.setProperty('--text', v.text);
+    root.setProperty('--muted', v.muted);
+    root.setProperty('--amber', v.accent);
+    root.setProperty('--on-accent', v.onAccent);
+    root.setProperty('--teal', v.teal);
+    // la barra de estado de Android acompaña al fondo
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', v.bg);
+  }
+
+  function currentVars(){
+    if(themeSel.modo === 'custom') return customVars(themeSel.accent, themeSel.bg);
+    const t = THEMES.find(x => x.id === themeSel.id) || THEMES[0];
+    return t.vars;
+  }
+  function applyThemeSel(){ applyVars(currentVars()); }
+
+  function loadTheme(){
+    try{
+      const v = localStorage.getItem(TEMA_KEY);
+      if(v) themeSel = JSON.parse(v);
+    }catch(e){ themeSel = {modo:'preset', id:'carbon'}; }
+  }
+  function saveTheme(){
+    try{ localStorage.setItem(TEMA_KEY, JSON.stringify(themeSel)); }
+    catch(e){ toast('No se pudo guardar. Reintenta.'); }
+  }
+
+  // --- interfaz del selector ---
+  function renderThemeUI(){
+    const list = $('themeList'); list.innerHTML = '';
+    THEMES.forEach(t => {
+      const b = document.createElement('button');
+      b.className = 'swatch' + (themeSel.modo === 'preset' && themeSel.id === t.id ? ' active' : '');
+      b.innerHTML =
+        '<span class="s-dots">' +
+          '<span class="s-dot" style="background:' + t.vars.bg + '"></span>' +
+          '<span class="s-dot" style="background:' + t.vars.accent + '"></span>' +
+        '</span>' + t.name + '<span class="s-check">✓</span>';
+      b.addEventListener('click', ()=>{
+        themeSel = {modo:'preset', id:t.id};
+        applyThemeSel(); saveTheme(); renderThemeUI();
+      });
+      list.appendChild(b);
+    });
+    // los selectores de color reflejan el tema vigente
+    const v = currentVars();
+    $('pickAccent').value = v.accent;
+    $('pickBg').value = v.bg;
+  }
+
+  $('themeBtn').addEventListener('click', ()=>{ renderThemeUI(); $('themeWrap').hidden = false; });
+  $('themeClose').addEventListener('click', ()=>{ $('themeWrap').hidden = true; });
+  $('themeWrap').addEventListener('click', (e)=>{ if(e.target === $('themeWrap')) $('themeWrap').hidden = true; });
+
+  // mover cualquier selector activa el modo personalizado y aplica EN VIVO
+  function onPick(){
+    themeSel = {modo:'custom', accent: $('pickAccent').value, bg: $('pickBg').value};
+    applyThemeSel(); saveTheme(); renderThemeUI();
+  }
+  $('pickAccent').addEventListener('input', onPick);
+  $('pickBg').addEventListener('input', onPick);
+
   // ===== Respaldo: exportar / importar =====
   function exportBackup(){
     const backup = {
       app: 'reps',          // firma: identifica que este json es nuestro
       formato: 1,           // versión del formato, por si algún día cambia
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -488,6 +605,10 @@
       dias = d || {};
       ideas = i || [];
       cierres = z || {}; // respaldos viejos no traen cierres: queda vacío
+      if(b.data['reps-tema'] && typeof b.data['reps-tema'] === 'object'){
+        themeSel = b.data['reps-tema'];
+        applyThemeSel(); saveTheme();
+      }
       save(); saveTray(); saveCierres();
       render(); renderTray();
       fillCierreForm(); renderPlanHoy();
@@ -505,6 +626,8 @@
     $('importFile').value = ''; // permite re-elegir el mismo archivo después
   });
 
+  loadTheme();
+  applyThemeSel(); // primero el tema: la app ya nace pintada del color elegido
   load();
   loadTray();
   loadCierres();   // antes de render(): el calendario ya lee los cierres
