@@ -86,7 +86,7 @@ h1 span{color:var(--amber)}
 .capa .c-cond{margin-top:8px;font-size:12px;color:var(--teal);font-weight:600}
 .nota-ruta{border-left:3px solid var(--teal);padding:10px 14px;color:var(--muted);font-size:13px;line-height:1.5;margin-top:16px}
 .nota-ruta b{color:var(--text)}
-.reset{margin-top:28px;text-align:center}
+.reset{margin-top:28px;display:flex;justify-content:center;gap:18px;flex-wrap:wrap}
 .reset button{background:none;border:none;color:var(--muted);font-size:12px;text-decoration:underline;cursor:pointer;font:inherit}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--card-2);border:1px solid var(--line);color:var(--text);padding:10px 18px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;white-space:nowrap}
 .toast.show{opacity:1}

@@ -49,7 +49,12 @@
     <div class="regla">
       <b>La regla:</b> un día malo es normal. <b>Dos seguidos</b> es volver al patrón viejo. Mínimo para ganar: despertar, correr y 1 hr de bloque.
     </div>
-    <div class="reset"><button id="resetBtn">Borrar todo el historial</button></div>
+    <div class="reset">
+      <button id="exportBtn">Exportar respaldo</button>
+      <button id="importBtn">Importar respaldo</button>
+      <button id="resetBtn">Borrar todo el historial</button>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+    </div>
   </div>
 
   <div class="panel" id="p-dia">

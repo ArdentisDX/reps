@@ -272,6 +272,59 @@
     $('trayInput').focus();
   });
 
+  // ===== Respaldo: exportar / importar =====
+  function exportBackup(){
+    const backup = {
+      app: 'reps',          // firma: identifica que este json es nuestro
+      formato: 1,           // versión del formato, por si algún día cambia
+      exportado: new Date().toISOString(),
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas },
+    };
+    // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
+    const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'reps-respaldo-' + today() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1000); // libera la memoria
+    toast('Respaldo descargado. 💾');
+  }
+
+  function importBackup(file){
+    const reader = new FileReader();
+    reader.onload = () => {
+      let b;
+      try { b = JSON.parse(reader.result); }
+      catch(e){ toast('Ese archivo no es un respaldo válido.'); return; }
+      if(!b || b.app !== 'reps' || !b.data || typeof b.data !== 'object'){
+        toast('Ese archivo no es un respaldo de REPS.'); return;
+      }
+      const d = b.data['reps-dias'], i = b.data['reps-bandeja'];
+      if((d && typeof d !== 'object') || (i && !Array.isArray(i))){
+        toast('El respaldo tiene un formato incorrecto.'); return;
+      }
+      const fecha = (b.exportado || '').slice(0,10) || 'fecha desconocida';
+      if(!confirm('Esto reemplazará tus datos actuales con el respaldo del ' + fecha + '. ¿Continuar?')) return;
+      dias = d || {};
+      ideas = i || [];
+      save(); saveTray();
+      render(); renderTray();
+      toast('Respaldo restaurado. 💾');
+    };
+    reader.onerror = () => toast('No se pudo leer el archivo.');
+    reader.readAsText(file);
+  }
+
+  $('exportBtn').addEventListener('click', exportBackup);
+  $('importBtn').addEventListener('click', ()=> $('importFile').click());
+  $('importFile').addEventListener('change', ()=>{
+    const f = $('importFile').files[0];
+    if(f) importBackup(f);
+    $('importFile').value = ''; // permite re-elegir el mismo archivo después
+  });
+
   load();
   render();
   loadTray();
