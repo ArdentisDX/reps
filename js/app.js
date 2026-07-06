@@ -371,6 +371,116 @@
   $('calPrev').addEventListener('click', ()=>{ calM--; if(calM < 0){ calM = 11; calY--; } $('calDetail').hidden = true; detailKey = null; renderCal(); });
   $('calNext').addEventListener('click', ()=>{ calM++; if(calM > 11){ calM = 0; calY++; } $('calDetail').hidden = true; detailKey = null; renderCal(); });
 
+  // ===== Compartir mes (imagen con canvas) =====
+  // Dibuja el mes visible del calendario en un canvas de 1080x1350 px
+  // (formato vertical, listo para redes) usando los colores del tema ACTIVO.
+  function drawMonthImage(){
+    const W = 1080, H = 1350, PAD = 80;
+    // lee las variables CSS vigentes: el tema que sea que esté puesto
+    const css = getComputedStyle(document.documentElement);
+    const C = n => css.getPropertyValue(n).trim();
+    const bg = C('--bg'), card = C('--card-2'), text = C('--text'),
+          muted = C('--muted'), accent = C('--amber'), onAccent = C('--on-accent');
+
+    const canvas = document.createElement('canvas'); // vive solo en memoria
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d'); // el "pincel" 2D
+    const FONT = 'system-ui, "Segoe UI", Roboto, sans-serif';
+
+    // 1) fondo
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // 2) encabezado: etiqueta + mes y año
+    const mesLargo = new Date(calY, calM, 1).toLocaleDateString('es-MX', {month:'long', year:'numeric'});
+    ctx.textAlign = 'left';
+    ctx.fillStyle = muted;
+    ctx.font = '600 28px ' + FONT;
+    ctx.fillText('MI MES EN REPS', PAD, 100);
+    ctx.fillStyle = text;
+    ctx.font = '800 64px ' + FONT;
+    ctx.fillText(mesLargo.charAt(0).toUpperCase() + mesLargo.slice(1), PAD, 175);
+
+    // 3) métricas: ganados del mes y mejor racha histórica
+    const daysInMonth = new Date(calY, calM + 1, 0).getDate();
+    let wonMes = 0;
+    for(let d = 1; d <= daysInMonth; d++){
+      if(isWon(dias[localISO(new Date(calY, calM, d))])) wonMes++;
+    }
+    ctx.fillStyle = accent;
+    ctx.font = '800 88px ' + FONT;
+    ctx.fillText(String(wonMes), PAD, 330);
+    ctx.fillText(String(statsData().best), W/2 + 20, 330);
+    ctx.fillStyle = muted;
+    ctx.font = '600 26px ' + FONT;
+    ctx.fillText('DÍAS GANADOS', PAD, 372);
+    ctx.fillText('MEJOR RACHA', W/2 + 20, 372);
+
+    // 4) calendario: misma lógica que renderCal, pero pintada a mano
+    const gap = 12;
+    const cell = (W - PAD*2 - gap*6) / 7;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = muted;
+    ctx.font = '700 26px ' + FONT;
+    ['D','L','M','M','J','V','S'].forEach((n,i) =>
+      ctx.fillText(n, PAD + i*(cell+gap) + cell/2, 445));
+
+    const todayKey = today();
+    let col = new Date(calY, calM, 1).getDay(), rowY = 470;
+    for(let day = 1; day <= daysInMonth; day++){
+      const x = PAD + col*(cell+gap);
+      const key = localISO(new Date(calY, calM, day));
+      const r = dias[key], w = isWon(r);
+      const partial = !w && r && HABITS.some(h => r[h.id]);
+      ctx.globalAlpha = key > todayKey ? 0.3 : 1; // días futuros: fantasmas
+      ctx.beginPath();
+      ctx.roundRect(x, rowY, cell, cell, 22);
+      ctx.fillStyle = w ? accent : card;
+      ctx.fill();
+      if(partial){ ctx.strokeStyle = accent; ctx.lineWidth = 5; ctx.stroke(); }
+      ctx.fillStyle = w ? onAccent : (partial ? accent : muted);
+      ctx.font = (w ? '800' : '600') + ' 34px ' + FONT;
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(day), x + cell/2, rowY + cell/2 + 2);
+      ctx.textBaseline = 'alphabetic';
+      ctx.globalAlpha = 1;
+      col++;
+      if(col === 7){ col = 0; rowY += cell + gap; }
+    }
+
+    // 5) logo "REPS." abajo, con el punto en color de acento
+    ctx.font = '800 60px ' + FONT;
+    const wReps = ctx.measureText('REPS').width, wDot = ctx.measureText('.').width;
+    const x0 = W/2 - (wReps + wDot)/2;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = text;   ctx.fillText('REPS', x0, 1315);
+    ctx.fillStyle = accent; ctx.fillText('.', x0 + wReps, 1315);
+
+    const mesCorto = new Date(calY, calM, 1).toLocaleDateString('es-MX', {month:'long'});
+    return { canvas, nombre: 'reps-' + mesCorto + '-' + calY + '.png' };
+  }
+
+  $('shareBtn').addEventListener('click', ()=>{
+    const { canvas, nombre } = drawMonthImage();
+    // toBlob convierte los píxeles del canvas en un archivo PNG real
+    canvas.toBlob(async (blob)=>{
+      if(!blob){ toast('No se pudo generar la imagen.'); return; }
+      const file = new File([blob], nombre, {type:'image/png'});
+      // en celular: hoja de compartir nativa (WhatsApp, Instagram...)
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        try{ await navigator.share({files:[file], title:'Mi mes en REPS'}); return; }
+        catch(err){ if(err && err.name === 'AbortError') return; } // canceló: no forzar descarga
+      }
+      // en PC (o si compartir falló): descarga clásica
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = nombre;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+      toast('Imagen descargada. 📤');
+    }, 'image/png');
+  });
+
   // ===== Cierre del día =====
   const MOODS = [
     {id:'bien',    emoji:'🔥', name:'Bien'},

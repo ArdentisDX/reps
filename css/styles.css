@@ -148,6 +148,9 @@ h1 span{color:var(--amber)}
 .cal-day.today{box-shadow:0 0 0 2px var(--amber-dim)}
 .cal-day.future{opacity:.25;background:none}
 
+.share-btn{margin-top:12px;width:100%;background:var(--amber);border:none;border-radius:12px;color:var(--on-accent);font:inherit;font-weight:800;font-size:14px;padding:12px 0;cursor:pointer}
+.share-btn:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+
 /* ===== Cierre del día ===== */
 .plan-hoy{margin-top:16px;background:var(--teal-dim);border:1px solid color-mix(in srgb, var(--teal) 40%, transparent);border-radius:var(--radius);padding:12px 14px;font-size:13px;line-height:1.5;white-space:pre-wrap}
 .plan-hoy b{color:var(--teal)}
