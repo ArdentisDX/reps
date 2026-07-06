@@ -25,6 +25,7 @@
   </div>
 
   <div class="panel active" id="p-hoy">
+    <div class="plan-hoy" id="planHoy" hidden>📌 <b>Plan de hoy:</b> <span id="planHoyTxt"></span></div>
     <div class="streak" style="margin-top:16px">
       <div><div class="num" id="streakNum">0</div></div>
       <div>
@@ -46,6 +47,22 @@
     <div class="prog">
       <div class="p-row"><span>DÍA COMPLETO</span><span id="progPct">0%</span></div>
       <div class="bar"><i id="progBar"></i></div>
+    </div>
+    <div class="sec">
+      <div class="sec-head"><h2>Cierre del día</h2><div class="tag">2 min antes de dormir</div></div>
+      <div class="cierre">
+        <div class="c-q">¿Cómo estuvo hoy?</div>
+        <div class="moods">
+          <button class="mood" data-mood="bien">🔥 Bien</button>
+          <button class="mood" data-mood="regular">😐 Regular</button>
+          <button class="mood" data-mood="mal">💀 Mal</button>
+        </div>
+        <label class="c-lbl" for="notasHoy">Notas / errores de hoy</label>
+        <textarea id="notasHoy" rows="2" placeholder="¿Qué funcionó? ¿Qué no?"></textarea>
+        <label class="c-lbl" for="planManana">Plan de mañana</label>
+        <textarea id="planManana" rows="2" placeholder="Ej: salgo a las 10, psicólogo 19:30"></textarea>
+        <button id="cierreBtn" class="c-save">Guardar cierre</button>
+      </div>
     </div>
     <div class="regla">
       <b>La regla:</b> un día malo es normal. <b>Dos seguidos</b> es volver al patrón viejo. Mínimo para ganar: despertar, correr y 1 hr de bloque.
@@ -143,8 +160,13 @@
       </div>
       <div class="cal-grid" id="calGrid"></div>
     </div>
+    <div class="cal-detail" id="calDetail" hidden>
+      <div class="cd-head"><span id="cdFecha"></span><span id="cdMood"></span></div>
+      <div class="cd-sec" id="cdNotasWrap"><b>Notas:</b> <span id="cdNotas"></span></div>
+      <div class="cd-sec" id="cdPlanWrap"><b>Plan que tenía:</b> <span id="cdPlan"></span></div>
+    </div>
     <div class="regla" style="margin-top:16px">
-      <b>Se lee así:</b> ámbar lleno = día ganado. Solo borde = algo cayó, pero no los 3 core. La constancia se ve.
+      <b>Se lee así:</b> ámbar lleno = día ganado. Solo borde = algo cayó, pero no los 3 core. Punto = día con cierre: tócalo.
     </div>
   </div>
 
@@ -159,7 +181,7 @@
         <button type="button" class="cp-cancel" id="cpCancel">Cancelar</button>
       </div>
       <form id="trayForm">
-        <input id="trayInput" type="text" placeholder="Captura una idea…" autocomplete="off" maxlength="200">
+        <textarea id="trayInput" rows="1" placeholder="Captura una idea…" autocomplete="off"></textarea>
         <button class="send" type="submit" aria-label="Guardar idea">＋</button>
       </form>
     </div>

@@ -246,8 +246,24 @@
     if(!t) return;
     pendingText = t;
     $('trayInput').value = '';
+    $('trayInput').style.height = 'auto'; // vuelve a una línea tras capturar
     $('cpText').textContent = '«' + t + '»';
     $('catPick').classList.add('show');
+  });
+
+  // el textarea crece con el contenido (hasta el tope del CSS)
+  $('trayInput').addEventListener('input', ()=>{
+    const t = $('trayInput');
+    t.style.height = 'auto';            // primero se encoge a lo mínimo...
+    t.style.height = t.scrollHeight + 'px'; // ...y luego crece a lo que mida su contenido
+  });
+
+  // Enter captura (como antes); Shift+Enter hace salto de línea
+  $('trayInput').addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      $('trayForm').requestSubmit();
+    }
   });
 
   // botones de categoría (se crean una sola vez)
@@ -343,12 +359,96 @@
         + (w ? ' won' : '') + (partial ? ' partial' : '')
         + (key === todayKey ? ' today' : '') + (key > todayKey ? ' future' : '');
       el.textContent = day;
+      if(cierres[key] && key <= todayKey){
+        el.classList.add('has-note', 'clickable');
+        el.addEventListener('click', ()=> showDayDetail(key));
+      }
       grid.appendChild(el);
     }
   }
 
-  $('calPrev').addEventListener('click', ()=>{ calM--; if(calM < 0){ calM = 11; calY--; } renderCal(); });
-  $('calNext').addEventListener('click', ()=>{ calM++; if(calM > 11){ calM = 0; calY++; } renderCal(); });
+  // al cambiar de mes se cierra el detalle: pertenece al mes que se veía
+  $('calPrev').addEventListener('click', ()=>{ calM--; if(calM < 0){ calM = 11; calY--; } $('calDetail').hidden = true; detailKey = null; renderCal(); });
+  $('calNext').addEventListener('click', ()=>{ calM++; if(calM > 11){ calM = 0; calY++; } $('calDetail').hidden = true; detailKey = null; renderCal(); });
+
+  // ===== Cierre del día =====
+  const MOODS = [
+    {id:'bien',    emoji:'🔥', name:'Bien'},
+    {id:'regular', emoji:'😐', name:'Regular'},
+    {id:'mal',     emoji:'💀', name:'Mal'},
+  ];
+  const CIERRES_KEY = 'reps-cierres';
+  let cierres = {};      // { 'YYYY-MM-DD': {animo, notas, plan, guardado} }
+  let moodSel = null;    // ánimo elegido en el formulario de hoy
+  let detailKey = null;  // día abierto en el detalle del calendario
+
+  function loadCierres(){
+    try{
+      const v = localStorage.getItem(CIERRES_KEY);
+      if(v) cierres = JSON.parse(v);
+    }catch(e){ cierres = {}; }
+  }
+  function saveCierres(){
+    try{ localStorage.setItem(CIERRES_KEY, JSON.stringify(cierres)); }
+    catch(e){ toast('No se pudo guardar. Reintenta.'); }
+  }
+
+  // botones de ánimo: uno activo a la vez; tocar el activo lo des-selecciona
+  document.querySelectorAll('.mood').forEach(b => {
+    b.addEventListener('click', ()=>{
+      moodSel = (moodSel === b.dataset.mood) ? null : b.dataset.mood;
+      document.querySelectorAll('.mood').forEach(x =>
+        x.classList.toggle('active', x.dataset.mood === moodSel));
+    });
+  });
+
+  $('cierreBtn').addEventListener('click', ()=>{
+    const notas = $('notasHoy').value.trim();
+    const plan = $('planManana').value.trim();
+    if(!moodSel && !notas && !plan){ toast('El cierre está vacío.'); return; }
+    cierres[today()] = { animo: moodSel, notas, plan, guardado: new Date().toISOString() };
+    saveCierres();
+    renderCal(); // para que aparezca el puntito de hoy en el calendario
+    toast('Cierre guardado. A dormir tranquilo. 🌙');
+  });
+
+  // si hoy ya tiene cierre, el formulario amanece con sus valores (editable)
+  function fillCierreForm(){
+    const c = cierres[today()];
+    if(!c) return;
+    moodSel = c.animo || null;
+    document.querySelectorAll('.mood').forEach(x =>
+      x.classList.toggle('active', x.dataset.mood === moodSel));
+    $('notasHoy').value = c.notas || '';
+    $('planManana').value = c.plan || '';
+  }
+
+  // el "plan de mañana" que escribiste AYER es el "plan de hoy" de HOY
+  function renderPlanHoy(){
+    const y = new Date(); y.setDate(y.getDate() - 1);
+    const c = cierres[localISO(y)];
+    const hay = !!(c && c.plan);
+    $('planHoy').hidden = !hay;
+    if(hay) $('planHoyTxt').textContent = c.plan;
+  }
+
+  // detalle de un día del calendario (solo días con cierre)
+  function showDayDetail(key){
+    if(detailKey === key && !$('calDetail').hidden){ // tocar de nuevo lo cierra
+      $('calDetail').hidden = true; detailKey = null; return;
+    }
+    const c = cierres[key];
+    const m = MOODS.find(x => x.id === c.animo);
+    $('cdFecha').textContent =
+      new Date(key + 'T12:00:00').toLocaleDateString('es-MX', {weekday:'long', day:'numeric', month:'long'});
+    $('cdMood').textContent = m ? (m.emoji + ' ' + m.name) : '';
+    $('cdNotasWrap').hidden = !c.notas;
+    $('cdNotas').textContent = c.notas || '';
+    $('cdPlanWrap').hidden = !c.plan;
+    $('cdPlan').textContent = c.plan || '';
+    $('calDetail').hidden = false;
+    detailKey = key;
+  }
 
   // ===== Respaldo: exportar / importar =====
   function exportBackup(){
@@ -356,7 +456,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       formato: 1,           // versión del formato, por si algún día cambia
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -379,16 +479,18 @@
       if(!b || b.app !== 'reps' || !b.data || typeof b.data !== 'object'){
         toast('Ese archivo no es un respaldo de REPS.'); return;
       }
-      const d = b.data['reps-dias'], i = b.data['reps-bandeja'];
-      if((d && typeof d !== 'object') || (i && !Array.isArray(i))){
+      const d = b.data['reps-dias'], i = b.data['reps-bandeja'], z = b.data['reps-cierres'];
+      if((d && typeof d !== 'object') || (i && !Array.isArray(i)) || (z && typeof z !== 'object')){
         toast('El respaldo tiene un formato incorrecto.'); return;
       }
       const fecha = (b.exportado || '').slice(0,10) || 'fecha desconocida';
       if(!confirm('Esto reemplazará tus datos actuales con el respaldo del ' + fecha + '. ¿Continuar?')) return;
       dias = d || {};
       ideas = i || [];
-      save(); saveTray();
+      cierres = z || {}; // respaldos viejos no traen cierres: queda vacío
+      save(); saveTray(); saveCierres();
       render(); renderTray();
+      fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
     };
     reader.onerror = () => toast('No se pudo leer el archivo.');
@@ -404,9 +506,12 @@
   });
 
   load();
-  render();
   loadTray();
+  loadCierres();   // antes de render(): el calendario ya lee los cierres
+  render();
   renderTray();
+  fillCierreForm();
+  renderPlanHoy();
 
   // Registra el service worker (cache offline). Solo existe en http/https,
   // por eso el "if": abriendo el archivo con doble clic (file://) no corre.
