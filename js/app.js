@@ -771,12 +771,33 @@
   $('pickAccent').addEventListener('input', onPick);
   $('pickBg').addEventListener('input', onPick);
 
+  // --- modo compacto: una clase en <body>, el CSS hace el resto ---
+  const COMPACT_KEY = 'reps-compacto';
+  let compacto = false;
+
+  function loadCompact(){
+    try{ compacto = localStorage.getItem(COMPACT_KEY) === '1'; }
+    catch(e){ compacto = false; }
+  }
+  function applyCompact(){
+    document.body.classList.toggle('compact', compacto);
+    $('compactToggle').checked = compacto;
+  }
+  $('compactToggle').addEventListener('change', ()=>{
+    compacto = $('compactToggle').checked;
+    try{
+      if(compacto) localStorage.setItem(COMPACT_KEY, '1');
+      else localStorage.removeItem(COMPACT_KEY); // apagado = sin clave
+    }catch(e){}
+    applyCompact();
+  });
+
   // ===== Esquema y migraciones =====
   // reps-schema versiona el FORMATO de los datos (no confundir con la
   // versión del cache en sw.js, que versiona los archivos de la app).
   const SCHEMA_KEY = 'reps-schema';
   const SCHEMA = 2; // versión de formato que esta app espera
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-tema'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-tema', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -867,7 +888,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-compacto': compacto },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -908,6 +929,12 @@
         themeSel = b.data['reps-tema'];
         applyThemeSel(); saveTheme();
       }
+      compacto = b.data['reps-compacto'] === true || b.data['reps-compacto'] === '1';
+      try{
+        if(compacto) localStorage.setItem(COMPACT_KEY, '1');
+        else localStorage.removeItem(COMPACT_KEY);
+      }catch(e){}
+      applyCompact();
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
       // formato, se migra lo guardado y se relee ya en formato actual
@@ -934,6 +961,8 @@
   migrate();       // ANTES que todo: los datos suben al formato actual
   loadTheme();
   applyThemeSel(); // primero el tema: la app ya nace pintada del color elegido
+  loadCompact();
+  applyCompact();
   load();
   loadTray();
   loadCierres();   // antes de render(): el calendario ya lee los cierres

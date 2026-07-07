@@ -94,3 +94,5 @@
 3. Al cambiar archivos de la app: subir versión en sw.js (reps-vN).
 4. Las ideas nuevas se anotan aquí, no se implementan al vuelo.
 5. Convenciones y formatos de datos: ver `CLAUDE.md`.
+6. El catálogo completo de sueños, con prioridades y el plan de las
+   próximas 8 semanas: ver `VISION.md`.

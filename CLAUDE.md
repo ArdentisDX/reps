@@ -40,6 +40,7 @@ directo sobre un Date: corre el día en zonas horarias negativas.
 | `reps-cierres` | `{fecha: {animo, notas, plan, guardado}}` | `animo` ∈ bien/regular/mal o null. El `plan` de la fecha X se muestra como "Plan de hoy" el día X+1. |
 | `reps-semana` | `{fecha: "texto"}` | Plan semanal, plano por día. Vacío = clave borrada. Una "semana" se deriva (lunes = `mondayOf`), no se guarda. |
 | `reps-tema` | `{modo:'preset', id}` o `{modo:'custom', accent, bg}` | Validar con `themeValido()` antes de aplicar. |
+| `reps-compacto` | `"1"` o ausente | Modo compacto (densidad). Se aplica como clase `compact` en `<body>`. |
 | `reps-schema` | `"N"` (número como string) | Versión del FORMATO de los datos. La gestiona `migrate()`; no tocar a mano. |
 | `reps-pre-migracion` | `{de, a, fecha, crudo}` | Copia cruda automática previa a la última migración. Solo lectura; no va en el respaldo exportado. |
 
@@ -129,4 +130,5 @@ y actualiza el `<meta theme-color>`. Nada más.
   paso y esperar su confirmación en flujos multi-paso.
 - Al terminar una feature: verificar en navegador, subir versión de
   cache, commit (mensaje en español, cuerpo breve) y push.
-- Visión de largo plazo y fases futuras: ver `ROADMAP.md`.
+- Visión de largo plazo: `ROADMAP.md` (fases y notas técnicas) y
+  `VISION.md` (sueños priorizados, modos de interfaz, plan de 8 semanas).
