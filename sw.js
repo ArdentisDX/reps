@@ -1,7 +1,7 @@
 // Service Worker de REPS — estrategia offline-first.
 // Versión del cache: súbela (v2, v3...) cada vez que cambies HTML/CSS/JS,
 // para que los dispositivos descarguen la copia nueva.
-const CACHE = 'reps-v10';
+const CACHE = 'reps-v11';
 
 // El "app shell": todos los archivos que la app necesita para funcionar.
 const ASSETS = [
@@ -46,9 +46,12 @@ self.addEventListener('fetch', (e) => {
       if (cached) return cached;
 
       return fetch(e.request).then((res) => {
-        // guarda una copia de lo descargado (p. ej. los íconos)
-        const copy = res.clone();
-        caches.open(CACHE).then((cache) => cache.put(e.request, copy));
+        // guarda copia SOLO si la respuesta fue exitosa (res.ok) y es de
+        // nuestro propio origen — jamás inmortalizar un 404 en el cache
+        if (res.ok && e.request.url.startsWith(self.location.origin)) {
+          const copy = res.clone();
+          caches.open(CACHE).then((cache) => cache.put(e.request, copy));
+        }
         return res;
       }).catch(() => {
         // sin internet y no está en cache: si es navegación, sirve la app

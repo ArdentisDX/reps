@@ -29,10 +29,13 @@
     });
   });
 
+  // un "mapa" válido: objeto de verdad, no array ni número ni null
+  function esMapa(v){ return !!v && typeof v === 'object' && !Array.isArray(v); }
+
   function load(){
     try{
-      const v = localStorage.getItem(KEY);
-      if(v) dias = JSON.parse(v);
+      const v = JSON.parse(localStorage.getItem(KEY));
+      if(esMapa(v)) dias = v; // si no tiene la forma esperada, se ignora
     }catch(e){ dias = {}; }
   }
   function save(){
@@ -64,12 +67,16 @@
       '<div class="h-hint">'+h.hint+'</div></span>' +
       (h.core ? '<span class="core-mark">CORE</span>' : '');
     b.addEventListener('click', ()=>{
-      const wasWon = isWon(dias[today()]);
-      rec[h.id] = !rec[h.id];
-      dias[today()] = rec;
+      // fecha y registro FRESCOS: si pasó la medianoche desde que se pintó
+      // la pantalla, el "rec" viejo pertenece a AYER y no debe tocarse
+      const k = today();
+      const cur = dias[k] || {};
+      const wasWon = isWon(cur);
+      cur[h.id] = !cur[h.id];
+      dias[k] = cur;
       save();
       render();
-      if(!wasWon && isWon(rec)) toast('Día ganado. Una rep más. 🔥');
+      if(!wasWon && isWon(cur)) toast('Día ganado. Una rep más. 🔥');
     });
     return b;
   }
@@ -149,8 +156,8 @@
 
   function loadTray(){
     try{
-      const v = localStorage.getItem(TRAY_KEY);
-      if(v) ideas = JSON.parse(v);
+      const v = JSON.parse(localStorage.getItem(TRAY_KEY));
+      if(Array.isArray(v)) ideas = v.filter(x => x && typeof x.text === 'string');
     }catch(e){ ideas = []; }
   }
   function saveTray(){
@@ -332,6 +339,8 @@
   function renderCal(){
     const now = new Date();
     if(calY === null){ calY = now.getFullYear(); calM = now.getMonth(); }
+    // si el día del detalle abierto ya no tiene cierre (p. ej. tras importar), se cierra
+    if(detailKey && !cierres[detailKey]){ $('calDetail').hidden = true; detailKey = null; }
     $('calTitle').textContent =
       new Date(calY, calM, 1).toLocaleDateString('es-MX', {month:'long', year:'numeric'});
     // la flecha ▶ se apaga en el mes actual: el futuro no existe todavía
@@ -490,8 +499,10 @@
 
   function loadSemana(){
     try{
-      const v = localStorage.getItem(SEMANA_KEY);
-      if(v) semana = JSON.parse(v);
+      const v = JSON.parse(localStorage.getItem(SEMANA_KEY));
+      if(esMapa(v)){
+        Object.keys(v).forEach(k => { if(typeof v[k] === 'string') semana[k] = v[k]; });
+      }
     }catch(e){ semana = {}; }
   }
   function saveSemana(){
@@ -561,8 +572,8 @@
 
   function loadCierres(){
     try{
-      const v = localStorage.getItem(CIERRES_KEY);
-      if(v) cierres = JSON.parse(v);
+      const v = JSON.parse(localStorage.getItem(CIERRES_KEY));
+      if(esMapa(v)) cierres = v;
     }catch(e){ cierres = {}; }
   }
   function saveCierres(){
@@ -589,10 +600,10 @@
     toast('Cierre guardado. A dormir tranquilo. 🌙');
   });
 
-  // si hoy ya tiene cierre, el formulario amanece con sus valores (editable)
+  // pinta el formulario con el cierre de HOY — y lo LIMPIA si no hay:
+  // nunca debe quedarse texto de otro día esperando guardarse por error
   function fillCierreForm(){
-    const c = cierres[today()];
-    if(!c) return;
+    const c = cierres[today()] || {};
     moodSel = c.animo || null;
     document.querySelectorAll('.mood').forEach(x =>
       x.classList.toggle('active', x.dataset.mood === moodSel));
@@ -703,11 +714,21 @@
   }
   function applyThemeSel(){ applyVars(currentVars()); }
 
+  // un tema solo es confiable si es un preset que existe o un custom
+  // con dos colores hex válidos — cualquier otra cosa rompería la pintura
+  const esHex = s => typeof s === 'string' && /^#[0-9a-f]{6}$/i.test(s);
+  function themeValido(t){
+    if(!t || typeof t !== 'object') return false;
+    if(t.modo === 'preset') return THEMES.some(x => x.id === t.id);
+    if(t.modo === 'custom') return esHex(t.accent) && esHex(t.bg);
+    return false;
+  }
+
   function loadTheme(){
     try{
-      const v = localStorage.getItem(TEMA_KEY);
-      if(v) themeSel = JSON.parse(v);
-    }catch(e){ themeSel = {modo:'preset', id:'carbon'}; }
+      const v = JSON.parse(localStorage.getItem(TEMA_KEY));
+      if(themeValido(v)) themeSel = v; // inválido: se queda Carbón
+    }catch(e){ /* se queda Carbón */ }
   }
   function saveTheme(){
     try{ localStorage.setItem(TEMA_KEY, JSON.stringify(themeSel)); }
@@ -784,12 +805,15 @@
       }
       const fecha = (b.exportado || '').slice(0,10) || 'fecha desconocida';
       if(!confirm('Esto reemplazará tus datos actuales con el respaldo del ' + fecha + '. ¿Continuar?')) return;
-      dias = d || {};
-      ideas = i || [];
-      cierres = z || {}; // respaldos viejos no traen cierres: queda vacío
+      dias = esMapa(d) ? d : {};
+      ideas = (i || []).filter(x => x && typeof x.text === 'string'); // fuera ideas malformadas
+      cierres = esMapa(z) ? z : {}; // respaldos viejos no traen cierres: queda vacío
       const w = b.data['reps-semana'];
-      semana = (w && typeof w === 'object') ? w : {};
-      if(b.data['reps-tema'] && typeof b.data['reps-tema'] === 'object'){
+      semana = {};
+      if(esMapa(w)){
+        Object.keys(w).forEach(k => { if(typeof w[k] === 'string') semana[k] = w[k]; });
+      }
+      if(themeValido(b.data['reps-tema'])){
         themeSel = b.data['reps-tema'];
         applyThemeSel(); saveTheme();
       }
@@ -821,6 +845,19 @@
   renderSemana();
   fillCierreForm();
   renderPlanHoy();
+
+  // Si la app quedó suspendida y vuelve otro día (lo normal en una PWA
+  // instalada: Android la congela, no la cierra), repinta TODO al despertar:
+  // checklist del día nuevo, banner del plan, semana actual, cierre limpio.
+  let uiDay = today();
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState === 'visible' && today() !== uiDay){
+      uiDay = today();
+      weekOff = 0; // "esta semana" también pudo cambiar
+      render(); renderTray(); renderSemana();
+      fillCierreForm(); renderPlanHoy();
+    }
+  });
 
   // Registra el service worker (cache offline). Solo existe en http/https,
   // por eso el "if": abriendo el archivo con doble clic (file://) no corre.
