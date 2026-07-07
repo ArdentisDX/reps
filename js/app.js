@@ -481,6 +481,73 @@
     }, 'image/png');
   });
 
+  // ===== Plan semanal =====
+  // Guardado plano por día: { 'YYYY-MM-DD': 'texto' }. Una "semana" no se
+  // guarda: se DERIVA (7 fechas consecutivas desde un lunes).
+  const SEMANA_KEY = 'reps-semana';
+  let semana = {};
+  let weekOff = 0; // 0 = semana actual, +1 = entrante, -1 = pasada...
+
+  function loadSemana(){
+    try{
+      const v = localStorage.getItem(SEMANA_KEY);
+      if(v) semana = JSON.parse(v);
+    }catch(e){ semana = {}; }
+  }
+  function saveSemana(){
+    try{ localStorage.setItem(SEMANA_KEY, JSON.stringify(semana)); }
+    catch(e){ toast('No se pudo guardar. Reintenta.'); }
+  }
+
+  // el lunes de la semana de una fecha: getDay() da 0=dom..6=sáb,
+  // y (dow+6)%7 son los días transcurridos desde el lunes
+  function mondayOf(date){
+    const d = new Date(date);
+    d.setDate(d.getDate() - (d.getDay() + 6) % 7);
+    return d;
+  }
+
+  function renderSemana(){
+    const mon = mondayOf(new Date());
+    mon.setDate(mon.getDate() + weekOff * 7);
+    const sun = new Date(mon); sun.setDate(sun.getDate() + 6);
+
+    // título: "Semana del 6 al 12 de julio" (mes solo donde hace falta)
+    const conMes = d => d.toLocaleDateString('es-MX', {day:'numeric', month:'long'});
+    const inicio = mon.getMonth() === sun.getMonth() ? mon.getDate() : conMes(mon);
+    $('wpTitle').textContent = 'Semana del ' + inicio + ' al ' + conMes(sun);
+
+    const list = $('wpList'); list.innerHTML = '';
+    const todayKey = today();
+    for(let i = 0; i < 7; i++){
+      const d = new Date(mon); d.setDate(d.getDate() + i);
+      const key = localISO(d);
+      const row = document.createElement('div');
+      row.className = 'wp-row' + (key === todayKey ? ' today' : '');
+      const lbl = document.createElement('label');
+      lbl.className = 'wp-lbl';
+      lbl.textContent = d.toLocaleDateString('es-MX', {weekday:'short', day:'numeric'});
+      lbl.setAttribute('for', 'wp-' + key);
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.id = 'wp-' + key;
+      inp.className = 'wp-inp';
+      inp.placeholder = 'Plan…';
+      inp.value = semana[key] || '';
+      inp.addEventListener('input', ()=>{
+        if(inp.value.trim()) semana[key] = inp.value;
+        else delete semana[key]; // sin texto = sin plan (no guardamos vacíos)
+        saveSemana();
+        if(key === todayKey) renderPlanHoy(); // el banner de Hoy, al instante
+      });
+      row.append(lbl, inp);
+      list.appendChild(row);
+    }
+  }
+
+  $('wpPrev').addEventListener('click', ()=>{ weekOff--; renderSemana(); });
+  $('wpNext').addEventListener('click', ()=>{ weekOff++; renderSemana(); });
+
   // ===== Cierre del día =====
   const MOODS = [
     {id:'bien',    emoji:'🔥', name:'Bien'},
@@ -533,13 +600,18 @@
     $('planManana').value = c.plan || '';
   }
 
-  // el "plan de mañana" que escribiste AYER es el "plan de hoy" de HOY
+  // El banner de Hoy junta dos fuentes: 1) el plan semanal de hoy,
+  // 2) el "plan de mañana" del cierre de ANOCHE. Ambos sin duplicar:
+  // si dicen lo mismo (ignorando mayúsculas), se muestra una sola vez.
   function renderPlanHoy(){
     const y = new Date(); y.setDate(y.getDate() - 1);
-    const c = cierres[localISO(y)];
-    const hay = !!(c && c.plan);
-    $('planHoy').hidden = !hay;
-    if(hay) $('planHoyTxt').textContent = c.plan;
+    const deCierre = ((cierres[localISO(y)] || {}).plan || '').trim();
+    const deSemana = (semana[today()] || '').trim();
+    const partes = [];
+    if(deSemana) partes.push(deSemana);
+    if(deCierre && deCierre.toLowerCase() !== deSemana.toLowerCase()) partes.push(deCierre);
+    $('planHoy').hidden = partes.length === 0;
+    if(partes.length) $('planHoyTxt').textContent = partes.join(' · ');
   }
 
   // detalle de un día del calendario (solo días con cierre)
@@ -683,7 +755,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       formato: 1,           // versión del formato, por si algún día cambia
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -715,12 +787,14 @@
       dias = d || {};
       ideas = i || [];
       cierres = z || {}; // respaldos viejos no traen cierres: queda vacío
+      const w = b.data['reps-semana'];
+      semana = (w && typeof w === 'object') ? w : {};
       if(b.data['reps-tema'] && typeof b.data['reps-tema'] === 'object'){
         themeSel = b.data['reps-tema'];
         applyThemeSel(); saveTheme();
       }
-      save(); saveTray(); saveCierres();
-      render(); renderTray();
+      save(); saveTray(); saveCierres(); saveSemana();
+      render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
     };
@@ -741,8 +815,10 @@
   load();
   loadTray();
   loadCierres();   // antes de render(): el calendario ya lee los cierres
+  loadSemana();    // antes de renderPlanHoy(): el banner lee el plan semanal
   render();
   renderTray();
+  renderSemana();
   fillCierreForm();
   renderPlanHoy();
 
