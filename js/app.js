@@ -498,6 +498,7 @@
   let weekOff = 0; // 0 = semana actual, +1 = entrante, -1 = pasada...
 
   function loadSemana(){
+    semana = {}; // siempre desde cero: esta función puede releerse tras migrar
     try{
       const v = JSON.parse(localStorage.getItem(SEMANA_KEY));
       if(esMapa(v)){
@@ -770,11 +771,101 @@
   $('pickAccent').addEventListener('input', onPick);
   $('pickBg').addEventListener('input', onPick);
 
+  // ===== Esquema y migraciones =====
+  // reps-schema versiona el FORMATO de los datos (no confundir con la
+  // versión del cache en sw.js, que versiona los archivos de la app).
+  const SCHEMA_KEY = 'reps-schema';
+  const SCHEMA = 2; // versión de formato que esta app espera
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-tema'];
+
+  // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
+  // Regla: una migración nunca se borra ni se edita una vez publicada.
+  const MIGRATIONS = {
+    // v1 → v2: normaliza datos escritos por versiones sin validación
+    1: function(){
+      const lee = k => { try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } };
+      const pon = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+      // ideas: solo objetos con texto; repara id, done y created faltantes
+      if(localStorage.getItem('reps-bandeja') !== null){
+        const ideas = lee('reps-bandeja');
+        if(Array.isArray(ideas)){
+          pon('reps-bandeja', ideas
+            .filter(x => x && typeof x.text === 'string')
+            .map(x => ({
+              id: x.id || Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+              text: x.text,
+              cat: typeof x.cat === 'string' ? x.cat : 'algundia',
+              done: !!x.done,
+              created: x.created || new Date().toISOString(),
+            })));
+        } else { localStorage.removeItem('reps-bandeja'); } // irrecuperable
+      }
+      // mapas de fechas: si no tienen forma de objeto, fuera
+      ['reps-dias', 'reps-cierres'].forEach(k => {
+        if(localStorage.getItem(k) !== null && !esMapa(lee(k))) localStorage.removeItem(k);
+      });
+      // semana: solo valores de texto sobreviven
+      if(localStorage.getItem('reps-semana') !== null){
+        const sem = lee('reps-semana');
+        if(esMapa(sem)){
+          const limpio = {};
+          Object.keys(sem).forEach(k => { if(typeof sem[k] === 'string') limpio[k] = sem[k]; });
+          pon('reps-semana', limpio);
+        } else { localStorage.removeItem('reps-semana'); }
+      }
+      // tema que no pasa la validación: fuera (la app caerá a Carbón)
+      if(localStorage.getItem('reps-tema') !== null && !themeValido(lee('reps-tema'))){
+        localStorage.removeItem('reps-tema');
+      }
+    },
+  };
+
+  function migrate(){
+    let v = parseInt(localStorage.getItem(SCHEMA_KEY), 10);
+    if(!v || v < 1){
+      // sin marca de versión: si hay datos, son de la era pre-versionado (v1);
+      // si no hay nada, es instalación nueva y ya nace en la versión actual
+      v = DATA_KEYS.some(k => localStorage.getItem(k) !== null) ? 1 : SCHEMA;
+    }
+    if(v > SCHEMA) return; // datos de una app más nueva: no tocar nada
+    if(v === SCHEMA){ localStorage.setItem(SCHEMA_KEY, String(SCHEMA)); return; }
+
+    // red de seguridad: copia CRUDA de todo antes de tocar un solo byte
+    try{
+      const crudo = {};
+      DATA_KEYS.forEach(k => { const s = localStorage.getItem(k); if(s !== null) crudo[k] = s; });
+      localStorage.setItem('reps-pre-migracion',
+        JSON.stringify({de: v, a: SCHEMA, fecha: new Date().toISOString(), crudo}));
+    }catch(e){ /* sin espacio para la copia: migramos igual, mejor que quedarse atrás */ }
+
+    try{
+      while(v < SCHEMA){
+        MIGRATIONS[v]();                              // sube un escalón
+        v++;
+        localStorage.setItem(SCHEMA_KEY, String(v));  // y deja constancia
+      }
+    }catch(e){
+      // una migración falló: restaurar la copia cruda — pérdida CERO
+      try{
+        const snap = JSON.parse(localStorage.getItem('reps-pre-migracion'));
+        if(snap && snap.crudo){
+          DATA_KEYS.forEach(k => {
+            if(k in snap.crudo) localStorage.setItem(k, snap.crudo[k]);
+            else localStorage.removeItem(k);
+          });
+          localStorage.setItem(SCHEMA_KEY, String(snap.de));
+        }
+      }catch(e2){}
+      console.warn('Migración fallida; datos restaurados tal cual estaban:', e);
+    }
+  }
+
   // ===== Respaldo: exportar / importar =====
   function exportBackup(){
     const backup = {
       app: 'reps',          // firma: identifica que este json es nuestro
-      formato: 1,           // versión del formato, por si algún día cambia
+      schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
       data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana },
     };
@@ -818,6 +909,12 @@
         applyThemeSel(); saveTheme();
       }
       save(); saveTray(); saveCierres(); saveSemana();
+      // el respaldo pudo venir de una app vieja: se marca su versión de
+      // formato, se migra lo guardado y se relee ya en formato actual
+      localStorage.setItem(SCHEMA_KEY, String(parseInt(b.schema, 10) || 1));
+      migrate();
+      load(); loadTray(); loadCierres(); loadSemana();
+      loadTheme(); applyThemeSel();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -834,6 +931,7 @@
     $('importFile').value = ''; // permite re-elegir el mismo archivo después
   });
 
+  migrate();       // ANTES que todo: los datos suben al formato actual
   loadTheme();
   applyThemeSel(); // primero el tema: la app ya nace pintada del color elegido
   load();

@@ -40,18 +40,48 @@ directo sobre un Date: corre el día en zonas horarias negativas.
 | `reps-cierres` | `{fecha: {animo, notas, plan, guardado}}` | `animo` ∈ bien/regular/mal o null. El `plan` de la fecha X se muestra como "Plan de hoy" el día X+1. |
 | `reps-semana` | `{fecha: "texto"}` | Plan semanal, plano por día. Vacío = clave borrada. Una "semana" se deriva (lunes = `mondayOf`), no se guarda. |
 | `reps-tema` | `{modo:'preset', id}` o `{modo:'custom', accent, bg}` | Validar con `themeValido()` antes de aplicar. |
+| `reps-schema` | `"N"` (número como string) | Versión del FORMATO de los datos. La gestiona `migrate()`; no tocar a mano. |
+| `reps-pre-migracion` | `{de, a, fecha, crudo}` | Copia cruda automática previa a la última migración. Solo lectura; no va en el respaldo exportado. |
 
 **Reglas de oro de los datos:**
 1. Toda carga valida la *forma* (`esMapa`, `Array.isArray`, `themeValido`)
    — localStorage corrupto nunca debe romper la app; se ignora y se usa
    el valor por defecto.
-2. El respaldo (Exportar/Importar en Hoy) incluye **las 5 claves**. Si
-   agregas una clave nueva: súmala a `exportBackup`, saneala en
-   `importBackup` y documenta aquí su forma.
+2. El respaldo (Exportar/Importar en Hoy) incluye **las 5 claves de
+   datos** y declara su `schema`; al importar se migra si viene de una
+   versión vieja. Si agregas una clave nueva: súmala a `exportBackup`,
+   saneala en `importBackup` y documenta aquí su forma.
 3. El "bug de la medianoche": la PWA instalada se suspende, no se cierra.
    Nunca capturar `today()` en un closure de evento — leerlo fresco al
    momento del click. Hay un listener de `visibilitychange` que repinta
    todo cuando la app despierta en un día distinto.
+
+## Versionado de datos y migraciones
+
+Sección `===== Esquema y migraciones =====` de app.js. Dos versiones
+conviven y NO deben confundirse: `reps-vN` en sw.js versiona los
+*archivos*; `SCHEMA`/`reps-schema` versiona el *formato de los datos*.
+
+**Convención para cambiar el formato de cualquier clave:**
+1. Sube la constante `SCHEMA` en 1.
+2. Agrega `MIGRATIONS[N]` (donde N es la versión vieja): una función que
+   convierte de N a N+1 trabajando **solo sobre localStorage crudo**
+   (leer con try/JSON.parse, escribir con JSON.stringify). Nunca debe
+   asumir que las claves existen ni que tienen la forma correcta.
+3. Las migraciones publicadas **jamás se editan ni se borran**: un
+   dispositivo que hibernó tres versiones las recorre en cadena.
+4. Actualiza la tabla de claves de este archivo y sube también la
+   versión del cache (el JS cambió).
+
+**Garantías que da `migrate()`** (corre antes que cualquier carga, y
+también tras importar un respaldo, usando su campo `schema`):
+- Sin marca + con datos = v1 (era pre-versionado). Sin marca + sin datos
+  = instalación nueva (nace en la versión actual, sin migrar).
+- Antes de migrar guarda las cadenas crudas en `reps-pre-migracion`; si
+  una migración lanza error, restaura todo tal cual y deja la versión
+  vieja — pérdida cero.
+- `reps-schema` mayor que `SCHEMA` (datos de una app más nueva): no se
+  toca nada.
 
 ## Service worker y versionado
 
