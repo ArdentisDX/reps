@@ -9,6 +9,26 @@
   "background_color": "#12161d",
   "theme_color": "#12161d",
   "lang": "es",
+  "shortcuts": [
+    {
+      "name": "Capturar idea",
+      "short_name": "Idea",
+      "url": "./index.html?tab=bandeja",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Cierre del día",
+      "short_name": "Cierre",
+      "url": "./index.html?tab=cierre",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Stats",
+      "short_name": "Stats",
+      "url": "./index.html?tab=stats",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
     {
       "src": "icons/icon-192.png",

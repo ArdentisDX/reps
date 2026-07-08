@@ -182,6 +182,16 @@ h1 span{color:var(--amber)}
 .cal-detail .cd-sec{font-size:13px;color:var(--muted);line-height:1.5;margin-top:6px;white-space:pre-wrap}
 .cal-detail .cd-sec b{color:var(--text)}
 
+/* ===== Intro (opening) ===== */
+.intro{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;pointer-events:none;animation:introOut .45s ease 1.5s forwards}
+.intro .in-logo{font-size:46px;font-weight:800;letter-spacing:-.02em;color:var(--text);animation:introLogo .7s cubic-bezier(.2,1.3,.4,1) both}
+.intro .in-logo span{color:var(--amber)}
+.intro .in-line{font-size:12px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;font-weight:600;opacity:0;animation:introLine .5s ease .5s forwards}
+@keyframes introLogo{0%{transform:scale(.72);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes introLine{to{opacity:1}}
+@keyframes introOut{to{opacity:0;visibility:hidden}}
+@media (prefers-reduced-motion:reduce){.intro{display:none}}
+
 /* ===== Temas ===== */
 .gear{position:absolute;top:18px;right:16px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:10px;color:var(--muted);font-size:17px;cursor:pointer}
 .gear:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
@@ -206,6 +216,22 @@ h1 span{color:var(--amber)}
 .dist-opt{flex:1;background:var(--card-2);border:1px solid var(--line);border-radius:10px;color:var(--text);font:inherit;font-size:13px;font-weight:600;padding:10px 0;cursor:pointer}
 .dist-opt:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .dist-opt.active{background:var(--amber);border-color:var(--amber);color:var(--on-accent);font-weight:800}
+
+/* ===== Efecto cristal (temas con fx:'glass') ===== */
+body.fx-glass{background:
+  radial-gradient(1100px 750px at 85% -10%, color-mix(in srgb, var(--amber) 20%, transparent), transparent 60%),
+  radial-gradient(950px 700px at -15% 110%, color-mix(in srgb, var(--teal) 16%, transparent), transparent 60%),
+  var(--bg);
+  background-attachment:fixed}
+body.fx-glass .tabs, body.fx-glass .streak, body.fx-glass .week,
+body.fx-glass .habit, body.fx-glass .prog, body.fx-glass .cierre,
+body.fx-glass .capa, body.fx-glass .slot, body.fx-glass .idea,
+body.fx-glass .cal, body.fx-glass .stat-card, body.fx-glass .cal-detail,
+body.fx-glass .week-plan, body.fx-glass .composer form, body.fx-glass .theme-sheet{
+  background:color-mix(in srgb, var(--card) 62%, transparent);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px)}
+body.fx-glass .composer{background:none}
 
 /* ===== Distribución: compacto y minimalista ===== */
 /* Clases en <body>: "compact" = densidad; "minimal" = compact + ocultar

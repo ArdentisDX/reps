@@ -582,13 +582,21 @@
         toast('Las alarmas se ponen desde el celular. 📱');
         return;
       }
-      const uri = 'intent:#Intent;action=android.intent.action.SET_ALARM;' +
+      // navegar por código (location.href) a un intent suele bloquearse en
+      // PWA instalada; un <a> real con click sí cuenta como gesto del usuario
+      const uri = 'intent://alarma/#Intent;' +
+        'action=android.intent.action.SET_ALARM;' +
         'i.android.intent.extra.alarm.HOUR=' + parseInt(hm[1], 10) + ';' +
         'i.android.intent.extra.alarm.MINUTES=' + parseInt(hm[2], 10) + ';' +
         'S.android.intent.extra.alarm.MESSAGE=' + encodeURIComponent('REPS · ' + n.textContent) + ';' +
+        'S.browser_fallback_url=' + encodeURIComponent(location.href) + ';' +
         'end';
       toast('Abriendo el Reloj… confirma la alarma ahí.');
-      location.href = uri;
+      const a = document.createElement('a');
+      a.href = uri;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
     });
     slot.appendChild(btn);
   });
@@ -700,6 +708,8 @@
     {id:'bosque',  name:'Bosque · verde',  vars:{bg:'#0f1613', card:'#16201b', card2:'#1c2822', line:'#28382f', text:'#e9f2ec', muted:'#8fa398', accent:'#7fd88f', onAccent:'#08210d', teal:'#ffd166'}},
     {id:'claro',   name:'Claro · limpio',  vars:{bg:'#f2f4f7', card:'#ffffff', card2:'#e9edf2', line:'#d4dae2', text:'#1a2230', muted:'#66717f', accent:'#c76a04', onAccent:'#ffffff', teal:'#0c8a70'}},
     {id:'violeta', name:'Violeta · neón',  vars:{bg:'#131020', card:'#1a1629', card2:'#211c34', line:'#2f2847', text:'#ece9f6', muted:'#968fae', accent:'#b795ff', onAccent:'#160b2b', teal:'#ff8ad8'}},
+    // fx:'glass' añade el efecto cristal (clase fx-glass en <body>)
+    {id:'cristal', name:'Cristal · líquido', fx:'glass', vars:{bg:'#0b1220', card:'#141d30', card2:'#1a2540', line:'#2a3a5c', text:'#eaf1ff', muted:'#8fa0bd', accent:'#7dd3ff', onAccent:'#04263a', teal:'#b795ff'}},
   ];
   const TEMA_KEY = 'reps-tema';
   let themeSel = {modo:'preset', id:'carbon'};
@@ -761,7 +771,12 @@
     const t = THEMES.find(x => x.id === themeSel.id) || THEMES[0];
     return t.vars;
   }
-  function applyThemeSel(){ applyVars(currentVars()); }
+  function applyThemeSel(){
+    applyVars(currentVars());
+    // efectos extra del tema (hoy solo 'glass'); el modo custom no lleva
+    const t = themeSel.modo === 'preset' ? THEMES.find(x => x.id === themeSel.id) : null;
+    document.body.classList.toggle('fx-glass', !!(t && t.fx === 'glass'));
+  }
 
   // un tema solo es confiable si es un preset que existe o un custom
   // con dos colores hex válidos — cualquier otra cosa rompería la pintura
@@ -1043,6 +1058,34 @@
   renderSemana();
   fillCierreForm();
   renderPlanHoy();
+
+  // ===== Intro: saludo según la hora + racha; el CSS la desvanece solo =====
+  (function(){
+    const el = $('intro');
+    if(!el) return;
+    const h = new Date().getHours();
+    const saludo = h >= 5 && h < 12 ? 'Buenos días' : h >= 12 && h < 19 ? 'Buenas tardes' : 'Buenas noches';
+    const s = streak();
+    $('introLine').textContent = saludo + ' · ' + (s > 0 ? 'racha de ' + s : 'a ganar el día');
+    setTimeout(()=> el.remove(), 2200); // ya invisible desde 1.95s; esto solo limpia el DOM
+  })();
+
+  // ===== Atajos del ícono (shortcuts del manifest): ?tab=... =====
+  (function(){
+    const tab = new URLSearchParams(location.search).get('tab');
+    if(!tab) return;
+    const map = { bandeja:'p-bandeja', stats:'p-stats', dia:'p-dia', cierre:'p-hoy' };
+    const panel = map[tab];
+    if(!panel) return;
+    const btn = document.querySelector('.tab[data-panel="' + panel + '"]');
+    if(btn) btn.click();
+    if(tab === 'cierre'){
+      setTimeout(()=> document.querySelector('.cierre').scrollIntoView({behavior:'smooth'}), 300);
+    }
+    if(tab === 'bandeja'){
+      setTimeout(()=> $('trayInput').focus(), 300); // listo para escribir
+    }
+  })();
 
   // Si la app quedó suspendida y vuelve otro día (lo normal en una PWA
   // instalada: Android la congela, no la cierra), repinta TODO al despertar:
