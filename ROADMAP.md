@@ -40,8 +40,8 @@
 
 **Widget / pantalla de inicio**
 - Verdad técnica: Android no permite widgets reales a una PWA. Lo que SÍ hay:
-  - `shortcuts` en `manifest.json`: mantener presionado el ícono → accesos
-    directos ("Capturar idea", "Cierre del día"). Barato, hacerlo pronto.
+  - ✅ `shortcuts` en `manifest.json` (hecho, julio 2026): mantener
+    presionado el ícono → "Capturar idea", "Cierre del día", "Stats".
   - **Badging API** (`navigator.setAppBadge`): puntito/número en el ícono
     (p. ej. hábitos core pendientes hoy). Soporte parcial en Android; se
     degrada sin romper nada.
