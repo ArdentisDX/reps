@@ -40,7 +40,7 @@
       <div class="sec-head"><h2>Innegociables</h2><div class="tag">3/3 = día ganado</div></div>
       <div id="coreList"></div>
     </div>
-    <div class="sec">
+    <div class="sec" id="secExtra">
       <div class="sec-head"><h2>Suman puntos</h2><div class="tag" style="color:var(--teal)">extra</div></div>
       <div id="extraList"></div>
     </div>
@@ -172,12 +172,14 @@
     </div>
     <div class="cal-detail" id="calDetail" hidden>
       <div class="cd-head"><span id="cdFecha"></span><span id="cdMood"></span></div>
+      <div class="cd-estado" id="cdEstado"></div>
+      <div class="cd-sec" id="cdHabitosWrap"><b>Reps del día:</b> <span id="cdHabitos"></span></div>
       <div class="cd-sec" id="cdNotasWrap"><b>Notas:</b> <span id="cdNotas"></span></div>
       <div class="cd-sec" id="cdPlanWrap"><b>Plan que tenía:</b> <span id="cdPlan"></span></div>
     </div>
     <button class="share-btn" id="shareBtn">📤 Compartir mi mes</button>
     <div class="regla" style="margin-top:16px">
-      <b>Se lee así:</b> ámbar lleno = día ganado. Solo borde = algo cayó, pero no los 3 core. Punto = día con cierre: tócalo.
+      <b>Se lee así:</b> ámbar lleno = día ganado. Solo borde = algo cayó, pero no los 3 core. Punto = día con cierre. <b>Toca cualquier día pasado</b> para ver su detalle.
     </div>
   </div>
 
@@ -206,9 +208,13 @@
       <div class="t-row"><label for="pickAccent">Color de acento</label><input type="color" id="pickAccent" value="#ffb454"></div>
       <div class="t-row"><label for="pickBg">Color de fondo</label><input type="color" id="pickBg" value="#12161d"></div>
       <div class="t-note">Los demás tonos (tarjetas, texto, líneas) se calculan solos para que siempre se lea bien.</div>
-      <div class="t-sub">Densidad</div>
-      <div class="t-row"><label for="compactToggle">Modo compacto</label><input type="checkbox" id="compactToggle"></div>
-      <div class="t-note">Menos aire y sin pistas en los hábitos: más contenido por pantalla.</div>
+      <div class="t-sub">Distribución</div>
+      <div class="dist-opts">
+        <button class="dist-opt" data-dist="normal">Normal</button>
+        <button class="dist-opt" data-dist="compacto">Compacto</button>
+        <button class="dist-opt" data-dist="minimal">Minimalista</button>
+      </div>
+      <div class="t-note">Compacto: menos aire, sin pistas. Minimalista: solo lo esencial — tus core, la racha y el cierre.</div>
     </div>
   </div>
 

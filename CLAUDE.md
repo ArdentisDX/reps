@@ -40,7 +40,7 @@ directo sobre un Date: corre el día en zonas horarias negativas.
 | `reps-cierres` | `{fecha: {animo, notas, plan, guardado}}` | `animo` ∈ bien/regular/mal o null. El `plan` de la fecha X se muestra como "Plan de hoy" el día X+1. |
 | `reps-semana` | `{fecha: "texto"}` | Plan semanal, plano por día. Vacío = clave borrada. Una "semana" se deriva (lunes = `mondayOf`), no se guarda. |
 | `reps-tema` | `{modo:'preset', id}` o `{modo:'custom', accent, bg}` | Validar con `themeValido()` antes de aplicar. |
-| `reps-compacto` | `"1"` o ausente | Modo compacto (densidad). Se aplica como clase `compact` en `<body>`. |
+| `reps-distribucion` | `"compacto"`, `"minimal"` o ausente (= normal) | Distribución de la interfaz: clases `compact`/`minimal` en `<body>`. Sustituyó a `reps-compacto` en el schema v3 (migración 2→3). |
 | `reps-schema` | `"N"` (número como string) | Versión del FORMATO de los datos. La gestiona `migrate()`; no tocar a mano. |
 | `reps-pre-migracion` | `{de, a, fecha, crudo}` | Copia cruda automática previa a la última migración. Solo lectura; no va en el respaldo exportado. |
 

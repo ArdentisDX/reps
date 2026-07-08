@@ -202,11 +202,14 @@ h1 span{color:var(--amber)}
 .t-row{display:flex;justify-content:space-between;align-items:center;background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:14px}
 .t-row input[type=color]{width:46px;height:32px;border:1px solid var(--line);background:none;padding:2px;cursor:pointer;border-radius:8px}
 .t-note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:4px}
-.t-row input[type=checkbox]{width:20px;height:20px;accent-color:var(--amber);cursor:pointer}
+.dist-opts{display:flex;gap:6px}
+.dist-opt{flex:1;background:var(--card-2);border:1px solid var(--line);border-radius:10px;color:var(--text);font:inherit;font-size:13px;font-weight:600;padding:10px 0;cursor:pointer}
+.dist-opt:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.dist-opt.active{background:var(--amber);border-color:var(--amber);color:var(--on-accent);font-weight:800}
 
-/* ===== Modo compacto ===== */
-/* Una sola clase en <body>: todo lo demás son overrides de densidad.
-   Semilla del futuro "modo minimalista" (ver VISION.md). */
+/* ===== Distribución: compacto y minimalista ===== */
+/* Clases en <body>: "compact" = densidad; "minimal" = compact + ocultar
+   ruido (solo core, racha, sello y cierre). Ver VISION.md → modos. */
 body.compact{padding-top:12px}
 body.compact .habit{padding:9px 12px;margin-bottom:6px}
 body.compact .habit .h-hint{display:none}
@@ -225,3 +228,12 @@ body.compact .regla{margin-top:14px;font-size:12px}
 body.compact .plan-hoy{margin-top:10px;padding:9px 12px}
 body.compact .wp-row{margin-bottom:4px}
 body.compact .wp-inp{padding:7px 10px}
+body.minimal #secExtra{display:none}
+body.minimal .prog{display:none}
+body.minimal .week{display:none}
+body.minimal #p-hoy .regla{display:none}
+
+/* ===== Detalle de día y alarmas ===== */
+.cal-detail .cd-estado{font-size:13px;font-weight:700;color:var(--amber);margin-bottom:2px}
+.slot-alarm{position:absolute;top:10px;right:10px;background:var(--card-2);border:1px solid var(--line);border-radius:8px;color:var(--muted);font-size:13px;padding:4px 7px;cursor:pointer}
+.slot-alarm:focus-visible{outline:2px solid var(--amber);outline-offset:2px}

@@ -339,8 +339,9 @@
   function renderCal(){
     const now = new Date();
     if(calY === null){ calY = now.getFullYear(); calM = now.getMonth(); }
-    // si el día del detalle abierto ya no tiene cierre (p. ej. tras importar), se cierra
-    if(detailKey && !cierres[detailKey]){ $('calDetail').hidden = true; detailKey = null; }
+    // si hay un detalle abierto, se repinta con datos frescos (los hábitos
+    // de hoy pueden cambiar mientras se está viendo)
+    if(detailKey){ const k = detailKey; detailKey = null; showDayDetail(k); }
     $('calTitle').textContent =
       new Date(calY, calM, 1).toLocaleDateString('es-MX', {month:'long', year:'numeric'});
     // la flecha ▶ se apaga en el mes actual: el futuro no existe todavía
@@ -368,8 +369,9 @@
         + (w ? ' won' : '') + (partial ? ' partial' : '')
         + (key === todayKey ? ' today' : '') + (key > todayKey ? ' future' : '');
       el.textContent = day;
-      if(cierres[key] && key <= todayKey){
-        el.classList.add('has-note', 'clickable');
+      if(key <= todayKey){
+        el.classList.add('clickable');
+        if(cierres[key]) el.classList.add('has-note'); // el punto sigue marcando cierres
         el.addEventListener('click', ()=> showDayDetail(key));
       }
       grid.appendChild(el);
@@ -560,6 +562,37 @@
   $('wpPrev').addEventListener('click', ()=>{ weekOff--; renderSemana(); });
   $('wpNext').addEventListener('click', ()=>{ weekOff++; renderSemana(); });
 
+  // ===== Alarmas de bloques (Mi día) =====
+  // Una PWA no puede programar alarmas del sistema por sí sola. Lo que SÍ
+  // puede en Android: lanzar un "intent" SET_ALARM que abre la app de
+  // Reloj con la alarma prellenada (hora + nombre) — el usuario confirma.
+  const esAndroid = /android/i.test(navigator.userAgent);
+  document.querySelectorAll('#p-dia .slot').forEach(slot => {
+    const t = slot.querySelector('.t'), n = slot.querySelector('.n');
+    if(!t || !n) return;
+    const hm = t.textContent.trim().match(/^(\d{1,2}):(\d{2})$/);
+    if(!hm) return; // sin hora reconocible, sin botón
+
+    const btn = document.createElement('button');
+    btn.className = 'slot-alarm';
+    btn.textContent = '⏰';
+    btn.setAttribute('aria-label', 'Poner alarma: ' + n.textContent + ' a las ' + t.textContent);
+    btn.addEventListener('click', ()=>{
+      if(!esAndroid){
+        toast('Las alarmas se ponen desde el celular. 📱');
+        return;
+      }
+      const uri = 'intent:#Intent;action=android.intent.action.SET_ALARM;' +
+        'i.android.intent.extra.alarm.HOUR=' + parseInt(hm[1], 10) + ';' +
+        'i.android.intent.extra.alarm.MINUTES=' + parseInt(hm[2], 10) + ';' +
+        'S.android.intent.extra.alarm.MESSAGE=' + encodeURIComponent('REPS · ' + n.textContent) + ';' +
+        'end';
+      toast('Abriendo el Reloj… confirma la alarma ahí.');
+      location.href = uri;
+    });
+    slot.appendChild(btn);
+  });
+
   // ===== Cierre del día =====
   const MOODS = [
     {id:'bien',    emoji:'🔥', name:'Bien'},
@@ -626,16 +659,31 @@
     if(partes.length) $('planHoyTxt').textContent = partes.join(' · ');
   }
 
-  // detalle de un día del calendario (solo días con cierre)
+  // detalle de cualquier día pasado: hábitos hechos + estado + cierre si hay
   function showDayDetail(key){
     if(detailKey === key && !$('calDetail').hidden){ // tocar de nuevo lo cierra
       $('calDetail').hidden = true; detailKey = null; return;
     }
-    const c = cierres[key];
+    const c = cierres[key] || {};
+    const r = dias[key];
     const m = MOODS.find(x => x.id === c.animo);
+
     $('cdFecha').textContent =
       new Date(key + 'T12:00:00').toLocaleDateString('es-MX', {weekday:'long', day:'numeric', month:'long'});
     $('cdMood').textContent = m ? (m.emoji + ' ' + m.name) : '';
+
+    // estado del día: ganado, parcial (n/3 core) o sin registro
+    const coreHechos = CORE.filter(id => r && r[id]).length;
+    $('cdEstado').textContent =
+      isWon(r) ? 'Día ganado 🔥' :
+      (r && HABITS.some(h => r[h.id])) ? 'Parcial · ' + coreHechos + '/' + CORE.length + ' core' :
+      'Sin registro';
+
+    // qué reps cayeron ese día
+    const hechos = HABITS.filter(h => r && r[h.id]).map(h => h.name);
+    $('cdHabitosWrap').hidden = hechos.length === 0;
+    $('cdHabitos').textContent = hechos.join(' · ');
+
     $('cdNotasWrap').hidden = !c.notas;
     $('cdNotas').textContent = c.notas || '';
     $('cdPlanWrap').hidden = !c.plan;
@@ -771,33 +819,43 @@
   $('pickAccent').addEventListener('input', onPick);
   $('pickBg').addEventListener('input', onPick);
 
-  // --- modo compacto: una clase en <body>, el CSS hace el resto ---
-  const COMPACT_KEY = 'reps-compacto';
-  let compacto = false;
+  // --- distribución: clases en <body>, el CSS hace el resto ---
+  // 'normal' | 'compacto' (densidad) | 'minimal' (densidad + solo lo esencial)
+  const DIST_KEY = 'reps-distribucion';
+  const DISTS = ['normal', 'compacto', 'minimal'];
+  let dist = 'normal';
 
-  function loadCompact(){
-    try{ compacto = localStorage.getItem(COMPACT_KEY) === '1'; }
-    catch(e){ compacto = false; }
-  }
-  function applyCompact(){
-    document.body.classList.toggle('compact', compacto);
-    $('compactToggle').checked = compacto;
-  }
-  $('compactToggle').addEventListener('change', ()=>{
-    compacto = $('compactToggle').checked;
+  function loadDist(){
     try{
-      if(compacto) localStorage.setItem(COMPACT_KEY, '1');
-      else localStorage.removeItem(COMPACT_KEY); // apagado = sin clave
-    }catch(e){}
-    applyCompact();
+      const v = localStorage.getItem(DIST_KEY);
+      dist = DISTS.includes(v) ? v : 'normal';
+    }catch(e){ dist = 'normal'; }
+  }
+  function applyDist(){
+    document.body.classList.toggle('compact', dist !== 'normal'); // minimal hereda la densidad
+    document.body.classList.toggle('minimal', dist === 'minimal');
+    document.querySelectorAll('.dist-opt').forEach(b =>
+      b.classList.toggle('active', b.dataset.dist === dist));
+  }
+  document.querySelectorAll('.dist-opt').forEach(b => {
+    b.addEventListener('click', ()=>{
+      dist = b.dataset.dist;
+      try{
+        if(dist === 'normal') localStorage.removeItem(DIST_KEY); // normal = sin clave
+        else localStorage.setItem(DIST_KEY, dist);
+      }catch(e){}
+      applyDist();
+    });
   });
 
   // ===== Esquema y migraciones =====
   // reps-schema versiona el FORMATO de los datos (no confundir con la
   // versión del cache en sw.js, que versiona los archivos de la app).
   const SCHEMA_KEY = 'reps-schema';
-  const SCHEMA = 2; // versión de formato que esta app espera
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-tema', 'reps-compacto'];
+  const SCHEMA = 3; // versión de formato que esta app espera
+  // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
+  // pre-migración también la proteja
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-tema', 'reps-distribucion', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -839,6 +897,14 @@
       if(localStorage.getItem('reps-tema') !== null && !themeValido(lee('reps-tema'))){
         localStorage.removeItem('reps-tema');
       }
+    },
+
+    // v2 → v3: el toggle reps-compacto se convierte en reps-distribucion
+    2: function(){
+      if(localStorage.getItem('reps-compacto') === '1'){
+        localStorage.setItem('reps-distribucion', 'compacto');
+      }
+      localStorage.removeItem('reps-compacto'); // clave retirada
     },
   };
 
@@ -888,7 +954,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-compacto': compacto },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-distribucion': dist },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -929,12 +995,16 @@
         themeSel = b.data['reps-tema'];
         applyThemeSel(); saveTheme();
       }
-      compacto = b.data['reps-compacto'] === true || b.data['reps-compacto'] === '1';
+      // distribución: clave nueva directa, o la vieja (reps-compacto) que
+      // se escribe cruda para que la cadena de migraciones la convierta
       try{
-        if(compacto) localStorage.setItem(COMPACT_KEY, '1');
-        else localStorage.removeItem(COMPACT_KEY);
+        const dv = b.data['reps-distribucion'];
+        if(DISTS.includes(dv) && dv !== 'normal') localStorage.setItem(DIST_KEY, dv);
+        else localStorage.removeItem(DIST_KEY);
+        if(b.data['reps-compacto'] === true || b.data['reps-compacto'] === '1'){
+          localStorage.setItem('reps-compacto', '1');
+        }
       }catch(e){}
-      applyCompact();
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
       // formato, se migra lo guardado y se relee ya en formato actual
@@ -942,6 +1012,7 @@
       migrate();
       load(); loadTray(); loadCierres(); loadSemana();
       loadTheme(); applyThemeSel();
+      loadDist(); applyDist();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -961,8 +1032,8 @@
   migrate();       // ANTES que todo: los datos suben al formato actual
   loadTheme();
   applyThemeSel(); // primero el tema: la app ya nace pintada del color elegido
-  loadCompact();
-  applyCompact();
+  loadDist();
+  applyDist();
   load();
   loadTray();
   loadCierres();   // antes de render(): el calendario ya lee los cierres
