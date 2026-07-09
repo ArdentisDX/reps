@@ -15,12 +15,26 @@
 Hoy los temas cambian *colores*. Un **modo** cambia *qué se muestra y
 cómo*: mismo motor de datos, otra piel completa.
 
+**Ojo — dos niveles distintos, no confundir:**
+- **Efecto** (ya existe: `reps-efecto`) = *piel* sobre el layout actual:
+  cristal (glass) y arcilla (clay) hoy; solo CSS, se combinan con
+  cualquier color. Barato. Aquí caben más: *neón*, *papel*, *mate*.
+- **Modo** (futuro) = *layout* completo distinto. Requiere el refactor de
+  view-models de abajo. Aquí caben Bento y UI Espacial.
+
 | Modo | Idea | Esfuerzo |
 |---|---|---|
-| **Minimalista** | Solo los 3 cores, la racha y nada más. Cero ruido: para días de poca batería mental. El "Modo compacto" de hoy es su semilla. | mediano |
-| **Futurista / HUD** | Panel de nave: datos densos, tipografía mono, glow del acento, todo visible a la vez (racha, %, semana, ánimo). Para quien ama los números. | mediano-grande |
-| **Distópico / brutalist** | Crudo: bordes duros, sin redondeos, tipografía condensada gigante, alto contraste. "GANA EL DÍA O NO." Motivación de gimnasio. | mediano |
-| **Retro / pixel** | Gamificado visual: fuente pixel, el sello "día ganado" como logro de arcade, la racha como barra de vida. | mediano-grande |
+| **Minimalista** ✅ | Solo core, racha y cierre. Ya existe como Distribución. Un modo real lo llevaría más lejos (tipografía y espaciado propios). | hecho (semilla) |
+| **Bento** | Retícula de recuadros tipo "bento box": cada dato (racha, %, ánimo, semana, mejor racha) en su celda de tamaño distinto, todo de un vistazo en una pantalla. Muy visual, muy de moda. | grande |
+| **UI Espacial** | Fondo de profundidad (estrellas/nebulosa sutil con el acento), tarjetas que "flotan" con parallax leve al scroll, la racha como un planeta que crece. Combina con el efecto cristal. | grande |
+| **Futurista / HUD** | Panel de nave: datos densos, tipografía mono, glow del acento, todo visible a la vez. Para quien ama los números. | mediano-grande |
+| **Distópico / brutalist** | Crudo: bordes duros, sin redondeos, tipografía condensada gigante, alto contraste. "GANA EL DÍA O NO." | mediano |
+| **Retro / pixel** | Gamificado: fuente pixel, el sello "día ganado" como logro de arcade, la racha como barra de vida. | mediano-grande |
+
+> Bento y UI Espacial son **layouts**, no pieles: reordenan la información,
+> no solo la repintan. Por eso esperan al refactor de view-models — meterlos
+> como CSS sobre el HTML actual daría un resultado frágil. Se hacen bien, o
+> se posponen.
 
 ### Diseño técnico (documentado hoy, NO implementado)
 
@@ -51,13 +65,14 @@ Hacerlo antes del primer modo nuevo; el modo minimalista es el piloto.
 ## 2 · Ideas de otras apps, adaptadas a la filosofía REPS
 
 **Duolingo — protectores de racha y celebraciones** · esfuerzo: chico
-- Qué hacen bien: la racha duele perderla, así que venden "congeladores".
-- Versión REPS (sin dinero, sin culpa): cada **7 días ganados seguidos
-  fabricas 1 congelador** (máx. 2 guardados). Un día perdido lo consume
-  automáticamente y la racha vive. Encaja perfecto con "un día malo es
-  normal, dos seguidos no": el congelador es exactamente ese primer día.
-- Celebraciones de hitos: pantalla especial en 7/30/100 reps (canvas ya
-  dominado). Requiere: solo `reps-dias` + un contador en localStorage.
+- ✅ **HECHO (jul 2026)**: cada **7 días ganados seguidos fabricas 1
+  congelador** (máx. 2). Un día perdido lo consume solo y la racha vive.
+  Lógica en `procesarRacha()` (`reps-racha`); el día salvado se marca 🧊
+  en el calendario. Encaja con "un día malo es normal, dos seguidos no".
+- ✅ **HECHO**: la insignia del ícono (Badging API) muestra los core
+  pendientes de hoy — el "widget que te incita a entrar" en su versión PWA.
+- Pendiente: celebraciones de hitos (pantalla especial en 7/30/100 reps
+  con canvas). Requiere solo `reps-dias` + un contador.
 
 **Habitica — gamificación RPG** · esfuerzo: mediano
 - Qué hacen bien: progresar da XP; tu constancia "sube de nivel".
@@ -77,11 +92,12 @@ Hacerlo antes del primer modo nuevo; el modo minimalista es el piloto.
 
 **WHOOP — tendencias y "recovery"** · esfuerzo: mediano
 - Qué hacen bien: te dicen cómo estás HOY con base en tus datos.
-- Versión REPS: un **"pulso" diario** calculado local: ánimo de los
-  últimos 3 cierres + % de la semana + horas del plan. Verde/ámbar/rojo
-  con un consejo de tono: "pulso bajo: hoy gana chiquito, solo los 3
-  cores". Más las gráficas de tendencia del ROADMAP (canvas). Todo
-  offline: es aritmética sobre `reps-cierres` y `reps-dias`.
+- ✅ **Parcial (jul 2026)**: "El Espejo" en Stats ya da insights locales
+  (`espejoInsights()`): qué rep sube tu ánimo, tu mejor/peor día de la
+  semana, en qué día mueren tus rachas. Pura aritmética sobre `reps-dias`
+  + `reps-cierres`, sin IA.
+- Pendiente: el **"pulso" diario** (semáforo verde/ámbar/rojo con consejo)
+  y las gráficas de tendencia (canvas). Misma fuente de datos.
 
 **Notion — hábitos personalizables** · esfuerzo: mediano-grande ⚠️ fundacional
 - Qué hacen bien: la herramienta se adapta a la persona, no al revés.
@@ -111,11 +127,10 @@ Hacerlo antes del primer modo nuevo; el modo minimalista es el piloto.
    cero silencioso: flujo de 30 segundos — "¿qué la mató?" (un tap:
    desvelo/celular/ánimo/imprevisto) + "¿qué cambio chico harías?". La
    derrota se convierte en dato para El Espejo, no en vergüenza.
-3. **El Espejo** · mediano — Correlaciones locales simples entre tus
-   propios datos: "los días que corres, tu ánimo es 🔥 el 78%", "tus
-   rachas mueren en domingo". Sin IA: es contar sobre `reps-dias` +
-   `reps-cierres`. Probablemente la feature con mejor razón
-   insight/esfuerzo de toda la lista.
+3. **El Espejo** ✅ **HECHO (jul 2026)** — Correlaciones locales entre tus
+   datos: qué rep sube tu ánimo, tu mejor/peor día, en qué día mueren tus
+   rachas. `espejoInsights()` en Stats, sin IA. Pendiente: más insights a
+   medida que crecen los datos.
 4. **Museo de reps** · chico-mediano — Línea de tiempo generada
    automáticamente con tus hitos reales: primera racha de 7, el mes que
    pasaste del 20% al 60%, la idea de la Bandeja que sí hiciste. Para el
@@ -130,10 +145,10 @@ Hacerlo antes del primer modo nuevo; el modo minimalista es el piloto.
 7. **Cápsula del tiempo** · chico — Mensaje a ti mismo sellado 30 días.
    Al abrirse, se muestra junto al calendario de ese mes: lo que creías
    vs. lo que hiciste. Combina con el cierre mensual.
-8. **Contador de identidad** · chico — No "racha" sino acumulado vital:
-   "has salido a correr **47 veces**". Las rachas se rompen; los totales
-   solo crecen. Es la métrica anti-perfeccionismo: ningún día malo te
-   quita lo corrido.
+8. **Contador de identidad** ✅ **HECHO (jul 2026)** — En Stats, cada rep
+   con su total de todos los tiempos ("Despertar 8:30 · 47×"). Las rachas
+   se rompen; los totales solo crecen. La métrica anti-perfeccionismo:
+   ningún día malo te quita lo corrido.
 
 ---
 
@@ -141,28 +156,31 @@ Hacerlo antes del primer modo nuevo; el modo minimalista es el piloto.
 
 | # | Feature | Impacto | Esfuerzo | Nota |
 |---|---|---|---|---|
-| 1 | Protector de racha + hitos (Duolingo) | alto | chico | Protege lo que más duele perder |
+| ✅ | Protector de racha (congeladores) | alto | chico | HECHO jul 2026 |
+| ✅ | Contador de identidad | alto | chico | HECHO jul 2026 |
+| ✅ | El Espejo (insights locales) | alto | mediano | HECHO jul 2026 (parcial) |
+| ✅ | Insignia del ícono (Badging API) | medio | chico | HECHO jul 2026 |
+| 1 | Hábitos personalizables (Notion) | alto | mediano-grande | Fundacional: estrena migración v4→v5. **Siguiente sesión.** |
 | 2 | Modo rescate + Ritual de derrota | alto | chico | El corazón anti-castigo de la misión |
-| 3 | Contador de identidad + Plan B | alto | chico | Totales que solo crecen |
-| 4 | Hábitos personalizables (Notion) | alto | mediano-grande | Fundacional: estrena las migraciones |
-| 5 | El Espejo + tendencias (WHOOP) | alto | mediano | Insight local, cero backend |
-| 6 | Temporizador de foco (Forest) | medio | mediano | Wake Lock + marca el hábito solo |
-| 7 | Test de bienvenida + metas (Capa 2) | medio | mediano | Prepara el contexto para la IA |
-| 8 | Refactor view-models + modo minimalista | medio | mediano | Habilita todas las skins |
-| 9 | XP y niveles (Habitica) | medio | mediano | Después del retro/pixel gana más |
-| 10 | Museo + Carta + Cápsula | medio | chico | Rachas de features chicas, moral alta |
-| 11 | IA de la Bandeja (Capa 3, Worker) | alto | grande | El salto a online-offline |
-| 12 | Social espejo (Strava, Capa 5) | medio | grande | Al final, con cuentas |
+| 3 | Celebración de hitos + Plan B por hábito | alto | chico | Cierra el paquete Duolingo |
+| 4 | Temporizador de foco (Forest) | medio | mediano | Wake Lock + marca el hábito solo |
+| 5 | Test de bienvenida + metas (Capa 2) | medio | mediano | Prepara el contexto para la IA |
+| 6 | "Pulso" diario + gráficas de tendencia | medio | mediano | Amplía El Espejo |
+| 7 | Refactor view-models (habilita modos) | medio | mediano | Puerta a Bento / UI Espacial / HUD |
+| 8 | XP y niveles (Habitica) | medio | mediano | Después del retro/pixel gana más |
+| 9 | Museo + Carta + Cápsula | medio | chico | Rachas de features chicas, moral alta |
+| 10 | IA de la Bandeja (Capa 3, Worker) | alto | grande | El salto a online-offline |
+| 11 | Social espejo (Strava, Capa 5) | medio | grande | Al final, con cuentas |
 
 **Las próximas 8 semanas de bloques** (2 hrs/día, un tema por semana):
 
-- **S1** — Protector de racha + celebración de hitos. Arranque con victoria rápida.
-- **S2** — Modo rescate + ritual de derrota + contador de identidad.
-- **S3–S4** — Hábitos personalizables (con su migración v2→v3). La semana fundacional.
-- **S5** — El Espejo + gráfica de tendencia en Stats.
-- **S6** — Temporizador de foco en los bloques.
-- **S7** — Test de bienvenida + metas (cierra la Capa 2 del ROADMAP).
-- **S8** — Refactor view-models + modo minimalista (primera skin real).
+- **S1–S2** — Hábitos personalizables (con su migración v4→v5). La semana fundacional.
+- **S3** — Modo rescate + ritual de derrota.
+- **S4** — Celebración de hitos + Plan B por hábito.
+- **S5** — Temporizador de foco en los bloques.
+- **S6** — Test de bienvenida + metas (cierra la Capa 2 del ROADMAP).
+- **S7** — "Pulso" diario + gráfica de tendencia en Stats.
+- **S8** — Refactor view-models (primer modo-layout real: Bento o UI Espacial).
 
 La IA (Capa 3) entra en el mes 3, con la app ya personalizable y el
 perfil listo: la IA llegará a conocerte, no a adivinarte.

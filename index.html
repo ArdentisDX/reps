@@ -37,6 +37,7 @@
       <div>
         <div class="lbl">Racha de días ganados</div>
         <div class="sub" id="streakSub">Gana hoy para encenderla.</div>
+        <div class="frz" id="frzInfo" hidden></div>
         <div class="warn" id="streakWarn" hidden>⚠ Ayer no cayó. No falles 2 seguidos.</div>
       </div>
     </div>
@@ -183,6 +184,14 @@
       <div class="cd-sec" id="cdPlanWrap"><b>Plan que tenía:</b> <span id="cdPlan"></span></div>
     </div>
     <button class="share-btn" id="shareBtn">📤 Compartir mi mes</button>
+    <div class="sec">
+      <div class="sec-head"><h2>Identidad</h2><div class="tag">los totales solo crecen</div></div>
+      <div class="ident" id="identList"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-head"><h2>El Espejo</h2><div class="tag" style="color:var(--teal)">tus datos hablan</div></div>
+      <div class="espejo" id="espejoList"></div>
+    </div>
     <div class="regla" style="margin-top:16px">
       <b>Se lee así:</b> ámbar lleno = día ganado. Solo borde = algo cayó, pero no los 3 core. Punto = día con cierre. <b>Toca cualquier día pasado</b> para ver su detalle.
     </div>
@@ -220,6 +229,13 @@
         <button class="dist-opt" data-dist="minimal">Minimalista</button>
       </div>
       <div class="t-note">Compacto: menos aire, sin pistas. Minimalista: solo lo esencial — tus core, la racha y el cierre.</div>
+      <div class="t-sub">Efecto</div>
+      <div class="dist-opts">
+        <button class="dist-opt fx-opt" data-fx="ninguno">Ninguno</button>
+        <button class="dist-opt fx-opt" data-fx="glass">Cristal</button>
+        <button class="dist-opt fx-opt" data-fx="clay">Arcilla</button>
+      </div>
+      <div class="t-note">El efecto se combina con cualquier tema o color personalizado.</div>
     </div>
   </div>
 

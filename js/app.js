@@ -43,17 +43,90 @@
     catch(e){ toast('No se pudo guardar. Reintenta.'); }
   }
 
-  function streak(){
+  // racha "pura": solo días ganados, sin congeladores (la usa procesarRacha)
+  function streakBase(){
     let n = 0;
     const d = new Date();
     if(!isWon(dias[localISO(d)])) d.setDate(d.getDate()-1);
     while(isWon(dias[localISO(d)])){ n++; d.setDate(d.getDate()-1); }
     return n;
   }
+
+  // ===== Protector de racha (congeladores) =====
+  // Cada 7 días ganados consecutivos fabricas 1 congelador (máx. 2).
+  // Un día perdido consume uno automáticamente y la racha sobrevive.
+  const RACHA_KEY = 'reps-racha';
+  let racha = { congeladores: 0, fabRun: 0, procesadoHasta: null, congelados: {} };
+
+  function loadRacha(){
+    try{
+      const v = JSON.parse(localStorage.getItem(RACHA_KEY));
+      if(esMapa(v)){
+        racha.congeladores = Math.max(0, Math.min(2, parseInt(v.congeladores, 10) || 0));
+        racha.fabRun = Math.max(0, parseInt(v.fabRun, 10) || 0);
+        racha.procesadoHasta = typeof v.procesadoHasta === 'string' ? v.procesadoHasta : null;
+        racha.congelados = esMapa(v.congelados) ? v.congelados : {};
+      }
+    }catch(e){ /* se quedan los valores por defecto */ }
+  }
+  function saveRacha(){
+    try{ localStorage.setItem(RACHA_KEY, JSON.stringify(racha)); }
+    catch(e){ toast('No se pudo guardar. Reintenta.'); }
+  }
+
+  // procesa una sola vez cada día transcurrido desde la última visita
+  function procesarRacha(){
+    const ayer = new Date(); ayer.setDate(ayer.getDate() - 1);
+    const ayerKey = localISO(ayer);
+    if(racha.procesadoHasta === null){
+      // primera vez: el pasado no se juzga; la racha vigente cuenta
+      // para fabricar el primer congelador
+      racha.procesadoHasta = ayerKey;
+      racha.fabRun = streakBase();
+      saveRacha();
+      return;
+    }
+    if(racha.procesadoHasta >= ayerKey) return; // ya está al día
+    let usados = 0, fabricados = 0;
+    const d = new Date(racha.procesadoHasta + 'T12:00:00');
+    d.setDate(d.getDate() + 1);
+    while(localISO(d) <= ayerKey){
+      const k = localISO(d);
+      if(isWon(dias[k])){
+        racha.fabRun++;
+        if(racha.fabRun % 7 === 0 && racha.congeladores < 2){ racha.congeladores++; fabricados++; }
+      } else if(racha.congeladores > 0){
+        racha.congeladores--;         // el congelador se sacrifica solo
+        racha.congelados[k] = true;   // y ese día queda marcado como salvado
+        usados++;
+      } else {
+        racha.fabRun = 0;             // sin protección: la fábrica reinicia
+      }
+      d.setDate(d.getDate() + 1);
+    }
+    racha.procesadoHasta = ayerKey;
+    saveRacha();
+    if(usados) toast('🧊 Un congelador salvó tu racha.');
+    else if(fabricados) toast('🧊 Fabricaste un congelador de racha.');
+  }
+
+  // racha visible: los días congelados no suman, pero tampoco rompen
+  function streak(){
+    let n = 0;
+    const d = new Date();
+    if(!isWon(dias[localISO(d)])) d.setDate(d.getDate()-1);
+    while(true){
+      const k = localISO(d);
+      if(isWon(dias[k])) n++;
+      else if(!racha.congelados[k]) break;
+      d.setDate(d.getDate()-1);
+    }
+    return n;
+  }
   function lostYesterday(){
     const y = new Date(); y.setDate(y.getDate()-1);
     const key = localISO(y);
-    return (key in dias) && !isWon(dias[key]);
+    return (key in dias) && !isWon(dias[key]) && !racha.congelados[key];
   }
 
   function habitBtn(h, rec){
@@ -105,6 +178,9 @@
       s>0 ? 'La racha vive. Cierra hoy los 3 core.' :
       'Gana hoy para encenderla.';
     $('streakWarn').hidden = !(lostYesterday() && !won);
+    $('frzInfo').hidden = racha.congeladores === 0;
+    $('frzInfo').textContent = '🧊 ×' + racha.congeladores +
+      (racha.congeladores === 1 ? ' congelador listo' : ' congeladores listos');
 
     const wk = $('week'); wk.innerHTML='';
     const names = ['dom','lun','mar','mié','jue','vie','sáb'];
@@ -123,6 +199,19 @@
     }
 
     renderStats(); // mantiene la pestaña Stats al día con cada cambio
+    updateBadge(); // la insignia del ícono refleja los core pendientes
+  }
+
+  // ===== Insignia en el ícono (Badging API) =====
+  // Lo más cercano a un "widget que te incita a entrar" que permite una
+  // PWA: un número sobre el ícono con tus core pendientes de hoy.
+  // Se limpia solo al ganar el día. Si el sistema no la soporta, no pasa nada.
+  function updateBadge(){
+    if(!('setAppBadge' in navigator)) return;
+    const rec = dias[today()] || {};
+    const pend = CORE.filter(id => !rec[id]).length;
+    if(pend > 0) navigator.setAppBadge(pend).catch(()=>{});
+    else navigator.clearAppBadge().catch(()=>{});
   }
 
   let toastT;
@@ -327,12 +416,89 @@
     return { total: wonSet.size, best, now: streak(), pct30: Math.round(won30/30*100) };
   }
 
+  // El Espejo: correlaciones simples entre TUS datos — pura aritmética
+  // local, sin IA. Cada insight exige un mínimo de muestras para hablar.
+  function espejoInsights(){
+    const out = [];
+    const nombres = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+    const keys = Object.keys(dias).filter(k => dias[k] && HABITS.some(h => dias[k][h.id]));
+
+    // 1) hábito ↔ ánimo: ¿qué rep te pone 🔥? (mínimo 5 días con cierre)
+    let mejor = null;
+    HABITS.forEach(h => {
+      const con = keys.filter(k => dias[k][h.id] && cierres[k] && cierres[k].animo);
+      if(con.length < 5) return;
+      const pct = Math.round(con.filter(k => cierres[k].animo === 'bien').length / con.length * 100);
+      if(pct >= 60 && (!mejor || pct > mejor.pct)) mejor = {nombre: h.name, pct};
+    });
+    if(mejor) out.push('Los días con «' + mejor.nombre + '», tu ánimo es 🔥 el ' + mejor.pct + '%.');
+
+    // 2) mejor y peor día de la semana (mínimo 3 muestras por día)
+    const porDow = Array.from({length:7}, ()=>({won:0, tot:0}));
+    keys.forEach(k => {
+      const dow = new Date(k + 'T12:00:00').getDay();
+      porDow[dow].tot++;
+      if(isWon(dias[k])) porDow[dow].won++;
+    });
+    const conDatos = porDow
+      .map((x,i) => ({i, pct: x.tot >= 3 ? Math.round(x.won / x.tot * 100) : null}))
+      .filter(x => x.pct !== null);
+    if(conDatos.length >= 2){
+      const top = conDatos.reduce((a,b)=> b.pct > a.pct ? b : a);
+      const low = conDatos.reduce((a,b)=> b.pct < a.pct ? b : a);
+      if(top.i !== low.i && top.pct !== low.pct){
+        out.push('Tu mejor día: ' + nombres[top.i] + ' (' + top.pct + '% ganado). El difícil: ' + nombres[low.i] + ' (' + low.pct + '%).');
+      }
+    }
+
+    // 3) ¿en qué día mueren tus rachas? (mínimo 3 muertes registradas)
+    const muertes = Array.from({length:7}, ()=>0); let total = 0;
+    Object.keys(dias).forEach(k => {
+      if(isWon(dias[k]) || racha.congelados[k]) return;
+      const prev = new Date(k + 'T12:00:00'); prev.setDate(prev.getDate() - 1);
+      if(isWon(dias[localISO(prev)])){ muertes[new Date(k + 'T12:00:00').getDay()]++; total++; }
+    });
+    if(total >= 3){
+      const peor = muertes.indexOf(Math.max(...muertes));
+      out.push('Tus rachas suelen morir en ' + nombres[peor] + '. Ese día, protégete.');
+    }
+    return out;
+  }
+
   function renderStats(){
     const s = statsData();
     $('stTotal').textContent = s.total;
     $('stBest').textContent = s.best;
     $('stNow').textContent = s.now;
     $('stMonth').textContent = s.pct30 + '%';
+
+    // contador de identidad: cuántas veces has hecho cada rep, en total.
+    // Las rachas se rompen; estos números solo crecen.
+    const il = $('identList'); il.innerHTML = '';
+    HABITS.forEach(h => {
+      const n = Object.keys(dias).filter(k => dias[k] && dias[k][h.id]).length;
+      const row = document.createElement('div'); row.className = 'id-row';
+      const name = document.createElement('span'); name.textContent = h.name;
+      const num = document.createElement('span'); num.className = 'id-num'; num.textContent = n + '×';
+      row.append(name, num);
+      il.appendChild(row);
+    });
+
+    // el espejo
+    const es = $('espejoList'); es.innerHTML = '';
+    const ins = espejoInsights();
+    if(ins.length === 0){
+      const p = document.createElement('div'); p.className = 'es-row es-empty';
+      p.textContent = 'El Espejo necesita ~2 semanas de datos para hablar de ti. Sigue sumando.';
+      es.appendChild(p);
+    } else {
+      ins.forEach(t => {
+        const p = document.createElement('div'); p.className = 'es-row';
+        p.textContent = t;
+        es.appendChild(p);
+      });
+    }
+
     renderCal();
   }
 
@@ -367,6 +533,7 @@
       const el = document.createElement('div');
       el.className = 'cal-day'
         + (w ? ' won' : '') + (partial ? ' partial' : '')
+        + (racha.congelados[key] ? ' frozen' : '')
         + (key === todayKey ? ' today' : '') + (key > todayKey ? ' future' : '');
       el.textContent = day;
       if(key <= todayKey){
@@ -684,6 +851,7 @@
     const coreHechos = CORE.filter(id => r && r[id]).length;
     $('cdEstado').textContent =
       isWon(r) ? 'Día ganado 🔥' :
+      racha.congelados[key] ? 'Congelado 🧊 · un congelador salvó la racha' :
       (r && HABITS.some(h => r[h.id])) ? 'Parcial · ' + coreHechos + '/' + CORE.length + ' core' :
       'Sin registro';
 
@@ -708,8 +876,7 @@
     {id:'bosque',  name:'Bosque · verde',  vars:{bg:'#0f1613', card:'#16201b', card2:'#1c2822', line:'#28382f', text:'#e9f2ec', muted:'#8fa398', accent:'#7fd88f', onAccent:'#08210d', teal:'#ffd166'}},
     {id:'claro',   name:'Claro · limpio',  vars:{bg:'#f2f4f7', card:'#ffffff', card2:'#e9edf2', line:'#d4dae2', text:'#1a2230', muted:'#66717f', accent:'#c76a04', onAccent:'#ffffff', teal:'#0c8a70'}},
     {id:'violeta', name:'Violeta · neón',  vars:{bg:'#131020', card:'#1a1629', card2:'#211c34', line:'#2f2847', text:'#ece9f6', muted:'#968fae', accent:'#b795ff', onAccent:'#160b2b', teal:'#ff8ad8'}},
-    // fx:'glass' añade el efecto cristal (clase fx-glass en <body>)
-    {id:'cristal', name:'Cristal · líquido', fx:'glass', vars:{bg:'#0b1220', card:'#141d30', card2:'#1a2540', line:'#2a3a5c', text:'#eaf1ff', muted:'#8fa0bd', accent:'#7dd3ff', onAccent:'#04263a', teal:'#b795ff'}},
+    {id:'cristal', name:'Cristal · hielo', vars:{bg:'#0b1220', card:'#141d30', card2:'#1a2540', line:'#2a3a5c', text:'#eaf1ff', muted:'#8fa0bd', accent:'#7dd3ff', onAccent:'#04263a', teal:'#b795ff'}},
   ];
   const TEMA_KEY = 'reps-tema';
   let themeSel = {modo:'preset', id:'carbon'};
@@ -771,12 +938,7 @@
     const t = THEMES.find(x => x.id === themeSel.id) || THEMES[0];
     return t.vars;
   }
-  function applyThemeSel(){
-    applyVars(currentVars());
-    // efectos extra del tema (hoy solo 'glass'); el modo custom no lleva
-    const t = themeSel.modo === 'preset' ? THEMES.find(x => x.id === themeSel.id) : null;
-    document.body.classList.toggle('fx-glass', !!(t && t.fx === 'glass'));
-  }
+  function applyThemeSel(){ applyVars(currentVars()); }
 
   // un tema solo es confiable si es un preset que existe o un custom
   // con dos colores hex válidos — cualquier otra cosa rompería la pintura
@@ -834,6 +996,34 @@
   $('pickAccent').addEventListener('input', onPick);
   $('pickBg').addEventListener('input', onPick);
 
+  // --- efecto visual (independiente del color: se combina con TODO) ---
+  const FX_KEY = 'reps-efecto';
+  const FXS = ['ninguno', 'glass', 'clay'];
+  let fx = 'ninguno';
+
+  function loadFx(){
+    try{
+      const v = localStorage.getItem(FX_KEY);
+      fx = FXS.includes(v) ? v : 'ninguno';
+    }catch(e){ fx = 'ninguno'; }
+  }
+  function applyFx(){
+    document.body.classList.toggle('fx-glass', fx === 'glass');
+    document.body.classList.toggle('fx-clay', fx === 'clay');
+    document.querySelectorAll('.fx-opt').forEach(b =>
+      b.classList.toggle('active', b.dataset.fx === fx));
+  }
+  document.querySelectorAll('.fx-opt').forEach(b => {
+    b.addEventListener('click', ()=>{
+      fx = b.dataset.fx;
+      try{
+        if(fx === 'ninguno') localStorage.removeItem(FX_KEY);
+        else localStorage.setItem(FX_KEY, fx);
+      }catch(e){}
+      applyFx();
+    });
+  });
+
   // --- distribución: clases en <body>, el CSS hace el resto ---
   // 'normal' | 'compacto' (densidad) | 'minimal' (densidad + solo lo esencial)
   const DIST_KEY = 'reps-distribucion';
@@ -849,10 +1039,10 @@
   function applyDist(){
     document.body.classList.toggle('compact', dist !== 'normal'); // minimal hereda la densidad
     document.body.classList.toggle('minimal', dist === 'minimal');
-    document.querySelectorAll('.dist-opt').forEach(b =>
+    document.querySelectorAll('.dist-opt[data-dist]').forEach(b =>
       b.classList.toggle('active', b.dataset.dist === dist));
   }
-  document.querySelectorAll('.dist-opt').forEach(b => {
+  document.querySelectorAll('.dist-opt[data-dist]').forEach(b => {
     b.addEventListener('click', ()=>{
       dist = b.dataset.dist;
       try{
@@ -867,10 +1057,10 @@
   // reps-schema versiona el FORMATO de los datos (no confundir con la
   // versión del cache en sw.js, que versiona los archivos de la app).
   const SCHEMA_KEY = 'reps-schema';
-  const SCHEMA = 3; // versión de formato que esta app espera
+  const SCHEMA = 4; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-tema', 'reps-distribucion', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -921,6 +1111,17 @@
       }
       localStorage.removeItem('reps-compacto'); // clave retirada
     },
+
+    // v3 → v4: el efecto vidrio se separa del tema; quien usaba el tema
+    // "Cristal · líquido" conserva su vidrio en la clave nueva reps-efecto
+    3: function(){
+      try{
+        const t = JSON.parse(localStorage.getItem('reps-tema'));
+        if(t && t.modo === 'preset' && t.id === 'cristal'){
+          localStorage.setItem('reps-efecto', 'glass');
+        }
+      }catch(e){ /* tema ilegible: sin efecto */ }
+    },
   };
 
   function migrate(){
@@ -969,7 +1170,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-distribucion': dist },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -1019,6 +1220,12 @@
         if(b.data['reps-compacto'] === true || b.data['reps-compacto'] === '1'){
           localStorage.setItem('reps-compacto', '1');
         }
+        const fv = b.data['reps-efecto'];
+        if(FXS.includes(fv) && fv !== 'ninguno') localStorage.setItem(FX_KEY, fv);
+        else localStorage.removeItem(FX_KEY);
+        const rc = b.data['reps-racha'];
+        if(esMapa(rc)) localStorage.setItem(RACHA_KEY, JSON.stringify(rc));
+        else localStorage.removeItem(RACHA_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -1028,6 +1235,9 @@
       load(); loadTray(); loadCierres(); loadSemana();
       loadTheme(); applyThemeSel();
       loadDist(); applyDist();
+      loadFx(); applyFx();
+      racha = { congeladores: 0, fabRun: 0, procesadoHasta: null, congelados: {} };
+      loadRacha(); procesarRacha();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -1049,10 +1259,14 @@
   applyThemeSel(); // primero el tema: la app ya nace pintada del color elegido
   loadDist();
   applyDist();
+  loadFx();
+  applyFx();
   load();
   loadTray();
   loadCierres();   // antes de render(): el calendario ya lee los cierres
   loadSemana();    // antes de renderPlanHoy(): el banner lee el plan semanal
+  loadRacha();     // antes de render(): la racha visible usa los congelados
+  procesarRacha(); // aplica congeladores por los días transcurridos
   render();
   renderTray();
   renderSemana();
@@ -1095,6 +1309,7 @@
     if(document.visibilityState === 'visible' && today() !== uiDay){
       uiDay = today();
       weekOff = 0; // "esta semana" también pudo cambiar
+      procesarRacha(); // días nuevos: fabrica o gasta congeladores
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
     }

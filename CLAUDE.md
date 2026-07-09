@@ -41,6 +41,8 @@ directo sobre un Date: corre el día en zonas horarias negativas.
 | `reps-semana` | `{fecha: "texto"}` | Plan semanal, plano por día. Vacío = clave borrada. Una "semana" se deriva (lunes = `mondayOf`), no se guarda. |
 | `reps-tema` | `{modo:'preset', id}` o `{modo:'custom', accent, bg}` | Validar con `themeValido()` antes de aplicar. |
 | `reps-distribucion` | `"compacto"`, `"minimal"` o ausente (= normal) | Distribución de la interfaz: clases `compact`/`minimal` en `<body>`. Sustituyó a `reps-compacto` en el schema v3 (migración 2→3). |
+| `reps-efecto` | `"glass"`, `"clay"` o ausente (= ninguno) | Efecto visual, INDEPENDIENTE del tema/color. Clases `fx-glass`/`fx-clay` en `<body>`. En v4 se separó del tema "Cristal" (migración 3→4). |
+| `reps-racha` | `{congeladores, fabRun, procesadoHasta, congelados:{fecha:true}}` | Protector de racha. `congeladores` 0–2. `procesarRacha()` avanza día por día desde `procesadoHasta` hasta ayer: cada 7 ganados fabrica 1 (máx 2), un día perdido gasta uno y marca `congelados[fecha]`. Nunca procesa "hoy" (en curso). |
 | `reps-schema` | `"N"` (número como string) | Versión del FORMATO de los datos. La gestiona `migrate()`; no tocar a mano. |
 | `reps-pre-migracion` | `{de, a, fecha, crudo}` | Copia cruda automática previa a la última migración. Solo lectura; no va en el respaldo exportado. |
 
@@ -48,10 +50,11 @@ directo sobre un Date: corre el día en zonas horarias negativas.
 1. Toda carga valida la *forma* (`esMapa`, `Array.isArray`, `themeValido`)
    — localStorage corrupto nunca debe romper la app; se ignora y se usa
    el valor por defecto.
-2. El respaldo (Exportar/Importar en Hoy) incluye **las 5 claves de
-   datos** y declara su `schema`; al importar se migra si viene de una
-   versión vieja. Si agregas una clave nueva: súmala a `exportBackup`,
-   saneala en `importBackup` y documenta aquí su forma.
+2. El respaldo (Exportar/Importar en Hoy) incluye **todas las claves de
+   datos** (dias, bandeja, cierres, semana, tema, distribucion, efecto,
+   racha) y declara su `schema`; al importar se migra si viene de una
+   versión vieja. Si agregas una clave nueva: súmala a `DATA_KEYS`, a
+   `exportBackup`, saneala en `importBackup` y documenta aquí su forma.
 3. El "bug de la medianoche": la PWA instalada se suspende, no se cierra.
    Nunca capturar `today()` en un closure de evento — leerlo fresco al
    momento del click. Hay un listener de `visibilitychange` que repinta
@@ -115,6 +118,12 @@ y actualiza el `<meta theme-color>`. Nada más.
   `isLight()` (luminancia percibida) decide el contraste del texto.
 - El canvas de "Compartir mi mes" lee las variables vigentes con
   `getComputedStyle` — cualquier feature visual nueva debe hacer lo mismo.
+
+**Efectos (independientes del color)**: `reps-efecto` aplica `fx-glass`
+(cristal: fondo con gradientes radiales del acento + `backdrop-filter`) o
+`fx-clay` (arcilla: sombras neumórficas) como clase en `<body>`. Se
+combinan con CUALQUIER tema o color custom — por eso viven separados del
+tema. Un efecto nuevo = una clase `fx-*` en CSS + su id en el array `FXS`.
 
 ## Convenciones
 
