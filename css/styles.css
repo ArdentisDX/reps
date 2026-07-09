@@ -29,6 +29,16 @@ h1 span{color:var(--amber)}
 .streak .sub{font-size:13px;color:var(--text);margin-top:3px}
 .streak .warn{font-size:12px;color:var(--red);margin-top:3px;font-weight:600}
 .streak .frz{font-size:12px;color:var(--teal);margin-top:3px;font-weight:700}
+
+/* ===== Levantarse: rescate y ritual ===== */
+.rescate{margin-top:12px;background:var(--teal-dim);border:1px solid color-mix(in srgb, var(--teal) 40%, transparent);border-radius:var(--radius);padding:14px 16px}
+.rescate .rs-title{font-size:13px;font-weight:800;color:var(--teal);letter-spacing:.04em}
+.rescate .rs-body{font-size:13px;color:var(--text);line-height:1.5;margin-top:5px}
+.ritual{margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}
+.ritual .ri-title{font-size:13px;color:var(--text);line-height:1.5;margin-bottom:10px}
+.ritual .ri-opts{display:flex;flex-wrap:wrap;gap:6px}
+.ritual .ri-opt{background:var(--card-2);border:1px solid var(--line);border-radius:10px;color:var(--text);font:inherit;font-size:13px;font-weight:600;padding:8px 11px;cursor:pointer}
+.ritual .ri-opt:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .week{display:flex;justify-content:space-between;margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 12px}
 .day{display:flex;flex-direction:column;align-items:center;gap:7px;flex:1}
 .day .d-lbl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
@@ -155,6 +165,8 @@ h1 span{color:var(--amber)}
 .id-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
 .id-row:last-child{border-bottom:none}
 .id-num{color:var(--amber);font-weight:800;font-size:15px;white-space:nowrap}
+.id-regresos{color:var(--teal);font-weight:700}
+.id-regresos .id-num{color:var(--teal)}
 .es-row{padding:10px 0;border-bottom:1px solid var(--line);font-size:13px;line-height:1.55}
 .es-row:last-child{border-bottom:none}
 .es-row.es-empty{color:var(--muted)}

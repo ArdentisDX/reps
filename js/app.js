@@ -169,6 +169,123 @@
     return (key in dias) && !isWon(dias[key]) && !racha.congelados[key];
   }
 
+  // ===== Levantarse: rescate, ritual de derrota, regresos =====
+  const CAIDAS_KEY = 'reps-caidas';
+  let caidas = {}; // { 'YYYY-MM-DD': motivo } — por qué murió una racha ese día
+  const MOTIVOS = [
+    {id:'desvelo',    emoji:'😴', name:'Desvelo'},
+    {id:'celular',    emoji:'📱', name:'Celular'},
+    {id:'animo',      emoji:'🌧️', name:'Ánimo'},
+    {id:'imprevisto', emoji:'🌀', name:'Imprevisto'},
+    {id:'otro',       emoji:'·',  name:'Otro'},
+  ];
+  function loadCaidas(){
+    try{
+      const v = JSON.parse(localStorage.getItem(CAIDAS_KEY));
+      if(esMapa(v)){
+        caidas = {};
+        Object.keys(v).forEach(k => { if(typeof v[k] === 'string') caidas[k] = v[k]; });
+      }
+    }catch(e){ caidas = {}; }
+  }
+  function saveCaidas(){
+    try{ localStorage.setItem(CAIDAS_KEY, JSON.stringify(caidas)); }
+    catch(e){ toast('No se pudo guardar. Reintenta.'); }
+  }
+
+  const primerDia = () => { const f = Object.keys(dias); return f.length ? f.sort()[0] : null; };
+
+  // días consecutivos que pasaron sin ganarse ni congelarse, terminando AYER;
+  // no juzga el tiempo anterior al primer registro (evita falsos en día 1)
+  function diasCaidosSeguidos(){
+    const primero = primerDia();
+    if(!primero) return 0;
+    let n = 0;
+    const d = new Date(); d.setDate(d.getDate() - 1);
+    while(localISO(d) >= primero){
+      const k = localISO(d);
+      if(isWon(dias[k]) || racha.congelados[k]) break;
+      n++;
+      d.setDate(d.getDate() - 1);
+    }
+    return n;
+  }
+
+  // longitud de la racha de días ganados que TERMINA justo antes de la fecha k
+  function rachaAntesDe(k){
+    let n = 0;
+    const d = new Date(k + 'T12:00:00'); d.setDate(d.getDate() - 1);
+    while(true){
+      const pk = localISO(d);
+      if(isWon(dias[pk])) n++;
+      else if(!racha.congelados[pk]) break;
+      d.setDate(d.getDate() - 1);
+    }
+    return n;
+  }
+
+  // regresos: días ganados cuyo día anterior (dentro de tu historia) fue una
+  // caída. Las rachas se rompen; volver es la habilidad — y solo crece.
+  function contarRegresos(){
+    const primero = primerDia();
+    if(!primero) return 0;
+    let n = 0;
+    Object.keys(dias).forEach(k => {
+      if(!isWon(dias[k])) return;
+      const p = new Date(k + 'T12:00:00'); p.setDate(p.getDate() - 1);
+      const pk = localISO(p);
+      if(pk >= primero && !isWon(dias[pk]) && !racha.congelados[pk]) n++;
+    });
+    return n;
+  }
+
+  // ritual de derrota: busca en los últimos 7 días la muerte de racha (de 2+)
+  // más reciente que aún no hayas reconocido, y pregunta qué pasó (una vez).
+  // La derrota se vuelve dato, no vergüenza.
+  let ritualDate = null;
+  function renderRitual(){
+    const primero = primerDia();
+    let target = null, largo = 0;
+    if(primero){
+      for(let i = 1; i <= 7; i++){
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const k = localISO(d);
+        if(k < primero) break;
+        if(k in caidas) continue;                 // ya reconocido
+        const esCaida = (k in dias) && !isWon(dias[k]) && !racha.congelados[k];
+        if(!esCaida) continue;
+        const n = rachaAntesDe(k);                // racha que murió ese día
+        if(n >= 2){ target = k; largo = n; break; } // el más reciente
+      }
+    }
+    $('ritual').hidden = !target;
+    if(target){
+      ritualDate = target;
+      const ayer = localISO(new Date(Date.now() - 86400000));
+      const cuando = target === ayer ? 'ayer' :
+        'el ' + new Date(target + 'T12:00:00').toLocaleDateString('es-MX', {weekday:'long'});
+      $('ritualTxt').textContent = 'Tu racha de ' + largo + ' terminó ' + cuando +
+        '. Un día malo es normal — no dos. ¿Qué la cortó?';
+    } else {
+      ritualDate = null;
+    }
+  }
+  // botones de motivo (se crean una vez)
+  MOTIVOS.forEach(m => {
+    const b = document.createElement('button');
+    b.className = 'ri-opt'; b.type = 'button';
+    b.textContent = m.emoji + ' ' + m.name;
+    b.addEventListener('click', ()=>{
+      if(!ritualDate) return;
+      caidas[ritualDate] = m.id;
+      saveCaidas();
+      $('ritual').hidden = true;
+      renderStats(); // El Espejo puede tener un insight nuevo de caídas
+      toast('Anotado. Mañana lo intentas de nuevo. 🌱');
+    });
+    $('ritualOpts').appendChild(b);
+  });
+
   function habitBtn(h, rec){
     const done = !!rec[h.id];
     const b = document.createElement('button');
@@ -232,10 +349,22 @@
       won ? 'Hoy ya cayó. Bien.' :
       s>0 ? 'La racha vive. Cierra hoy los ' + CORE.length + ' core.' :
       'Gana hoy para encenderla.';
-    $('streakWarn').hidden = !(lostYesterday() && !won);
     $('frzInfo').hidden = racha.congeladores === 0;
     $('frzInfo').textContent = '🧊 ×' + racha.congeladores +
       (racha.congeladores === 1 ? ' congelador listo' : ' congeladores listos');
+
+    // modo rescate: 2+ días caídos y hoy aún sin ganar → apoyo, no regaño.
+    // El aviso rojo simple solo sale si NO estamos ya en rescate.
+    const caidosN = diasCaidosSeguidos();
+    const enPeligro = caidosN >= 2 && !won;
+    $('rescate').hidden = !enPeligro;
+    if(enPeligro){
+      $('rescateTxt').textContent = 'Llevas ' + caidosN + ' días fuera. No busques el día perfecto: ' +
+        'haz UNA sola cosa hoy y rompe la inercia. Volver ya es ganar.';
+    }
+    $('streakWarn').hidden = !(lostYesterday() && !won) || enPeligro;
+
+    renderRitual();
 
     const wk = $('week'); wk.innerHTML='';
     const names = ['dom','lun','mar','mié','jue','vie','sáb'];
@@ -517,6 +646,16 @@
       const peor = muertes.indexOf(Math.max(...muertes));
       out.push('Tus rachas suelen morir en ' + nombres[peor] + '. Ese día, protégete.');
     }
+
+    // 4) el motivo más común de tus caídas (del ritual de derrota, mín. 3)
+    const claves = Object.keys(caidas);
+    if(claves.length >= 3){
+      const cuenta = {};
+      claves.forEach(k => { cuenta[caidas[k]] = (cuenta[caidas[k]] || 0) + 1; });
+      const topId = Object.keys(cuenta).reduce((a,b)=> cuenta[b] > cuenta[a] ? b : a);
+      const m = MOTIVOS.find(x => x.id === topId);
+      if(m) out.push('Lo que más corta tus rachas: ' + m.emoji + ' ' + m.name.toLowerCase() + '. Ahí está tu punto débil.');
+    }
     return out;
   }
 
@@ -527,9 +666,20 @@
     $('stNow').textContent = s.now;
     $('stMonth').textContent = s.pct30 + '%';
 
-    // contador de identidad: cuántas veces has hecho cada rep, en total.
+    // contador de identidad: cada rep es un VOTO por quién te estás volviendo.
     // Las rachas se rompen; estos números solo crecen.
     const il = $('identList'); il.innerHTML = '';
+
+    // regresos: caer y volver es la habilidad. Va primero y resaltado.
+    const reg = contarRegresos();
+    if(reg > 0){
+      const row = document.createElement('div'); row.className = 'id-row id-regresos';
+      const name = document.createElement('span'); name.textContent = '🔄 Has vuelto después de caer';
+      const num = document.createElement('span'); num.className = 'id-num'; num.textContent = reg + '×';
+      row.append(name, num);
+      il.appendChild(row);
+    }
+
     HABITS.forEach(h => {
       const n = Object.keys(dias).filter(k => dias[k] && dias[k][h.id]).length;
       const row = document.createElement('div'); row.className = 'id-row';
@@ -1182,7 +1332,7 @@
   const SCHEMA = 5; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -1301,7 +1451,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -1362,6 +1512,9 @@
         const hb = b.data['reps-habitos'];
         if(Array.isArray(hb)) localStorage.setItem(HABITS_KEY, JSON.stringify(hb));
         else localStorage.removeItem(HABITS_KEY);
+        const cd = b.data['reps-caidas'];
+        if(esMapa(cd)) localStorage.setItem(CAIDAS_KEY, JSON.stringify(cd));
+        else localStorage.removeItem(CAIDAS_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -1375,6 +1528,7 @@
       loadFx(); applyFx();
       racha = { congeladores: 0, fabRun: 0, procesadoHasta: null, congelados: {} };
       loadRacha(); procesarRacha();
+      caidas = {}; loadCaidas();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -1405,6 +1559,7 @@
   loadSemana();    // antes de renderPlanHoy(): el banner lee el plan semanal
   loadRacha();     // antes de render(): la racha visible usa los congelados
   procesarRacha(); // aplica congeladores por los días transcurridos
+  loadCaidas();    // antes de render(): el ritual y El Espejo leen las caídas
   render();
   renderTray();
   renderSemana();

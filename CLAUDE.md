@@ -44,6 +44,7 @@ directo sobre un Date: corre el día en zonas horarias negativas.
 | `reps-distribucion` | `"compacto"`, `"minimal"` o ausente (= normal) | Distribución de la interfaz: clases `compact`/`minimal` en `<body>`. Sustituyó a `reps-compacto` en el schema v3 (migración 2→3). |
 | `reps-efecto` | `"glass"`, `"clay"` o ausente (= ninguno) | Efecto visual, INDEPENDIENTE del tema/color. Clases `fx-glass`/`fx-clay` en `<body>`. En v4 se separó del tema "Cristal" (migración 3→4). |
 | `reps-racha` | `{congeladores, fabRun, procesadoHasta, congelados:{fecha:true}}` | Protector de racha. `congeladores` 0–2. `procesarRacha()` avanza día por día desde `procesadoHasta` hasta ayer: cada 7 ganados fabrica 1 (máx 2), un día perdido gasta uno y marca `congelados[fecha]`. Nunca procesa "hoy" (en curso). |
+| `reps-caidas` | `{fecha: motivoId}` | Ritual de derrota: por qué murió una racha ese día. `motivoId` ∈ desvelo/celular/animo/imprevisto/otro. Clave aditiva (sin cambio de schema); alimenta un insight de El Espejo. |
 | `reps-schema` | `"N"` (número como string) | Versión del FORMATO de los datos. La gestiona `migrate()`; no tocar a mano. |
 | `reps-pre-migracion` | `{de, a, fecha, crudo}` | Copia cruda automática previa a la última migración. Solo lectura; no va en el respaldo exportado. |
 
