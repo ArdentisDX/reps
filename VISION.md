@@ -99,13 +99,15 @@ Hacerlo antes del primer modo nuevo; el modo minimalista es el piloto.
 - Pendiente: el **"pulso" diario** (semáforo verde/ámbar/rojo con consejo)
   y las gráficas de tendencia (canvas). Misma fuente de datos.
 
-**Notion — hábitos personalizables** · esfuerzo: mediano-grande ⚠️ fundacional
-- Qué hacen bien: la herramienta se adapta a la persona, no al revés.
-- Versión REPS: editar/agregar/quitar hábitos y marcar cuáles son core
-  (2–4). HABITS pasa de constante a `reps-habitos` en localStorage — es
-  **la migración de esquema más seria hasta ahora** (por eso ya existe el
-  sistema de migraciones). Regla de diseño: máximo 8 hábitos, para
-  proteger el 20/80 de la sobre-ingeniería de rutinas.
+**Notion — hábitos personalizables** ✅ **HECHO (jul 2026)**
+- La herramienta se adapta a la persona, no al revés.
+- Editor en Hoy: agregar/renombrar/borrar hábitos y marcar cuáles son core.
+  `HABITS` pasó de constante a `reps-habitos`; IDs inmutables (renombrar
+  no toca el historial); migración v4→v5 siembra la lista de fábrica.
+  Límites: máx 8 hábitos, entre 2 y 4 core (protege el 20/80).
+- Nota de diseño: "día ganado" se juzga contra los core actuales; los
+  hábitos nuevos nacen como extra y al cambiar core se avisa. (Alternativa
+  futura si hace falta: snapshot de core por día.)
 
 **Strava — logros compartidos y retos** · esfuerzo: grande (Capa 5)
 - Qué hacen bien: la constancia se vuelve social sin ser competencia pura.
@@ -160,9 +162,9 @@ Hacerlo antes del primer modo nuevo; el modo minimalista es el piloto.
 | ✅ | Contador de identidad | alto | chico | HECHO jul 2026 |
 | ✅ | El Espejo (insights locales) | alto | mediano | HECHO jul 2026 (parcial) |
 | ✅ | Insignia del ícono (Badging API) | medio | chico | HECHO jul 2026 |
-| 1 | Hábitos personalizables (Notion) | alto | mediano-grande | Fundacional: estrena migración v4→v5. **Siguiente sesión.** |
-| 2 | Modo rescate + Ritual de derrota | alto | chico | El corazón anti-castigo de la misión |
-| 3 | Celebración de hitos + Plan B por hábito | alto | chico | Cierra el paquete Duolingo |
+| ✅ | Hábitos personalizables (Notion) | alto | mediano-grande | HECHO jul 2026 (migración v4→v5) |
+| 1 | Modo rescate + Ritual de derrota | alto | chico | El corazón anti-castigo de la misión |
+| 2 | Celebración de hitos + Plan B por hábito | alto | chico | Cierra el paquete Duolingo |
 | 4 | Temporizador de foco (Forest) | medio | mediano | Wake Lock + marca el hábito solo |
 | 5 | Test de bienvenida + metas (Capa 2) | medio | mediano | Prepara el contexto para la IA |
 | 6 | "Pulso" diario + gráficas de tendencia | medio | mediano | Amplía El Espejo |
@@ -172,15 +174,14 @@ Hacerlo antes del primer modo nuevo; el modo minimalista es el piloto.
 | 10 | IA de la Bandeja (Capa 3, Worker) | alto | grande | El salto a online-offline |
 | 11 | Social espejo (Strava, Capa 5) | medio | grande | Al final, con cuentas |
 
-**Las próximas 8 semanas de bloques** (2 hrs/día, un tema por semana):
+**Las próximas semanas de bloques** (2 hrs/día, un tema por semana):
 
-- **S1–S2** — Hábitos personalizables (con su migración v4→v5). La semana fundacional.
-- **S3** — Modo rescate + ritual de derrota.
-- **S4** — Celebración de hitos + Plan B por hábito.
-- **S5** — Temporizador de foco en los bloques.
-- **S6** — Test de bienvenida + metas (cierra la Capa 2 del ROADMAP).
-- **S7** — "Pulso" diario + gráfica de tendencia en Stats.
-- **S8** — Refactor view-models (primer modo-layout real: Bento o UI Espacial).
+- **S1** — Modo rescate + ritual de derrota.
+- **S2** — Celebración de hitos + Plan B por hábito.
+- **S3** — Temporizador de foco en los bloques.
+- **S4** — Test de bienvenida + metas (cierra la Capa 2 del ROADMAP).
+- **S5** — "Pulso" diario + gráfica de tendencia en Stats.
+- **S6** — Refactor view-models (primer modo-layout real: Bento o UI Espacial).
 
 La IA (Capa 3) entra en el mes 3, con la app ya personalizable y el
 perfil listo: la IA llegará a conocerte, no a adivinarte.

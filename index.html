@@ -43,13 +43,14 @@
     </div>
     <div class="week" id="week"></div>
     <div class="sec">
-      <div class="sec-head"><h2>Innegociables</h2><div class="tag">3/3 = día ganado</div></div>
+      <div class="sec-head"><h2>Innegociables</h2><div class="tag" id="coreTag">3/3 = día ganado</div></div>
       <div id="coreList"></div>
     </div>
     <div class="sec" id="secExtra">
       <div class="sec-head"><h2>Suman puntos</h2><div class="tag" style="color:var(--teal)">extra</div></div>
       <div id="extraList"></div>
     </div>
+    <div class="edit-hab"><button id="editHabBtn">✏️ Editar hábitos</button></div>
     <div class="stamp-wrap"><div class="stamp" id="stamp">Día ganado</div></div>
     <div class="prog">
       <div class="p-row"><span>DÍA COMPLETO</span><span id="progPct">0%</span></div>
@@ -236,6 +237,15 @@
         <button class="dist-opt fx-opt" data-fx="clay">Arcilla</button>
       </div>
       <div class="t-note">El efecto se combina con cualquier tema o color personalizado.</div>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="habWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Editar hábitos</h2><button id="habClose" aria-label="Cerrar">✕</button></div>
+      <div id="habList"></div>
+      <button class="hab-add" id="habAdd">＋ Agregar hábito</button>
+      <div class="t-note">La ⭐ marca los <b>core</b>: los que definen tu «día ganado» (entre 2 y 4). Máx. 8 hábitos. Renombrar nunca borra tu historial.</div>
     </div>
   </div>
 

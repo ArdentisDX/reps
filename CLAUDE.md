@@ -35,7 +35,8 @@ directo sobre un Date: corre el día en zonas horarias negativas.
 
 | Clave | Forma | Notas |
 |---|---|---|
-| `reps-dias` | `{fecha: {habitoId: bool}}` | Día "ganado" = los 3 hábitos `core` en true (`isWon`). Registros vacíos son válidos (significan "abrió la app y no hizo nada"). |
+| `reps-dias` | `{fecha: {habitoId: bool}}` | Día "ganado" = todos los hábitos `core` (según la lista actual) en true (`isWon`). Registros vacíos son válidos. Las claves son IDs de `reps-habitos`; por eso los IDs son inmutables (renombrar no rompe el historial). |
+| `reps-habitos` | `[{id, name, hint, core}]` | Hábitos editables (antes constante en el código). IDs inmutables. Editor en Hoy. Reglas: máx 8, entre 2 y 4 core. `CORE` se deriva con `rebuildCore()`. La lista de fábrica (`HABITS_DEFAULT`) siembra esta clave en la migración 4→5. |
 | `reps-bandeja` | `[{id, text, cat, done, created}]` | Ideas, más nuevas primero. `cat` ∈ ya/social/compras/aprender/algundia. `addIdea(texto, cat)` es la única puerta de entrada (pensada para la IA de fase 2). |
 | `reps-cierres` | `{fecha: {animo, notas, plan, guardado}}` | `animo` ∈ bien/regular/mal o null. El `plan` de la fecha X se muestra como "Plan de hoy" el día X+1. |
 | `reps-semana` | `{fecha: "texto"}` | Plan semanal, plano por día. Vacío = clave borrada. Una "semana" se deriva (lunes = `mondayOf`), no se guarda. |

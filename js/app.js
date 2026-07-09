@@ -1,5 +1,7 @@
 (function(){
-  const HABITS = [
+  // Lista de fábrica: la migración v4→v5 siembra reps-habitos con esto.
+  // Sus IDs son sagrados: el historial de reps-dias se guarda por ID.
+  const HABITS_DEFAULT = [
     {id:'despertar', name:'Despertar 8:30', hint:'Pies al piso, sin snooze', core:true},
     {id:'correr',    name:'Correr / perrita + 10 min calistenia', hint:'20–30 min, antes de la PC', core:true},
     {id:'bloque1',   name:'Bloque de construcción', hint:'Mínimo 1 hr, celular en otro cuarto', core:true},
@@ -7,7 +9,13 @@
     {id:'bloque2',   name:'Bloque corto (1 hr)', hint:'App, leer, practicar', core:false},
     {id:'dormir',    name:'Leer 20 min + dormir 1:00 am', hint:'Celular a cargar lejos de la cama', core:false},
   ];
-  const CORE = HABITS.filter(h=>h.core).map(h=>h.id);
+  const HABITS_KEY = 'reps-habitos';
+  const MAX_HABITS = 8, MIN_CORE = 2, MAX_CORE = 4;
+  let HABITS = HABITS_DEFAULT.map(h => Object.assign({}, h)); // editable en runtime
+  let CORE = [];
+  function rebuildCore(){ CORE = HABITS.filter(h => h.core).map(h => h.id); }
+  rebuildCore();
+
   const KEY = 'reps-dias';
   let dias = {};
 
@@ -18,7 +26,9 @@
     return new Date(d.getTime() - off*60000).toISOString().slice(0,10);
   }
   const today = () => localISO(new Date());
-  function isWon(rec){ return !!rec && CORE.every(id=>rec[id]); }
+  // sin core definido, un registro NUNCA está ganado (evita el "true vacío"
+  // de [].every, que marcaría cualquier día como ganado)
+  function isWon(rec){ return !!rec && CORE.length > 0 && CORE.every(id => rec[id]); }
 
   document.querySelectorAll('.tab').forEach(t=>{
     t.addEventListener('click', ()=>{
@@ -42,6 +52,36 @@
     try{ localStorage.setItem(KEY, JSON.stringify(dias)); }
     catch(e){ toast('No se pudo guardar. Reintenta.'); }
   }
+
+  // depura una lista de hábitos cruda a la forma correcta; devuelve null
+  // si no queda nada usable (para caer a la lista de fábrica)
+  function sanearHabitos(v){
+    if(!Array.isArray(v)) return null;
+    const vistos = {};
+    const limpio = v
+      .filter(h => h && typeof h.id === 'string' && h.id && typeof h.name === 'string' && h.name.trim())
+      .filter(h => vistos[h.id] ? false : (vistos[h.id] = true)) // ids únicos
+      .map(h => ({ id: h.id, name: h.name.trim(), hint: typeof h.hint === 'string' ? h.hint.trim() : '', core: !!h.core }))
+      .slice(0, MAX_HABITS);
+    return limpio.length ? limpio : null;
+  }
+  function loadHabitos(){
+    let crudo = null;
+    try{ crudo = localStorage.getItem(HABITS_KEY); }catch(e){}
+    let v = null;
+    try{ v = sanearHabitos(JSON.parse(crudo)); }catch(e){}
+    if(v) HABITS = v;                       // lista válida guardada
+    else HABITS = HABITS_DEFAULT.map(h => Object.assign({}, h)); // fábrica
+    rebuildCore();
+    // persiste la lista efectiva cuando en storage no había una válida:
+    // instalación nueva (crudo null) o datos corruptos (v null) → se sanea
+    if(crudo === null || !v) saveHabitos();
+  }
+  function saveHabitos(){
+    try{ localStorage.setItem(HABITS_KEY, JSON.stringify(HABITS)); }
+    catch(e){ toast('No se pudo guardar. Reintenta.'); }
+  }
+  const nuevoHabId = () => 'h' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
 
   // racha "pura": solo días ganados, sin congeladores (la usa procesarRacha)
   function streakBase(){
@@ -134,11 +174,21 @@
     const b = document.createElement('button');
     b.className = 'habit' + (done?' done':'');
     b.setAttribute('aria-pressed', done);
-    b.innerHTML =
-      '<span class="check" aria-hidden="true">✓</span>' +
-      '<span class="h-body"><span class="h-name">'+h.name+'</span>' +
-      '<div class="h-hint">'+h.hint+'</div></span>' +
-      (h.core ? '<span class="core-mark">CORE</span>' : '');
+    // textContent (no innerHTML): el nombre y la pista son texto del usuario
+    const check = document.createElement('span');
+    check.className = 'check'; check.setAttribute('aria-hidden','true'); check.textContent = '✓';
+    const body = document.createElement('span'); body.className = 'h-body';
+    const name = document.createElement('span'); name.className = 'h-name'; name.textContent = h.name;
+    body.appendChild(name);
+    if(h.hint){
+      const hint = document.createElement('div'); hint.className = 'h-hint'; hint.textContent = h.hint;
+      body.appendChild(hint);
+    }
+    b.append(check, body);
+    if(h.core){
+      const mark = document.createElement('span'); mark.className = 'core-mark'; mark.textContent = 'CORE';
+      b.appendChild(mark);
+    }
     b.addEventListener('click', ()=>{
       // fecha y registro FRESCOS: si pasó la medianoche desde que se pintó
       // la pantalla, el "rec" viejo pertenece a AYER y no debe tocarse
@@ -162,6 +212,11 @@
     const coreL = $('coreList'), extraL = $('extraList');
     coreL.innerHTML=''; extraL.innerHTML='';
     HABITS.forEach(h=> (h.core?coreL:extraL).appendChild(habitBtn(h,rec)) );
+    // sin hábitos extra, la sección "Suman puntos" se oculta
+    const secExtra = $('secExtra');
+    if(secExtra) secExtra.hidden = !HABITS.some(h => !h.core);
+    const coreDone = CORE.filter(id => rec[id]).length;
+    $('coreTag').textContent = coreDone + '/' + CORE.length + ' = día ganado';
 
     const won = isWon(rec);
     $('stamp').classList.toggle('show', won);
@@ -175,7 +230,7 @@
     $('streakNum').textContent = s;
     $('streakSub').textContent =
       won ? 'Hoy ya cayó. Bien.' :
-      s>0 ? 'La racha vive. Cierra hoy los 3 core.' :
+      s>0 ? 'La racha vive. Cierra hoy los ' + CORE.length + ' core.' :
       'Gana hoy para encenderla.';
     $('streakWarn').hidden = !(lostYesterday() && !won);
     $('frzInfo').hidden = racha.congeladores === 0;
@@ -1053,14 +1108,81 @@
     });
   });
 
+  // ===== Editor de hábitos =====
+  function renderHabEditor(){
+    const list = $('habList'); list.innerHTML = '';
+    const coreCount = HABITS.filter(h => h.core).length;
+
+    HABITS.forEach(h => {
+      const row = document.createElement('div'); row.className = 'hab-row';
+
+      // ⭐ toggle core (respeta límites 2–4 y avisa del efecto en el historial)
+      const star = document.createElement('button');
+      star.className = 'hab-star' + (h.core ? ' on' : '');
+      star.textContent = h.core ? '⭐' : '☆';
+      star.setAttribute('aria-label', h.core ? 'Quitar de core' : 'Marcar como core');
+      star.addEventListener('click', ()=>{
+        if(h.core && coreCount <= MIN_CORE){ toast('Necesitas al menos ' + MIN_CORE + ' core.'); return; }
+        if(!h.core && coreCount >= MAX_CORE){ toast('Máximo ' + MAX_CORE + ' core.'); return; }
+        h.core = !h.core;
+        rebuildCore(); saveHabitos(); render(); renderHabEditor();
+        toast('Ojo: cambiar los core re-evalúa tus días pasados.');
+      });
+
+      // nombre (editable en vivo)
+      const name = document.createElement('input');
+      name.type = 'text'; name.className = 'hab-name'; name.value = h.name; name.maxLength = 40;
+      name.setAttribute('aria-label', 'Nombre del hábito');
+      name.addEventListener('input', ()=>{
+        h.name = name.value;
+        saveHabitos(); render(); // el historial no se toca: el id es el mismo
+      });
+
+      // pista (opcional)
+      const hint = document.createElement('input');
+      hint.type = 'text'; hint.className = 'hab-hint'; hint.value = h.hint; hint.maxLength = 60;
+      hint.placeholder = 'Pista (opcional)';
+      hint.setAttribute('aria-label', 'Pista del hábito');
+      hint.addEventListener('input', ()=>{ h.hint = hint.value; saveHabitos(); render(); });
+
+      // borrar (confirma; el historial de ese id se conserva en reps-dias)
+      const del = document.createElement('button');
+      del.className = 'hab-del'; del.textContent = '✕'; del.setAttribute('aria-label', 'Borrar hábito');
+      del.addEventListener('click', ()=>{
+        if(HABITS.length <= MIN_CORE){ toast('Deja al menos ' + MIN_CORE + ' hábitos.'); return; }
+        if(h.core && HABITS.filter(x => x.core).length <= MIN_CORE){
+          toast('No puedes bajar de ' + MIN_CORE + ' core. Quita el ⭐ de otro primero.'); return;
+        }
+        if(!confirm('¿Borrar «' + h.name + '»? Tu historial de ese hábito se conserva, solo deja de mostrarse.')) return;
+        HABITS = HABITS.filter(x => x.id !== h.id);
+        rebuildCore(); saveHabitos(); render(); renderHabEditor();
+        toast('Hábito borrado.');
+      });
+
+      const top = document.createElement('div'); top.className = 'hab-top';
+      top.append(star, name, del);
+      row.append(top, hint);
+      list.appendChild(row);
+    });
+  }
+
+  $('editHabBtn').addEventListener('click', ()=>{ renderHabEditor(); $('habWrap').hidden = false; });
+  $('habClose').addEventListener('click', ()=>{ $('habWrap').hidden = true; });
+  $('habWrap').addEventListener('click', (e)=>{ if(e.target === $('habWrap')) $('habWrap').hidden = true; });
+  $('habAdd').addEventListener('click', ()=>{
+    if(HABITS.length >= MAX_HABITS){ toast('Máximo ' + MAX_HABITS + ' hábitos.'); return; }
+    HABITS.push({ id: nuevoHabId(), name: 'Nuevo hábito', hint: '', core: false }); // nace como extra
+    rebuildCore(); saveHabitos(); render(); renderHabEditor();
+  });
+
   // ===== Esquema y migraciones =====
   // reps-schema versiona el FORMATO de los datos (no confundir con la
   // versión del cache en sw.js, que versiona los archivos de la app).
   const SCHEMA_KEY = 'reps-schema';
-  const SCHEMA = 4; // versión de formato que esta app espera
+  const SCHEMA = 5; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -1122,6 +1244,15 @@
         }
       }catch(e){ /* tema ilegible: sin efecto */ }
     },
+
+    // v4 → v5: los hábitos dejan de estar fijos en el código y pasan a
+    // reps-habitos. Quien no tenga lista propia hereda la de fábrica (mismos
+    // IDs), así el historial de reps-dias sigue mostrándose intacto.
+    4: function(){
+      if(localStorage.getItem('reps-habitos') === null){
+        localStorage.setItem('reps-habitos', JSON.stringify(HABITS_DEFAULT));
+      }
+    },
   };
 
   function migrate(){
@@ -1170,7 +1301,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -1226,12 +1357,18 @@
         const rc = b.data['reps-racha'];
         if(esMapa(rc)) localStorage.setItem(RACHA_KEY, JSON.stringify(rc));
         else localStorage.removeItem(RACHA_KEY);
+        // hábitos: se escriben crudos; loadHabitos los sanea (o si el
+        // respaldo es viejo y no los trae, la migración v4→v5 los siembra)
+        const hb = b.data['reps-habitos'];
+        if(Array.isArray(hb)) localStorage.setItem(HABITS_KEY, JSON.stringify(hb));
+        else localStorage.removeItem(HABITS_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
       // formato, se migra lo guardado y se relee ya en formato actual
       localStorage.setItem(SCHEMA_KEY, String(parseInt(b.schema, 10) || 1));
       migrate();
+      loadHabitos(); // antes de load/render: todo lo demás depende de HABITS
       load(); loadTray(); loadCierres(); loadSemana();
       loadTheme(); applyThemeSel();
       loadDist(); applyDist();
@@ -1255,6 +1392,7 @@
   });
 
   migrate();       // ANTES que todo: los datos suben al formato actual
+  loadHabitos();   // antes de load/render: la racha y las vistas usan HABITS/CORE
   loadTheme();
   applyThemeSel(); // primero el tema: la app ya nace pintada del color elegido
   loadDist();

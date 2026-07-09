@@ -228,6 +228,24 @@ h1 span{color:var(--amber)}
 .dist-opt:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .dist-opt.active{background:var(--amber);border-color:var(--amber);color:var(--on-accent);font-weight:800}
 
+/* ===== Editor de hábitos ===== */
+.edit-hab{text-align:center;margin-top:14px}
+.edit-hab button{background:none;border:1px solid var(--line);border-radius:10px;color:var(--muted);font:inherit;font-size:13px;font-weight:600;padding:9px 16px;cursor:pointer}
+.edit-hab button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.hab-row{background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px}
+.hab-top{display:flex;align-items:center;gap:8px}
+.hab-star{background:none;border:none;font-size:20px;cursor:pointer;padding:2px;line-height:1;filter:grayscale(1);opacity:.5}
+.hab-star.on{filter:none;opacity:1}
+.hab-star:focus-visible{outline:2px solid var(--amber);outline-offset:2px;border-radius:6px}
+.hab-name{flex:1;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--text);font:inherit;font-size:14px;font-weight:600;padding:8px 10px;outline:none}
+.hab-name:focus{border-color:var(--amber)}
+.hab-hint{width:100%;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--muted);font:inherit;font-size:12px;padding:7px 10px;outline:none;margin-top:6px}
+.hab-hint:focus{border-color:var(--amber)}
+.hab-del{background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:6px 8px}
+.hab-del:focus-visible{outline:2px solid var(--amber);outline-offset:2px;border-radius:6px}
+.hab-add{width:100%;background:var(--card-2);border:1px dashed var(--line);border-radius:12px;color:var(--text);font:inherit;font-size:14px;font-weight:600;padding:11px 0;cursor:pointer;margin:2px 0 12px}
+.hab-add:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
 /* ===== Efecto cristal (temas con fx:'glass') ===== */
 body.fx-glass{background:
   radial-gradient(1100px 750px at 85% -10%, color-mix(in srgb, var(--amber) 20%, transparent), transparent 60%),
