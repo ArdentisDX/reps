@@ -3,9 +3,9 @@
   // Sus IDs son sagrados: el historial de reps-dias se guarda por ID.
   // days: 'all' = todos los días, o un array de días de semana (0=domingo..6=sábado)
   const HABITS_DEFAULT = [
-    {id:'despertar', name:'Despertar 8:30', hint:'Pies al piso, sin snooze', core:true, days:'all'},
-    {id:'correr',    name:'Correr / perrita + 10 min calistenia', hint:'20–30 min, antes de la PC', core:true, days:'all'},
-    {id:'bloque1',   name:'Bloque de construcción', hint:'Mínimo 1 hr, celular en otro cuarto', core:true, days:'all'},
+    {id:'despertar', name:'Despertar 8:30', hint:'Pies al piso, sin snooze', core:true, days:'all', planB:'levantarte, aunque sea 10 min tarde'},
+    {id:'correr',    name:'Correr / perrita + 10 min calistenia', hint:'20–30 min, antes de la PC', core:true, days:'all', planB:'caminar 5 min con la perrita'},
+    {id:'bloque1',   name:'Bloque de construcción', hint:'Mínimo 1 hr, celular en otro cuarto', core:true, days:'all', planB:'15 min, aunque sea abrir el proyecto'},
     {id:'cama',      name:'Cama tendida', hint:'Ya lo tienes automático', core:false, days:'all'},
     {id:'bloque2',   name:'Bloque corto (1 hr)', hint:'App, leer, practicar', core:false, days:'all'},
     {id:'dormir',    name:'Leer 20 min + dormir 1:00 am', hint:'Celular a cargar lejos de la cama', core:false, days:'all'},
@@ -91,7 +91,7 @@
     const limpio = v
       .filter(h => h && typeof h.id === 'string' && h.id && typeof h.name === 'string' && h.name.trim())
       .filter(h => vistos[h.id] ? false : (vistos[h.id] = true)) // ids únicos
-      .map(h => ({ id: h.id, name: h.name.trim(), hint: typeof h.hint === 'string' ? h.hint.trim() : '', core: !!h.core, days: sanearDays(h.days) }))
+      .map(h => ({ id: h.id, name: h.name.trim(), hint: typeof h.hint === 'string' ? h.hint.trim() : '', core: !!h.core, days: sanearDays(h.days), planB: typeof h.planB === 'string' ? h.planB.trim() : '' }))
       .slice(0, MAX_HABITS);
     return limpio.length ? limpio : null;
   }
@@ -351,6 +351,13 @@
     if(h.hint){
       const hint = document.createElement('div'); hint.className = 'h-hint'; hint.textContent = h.hint;
       body.appendChild(hint);
+    }
+    // Plan B: el mínimo aceptable, como permiso para el día difícil.
+    // Solo se muestra si el hábito aún no está hecho.
+    if(h.planB && !done){
+      const pb = document.createElement('div'); pb.className = 'h-planb';
+      pb.textContent = '🅱️ mínimo: ' + h.planB;
+      body.appendChild(pb);
     }
     b.append(check, body);
     if(h.core){
@@ -1612,6 +1619,13 @@
       hint.setAttribute('aria-label', 'Pista del hábito');
       hint.addEventListener('input', ()=>{ h.hint = hint.value; saveHabitos(); render(); });
 
+      // Plan B: la versión mínima para días difíciles (opcional)
+      const planb = document.createElement('input');
+      planb.type = 'text'; planb.className = 'hab-hint'; planb.value = h.planB || ''; planb.maxLength = 60;
+      planb.placeholder = '🅱️ Plan B: el mínimo en un mal día';
+      planb.setAttribute('aria-label', 'Plan B del hábito');
+      planb.addEventListener('input', ()=>{ h.planB = planb.value; saveHabitos(); render(); });
+
       // borrar (confirma; el historial de ese id se conserva en reps-dias)
       const del = document.createElement('button');
       del.className = 'hab-del'; del.textContent = '✕'; del.setAttribute('aria-label', 'Borrar hábito');
@@ -1652,7 +1666,7 @@
         daysRow.appendChild(chip);
       });
 
-      row.append(top, hint, daysRow);
+      row.append(top, hint, planb, daysRow);
       list.appendChild(row);
     });
   }
@@ -1662,7 +1676,7 @@
   $('habWrap').addEventListener('click', (e)=>{ if(e.target === $('habWrap')) $('habWrap').hidden = true; });
   $('habAdd').addEventListener('click', ()=>{
     if(HABITS.length >= MAX_HABITS){ toast('Máximo ' + MAX_HABITS + ' hábitos.'); return; }
-    HABITS.push({ id: nuevoHabId(), name: 'Nuevo hábito', hint: '', core: false, days: 'all' }); // nace como extra, todos los días
+    HABITS.push({ id: nuevoHabId(), name: 'Nuevo hábito', hint: '', core: false, days: 'all', planB: '' }); // nace como extra, todos los días
     rebuildCore(); saveHabitos(); render(); renderHabEditor();
   });
 

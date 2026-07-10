@@ -60,6 +60,7 @@ h1 span{color:var(--amber)}
 .habit .h-name{font-size:15px;font-weight:600}
 .habit.done .h-name{color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in srgb, var(--amber) 50%, transparent)}
 .habit .h-hint{font-size:12px;color:var(--muted);margin-top:2px}
+.habit .h-planb{font-size:12px;color:var(--teal);margin-top:3px;font-weight:600}
 .habit .core-mark{font-size:10px;font-weight:800;letter-spacing:.12em;color:var(--amber);border:1px solid color-mix(in srgb, var(--amber) 40%, transparent);border-radius:6px;padding:3px 6px;white-space:nowrap}
 .stamp-wrap{display:flex;justify-content:center;margin:22px 0 4px;min-height:56px}
 .stamp{display:none;transform:rotate(-6deg);border:3px solid var(--amber);color:var(--amber);border-radius:10px;padding:10px 22px;font-size:22px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;background:var(--amber-dim)}
@@ -392,7 +393,7 @@ body.fx-neon h1 span{text-shadow:0 0 12px color-mix(in srgb, var(--amber) 80%, t
    ruido (solo core, racha, sello y cierre). Ver VISION.md → modos. */
 body.compact{padding-top:12px}
 body.compact .habit{padding:9px 12px;margin-bottom:6px}
-body.compact .habit .h-hint{display:none}
+body.compact .habit .h-hint, body.compact .habit .h-planb{display:none}
 body.compact .habit .check{width:24px;height:24px;min-width:24px;border-radius:8px}
 body.compact .streak{padding:10px 12px}
 body.compact .streak .num{font-size:34px;min-width:52px}
