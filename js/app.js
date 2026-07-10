@@ -514,6 +514,14 @@
     const won = esGanado(hoyKey);
     $('stamp').classList.toggle('show', won);
 
+    // anillo del día (WHOOP): se llena con los core; ✓ al ganar, · en descanso
+    const ring = $('dayRing');
+    const ringPct = coreHoy.length ? Math.round(coreDone / coreHoy.length * 100) : 0;
+    ring.style.setProperty('--p', desc ? 0 : ringPct);
+    ring.classList.toggle('done', won);
+    ring.classList.toggle('rest', desc);
+    $('ringTxt').textContent = desc ? '·' : (won ? '✓' : coreDone + '/' + coreHoy.length);
+
     const done = hoyHabs.filter(h=>rec[h.id]).length;
     const pct = hoyHabs.length ? Math.round(done/hoyHabs.length*100) : 0;
     $('progPct').textContent = pct+'%';
