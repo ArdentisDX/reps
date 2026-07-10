@@ -176,6 +176,7 @@ Hacerlo antes del primer modo nuevo; el modo minimalista es el piloto.
 | ✅ | Metas corto/mediano/largo plazo (Capa 2) | medio | mediano | HECHO jul 2026 (reps-metas + recompensas) |
 | ✅ | Rutina editable + paquete emocional + crecimiento | alto | mediano | HECHO jul 2026 (reps-rutina, presencia, empujón, carta, museo, mes vs mes, año en imagen, compañero 🌱) |
 | 1 | **Hábitos con meta numérica** (contador +/−) | alto | mediano ⚠️ | **Siguiente sesión propia**: cambia qué significa "hecho" (count ≥ meta) y toca `isWon`/parciales en ~10 sitios — misma cirugía aislada que hábitos-por-día |
+| 4 | Color del ícono del escritorio | bajo | — ⚠️ | **Bloqueado por Android**: la PWA instalada NO puede repintar su ícono del lanzador en caliente; solo cambia desinstalando/reinstalando. Un selector dentro de la app es imposible para ese ícono. Único camino a "cambiar sin reinstalar": empaquetar como TWA en Play Store (una actualización sí puede traer ícono nuevo) — descartado por ser uso personal. Lo que SÍ se podría hacer sin tienda: selector con vista previa + cambiar el favicon de la pestaña + generar el manifest con el color elegido (afecta futuras instalaciones, no el ícono ya pegado). Diferido a petición del usuario (jul 2026). |
 | 5 | Gráficas de tendencia extra en Stats | medio | chico | Amplía el Pulso |
 | 6 | Refactor view-models (habilita modos) | medio | mediano | Puerta a Bento / UI Espacial / HUD |
 | 7 | XP y niveles (Habitica) | medio | mediano | Después del retro/pixel gana más |

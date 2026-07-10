@@ -572,9 +572,13 @@
       wk.appendChild(el);
     }
 
+    renderAhora(); // HUD del bloque en curso (El Ahora)
     renderStats(); // mantiene la pestaña Stats al día con cada cambio
     updateBadge(); // la insignia del ícono refleja los core pendientes
   }
+  // El Ahora avanza solo: refresca el bloque en curso cada minuto sin
+  // repintar todo (el visibilitychange ya cubre el regreso de la app)
+  setInterval(() => { try{ renderAhora(); }catch(e){} }, 60000);
 
   // ===== Insignia en el ícono (Badging API) =====
   // Lo más cercano a un "widget que te incita a entrar" que permite una
@@ -1581,6 +1585,49 @@
       a.href = uri; document.body.appendChild(a); a.click(); a.remove();
     });
     return btn;
+  }
+
+  // minutos crudos del día (0–1439), SIN el corrimiento de madrugada: para
+  // "en qué bloque estoy" el reloj real manda (0:40 es de madrugada, no del final)
+  function minCrudos(hora){
+    const [h, m] = hora.split(':').map(x => parseInt(x, 10));
+    return h * 60 + m;
+  }
+  // devuelve el bloque en curso y el siguiente según la hora actual
+  function bloqueActual(){
+    if(!rutina.length) return null;
+    const orden = [...rutina].map(s => ({ s, min: minCrudos(s.hora) }))
+      .sort((a, b) => a.min - b.min);
+    const now = new Date();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    let cur = null;
+    for(const o of orden){ if(o.min <= nowMin) cur = o; }
+    if(!cur) cur = orden[orden.length - 1]; // antes del primer bloque: sigue el de anoche
+    const next = orden.find(o => o.min > nowMin) || orden[0];
+    // ventana del bloque, cruzando medianoche si hace falta
+    let ini = cur.min, fin = next.min;
+    if(fin <= ini) fin += 1440;
+    let ahora = nowMin; if(ahora < ini) ahora += 1440;
+    const dur = Math.max(1, fin - ini);
+    const pct = Math.min(100, Math.max(0, Math.round((ahora - ini) / dur * 100)));
+    return { cur: cur.s, next: next.s, resta: Math.max(0, fin - ahora), pct };
+  }
+  function textoResta(min){
+    if(min >= 60){
+      const h = Math.floor(min / 60), m = min % 60;
+      return m ? h + ' h ' + m + ' min' : h + ' h';
+    }
+    return min + ' min';
+  }
+  function renderAhora(){
+    const box = $('ahora'); if(!box) return;
+    const b = bloqueActual();
+    if(!b){ box.hidden = true; return; }
+    box.hidden = false;
+    $('ahName').textContent = b.cur.hora + ' · ' + b.cur.nombre;
+    $('ahRest').textContent = 'faltan ' + textoResta(b.resta);
+    $('ahBar').style.width = b.pct + '%';
+    $('ahNext').textContent = 'Luego · ' + b.next.nombre + ' ' + b.next.hora;
   }
 
   function renderRutina(){
