@@ -1809,6 +1809,45 @@
   }
   function saveFoco(){ try{ localStorage.setItem(FOCO_KEY, String(focoTotal)); }catch(e){} }
 
+  // preferencia de sonido al terminar (por defecto encendido)
+  const SONIDO_KEY = 'reps-foco-sonido';
+  let focoSonido = true;
+  function loadSonido(){ try{ focoSonido = localStorage.getItem(SONIDO_KEY) !== '0'; }catch(e){ focoSonido = true; } }
+  function saveSonido(){ try{ if(focoSonido) localStorage.removeItem(SONIDO_KEY); else localStorage.setItem(SONIDO_KEY, '0'); }catch(e){} }
+
+  // sonido sintetizado con Web Audio (sin archivos: offline eterno). El
+  // AudioContext se "desbloquea" en el gesto de Empezar para que suene
+  // después, cuando el temporizador llega a 0 sin que toques nada.
+  let audioCtx = null;
+  function unlockAudio(){
+    try{
+      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if(audioCtx.state === 'suspended') audioCtx.resume();
+    }catch(e){}
+  }
+  function tono(freq, start, dur, vol){
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = 'sine'; o.frequency.value = freq;
+    o.connect(g); g.connect(audioCtx.destination);
+    const t = audioCtx.currentTime + start;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.start(t); o.stop(t + dur + 0.02);
+  }
+  function sonarFin(){
+    try{ if(navigator.vibrate) navigator.vibrate([120, 60, 120]); }catch(e){}
+    if(!focoSonido) return;
+    try{
+      unlockAudio();
+      if(!audioCtx) return;
+      // campanita: arpegio cálido ascendente (Do–Mi–Sol)
+      tono(523.25, 0,    0.55, 0.28);
+      tono(659.25, 0.13, 0.55, 0.24);
+      tono(783.99, 0.26, 0.80, 0.22);
+    }catch(e){}
+  }
+
   async function pedirWakeLock(){
     try{ if('wakeLock' in navigator) foco.wakeLock = await navigator.wakeLock.request('screen'); }catch(e){}
   }
@@ -1816,10 +1855,16 @@
     try{ if(foco.wakeLock){ foco.wakeLock.release(); foco.wakeLock = null; } }catch(e){}
   }
 
+  function pintarSonidoBtn(){
+    const b = $('focoSonidoBtn');
+    b.classList.toggle('off', !focoSonido);
+    b.textContent = focoSonido ? '🔊 Sonido al terminar' : '🔇 Sin sonido';
+  }
   function abrirFoco(habitId, habitName){
     foco.habitId = habitId; foco.habitName = habitName; foco.min = 25;
     $('focoHab').textContent = '🎯 ' + habitName;
     document.querySelectorAll('.foco-dur').forEach(b => b.classList.toggle('on', b.dataset.min === '25'));
+    pintarSonidoBtn();
     $('focoSetup').hidden = false; $('focoRun').hidden = true;
     $('foco').hidden = false;
   }
@@ -1838,6 +1883,7 @@
     if(left <= 0){ completarFoco(true); }
   }
   function empezarFoco(){
+    unlockAudio(); // gesto del usuario: deja el audio listo para sonar al final
     foco.totalSec = foco.min * 60;
     foco.endTime = Date.now() + foco.totalSec * 1000; // por reloj real: sobrevive al throttle en segundo plano
     $('focoSetup').hidden = true; $('focoRun').hidden = false;
@@ -1847,6 +1893,7 @@
   }
   // completar: full = llegó a 0; si no, cuenta los minutos transcurridos
   function completarFoco(full){
+    if(full) sonarFin(); // el ciclo llegó a 0: campanita + vibración
     const transcurridos = full ? foco.min : Math.max(1, Math.round((foco.totalSec - Math.max(0, (foco.endTime - Date.now())/1000)) / 60));
     focoTotal += transcurridos; saveFoco();
     // marca el hábito hecho hoy (misma lógica que el clic normal, fecha fresca)
@@ -1865,6 +1912,10 @@
     foco.min = parseInt(b.dataset.min, 10);
     document.querySelectorAll('.foco-dur').forEach(x => x.classList.toggle('on', x === b));
   }));
+  $('focoSonidoBtn').addEventListener('click', ()=>{
+    focoSonido = !focoSonido; saveSonido(); pintarSonidoBtn();
+    if(focoSonido){ unlockAudio(); sonarFin(); } // preescucha al encender
+  });
   $('focoStart').addEventListener('click', empezarFoco);
   $('focoCancelSetup').addEventListener('click', cerrarFoco);
   $('focoCancel').addEventListener('click', cerrarFoco);
@@ -2072,7 +2123,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-metas', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -2203,7 +2254,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-metas': metas },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -2282,6 +2333,9 @@
         const mt = b.data['reps-metas'];
         if(Array.isArray(mt)) localStorage.setItem(METAS_KEY, JSON.stringify(mt));
         else localStorage.removeItem(METAS_KEY);
+        // sonido: solo se guarda cuando está APAGADO (ausente = encendido)
+        if(b.data['reps-foco-sonido'] === false) localStorage.setItem(SONIDO_KEY, '0');
+        else localStorage.removeItem(SONIDO_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -2299,7 +2353,7 @@
       hitosVistos = []; loadHitos();
       cierreSemana = {}; loadCierreSemana();
       perfil = null; loadPerfil(); aplicarNombre();
-      focoTotal = 0; loadFoco();
+      focoTotal = 0; loadFoco(); loadSonido();
       metas = []; loadMetas(); renderMetas();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
@@ -2341,6 +2395,7 @@
   loadCaidas();    // antes de render(): el ritual y El Espejo leen las caídas
   loadHitos();     // antes de render(): siembra lo ya logrado sin celebrar
   loadFoco();      // antes de render(): el total de foco se muestra en Stats
+  loadSonido();
   loadMetas();
   render();
   renderMetas();
