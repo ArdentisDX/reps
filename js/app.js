@@ -1643,6 +1643,192 @@
     rebuildCore(); saveHabitos(); render(); renderHabEditor();
   });
 
+  // ===== Bienvenida: cuestionario que moldea los hábitos al usuario =====
+  // 100% local: construye un perfil y una lista de hábitos a la medida.
+  // (El perfil será, en la fase 2, el contexto que la IA use para conocerte.)
+  const PERFIL_KEY = 'reps-perfil';
+  let perfil = null;
+  function loadPerfil(){
+    try{ const v = JSON.parse(localStorage.getItem(PERFIL_KEY)); if(esMapa(v)) perfil = v; }
+    catch(e){ perfil = null; }
+  }
+  function savePerfil(){
+    try{ localStorage.setItem(PERFIL_KEY, JSON.stringify(perfil)); }catch(e){}
+  }
+  function aplicarNombre(){
+    let n = null;
+    if(perfil && typeof perfil.nombre === 'string' && perfil.nombre.trim()) n = perfil.nombre.trim();
+    else if(!perfil) n = 'Luis Fernando'; // instalación previa al perfil
+    $('eyebrow').textContent = 'Sistema diario' + (n ? ' · ' + n : '');
+  }
+
+  // catálogo: cada área elegida aporta uno o dos hábitos sugeridos
+  const ONB_AREAS = [
+    {id:'cuerpo',   emoji:'💪', name:'Mi cuerpo',      hab:{name:'Moverte 20 min', hint:'Caminar, correr, lo que sea', core:true}, extra:{name:'Calistenia 5 min', hint:'Lagartijas, sentadillas', core:false}},
+    {id:'aprender', emoji:'🧠', name:'Aprender algo',  hab:{name:'Aprender 30 min', hint:'Idioma, curso, leer', core:true}},
+    {id:'proyecto', emoji:'🎯', name:'Un proyecto',    hab:{name:'Bloque de proyecto', hint:'Mínimo 1 hr, sin distracciones', core:true}},
+    {id:'calma',    emoji:'🧘', name:'Calma mental',   hab:{name:'Respirar 5 min', hint:'Meditar o solo respirar', core:false}},
+    {id:'pantalla', emoji:'📵', name:'Menos pantalla', hab:{name:'Comida sin celular', hint:'Presencia, no scroll', core:false}},
+    {id:'dormir',   emoji:'😴', name:'Dormir mejor',   hab:{name:'Leer 15 min + dormir', hint:'Celular lejos de la cama', core:true}},
+  ];
+  const ONB_DESPERTAR = [
+    {id:'temprano', emoji:'🌅', name:'Temprano', sub:'antes de las 7', hora:'6:30'},
+    {id:'media',    emoji:'☀️', name:'Media mañana', sub:'7 a 9', hora:'8:00'},
+    {id:'tarde',    emoji:'🌤️', name:'Más tarde', sub:'después de 9', hora:'10:00'},
+    {id:'variable', emoji:'🔀', name:'Variable', sub:'cambia mucho', hora:''},
+  ];
+  const ONB_TIEMPO = [
+    {id:'poco',     emoji:'⏳', name:'Poco', sub:'empiezo chiquito', core:2},
+    {id:'medio',    emoji:'⏱️', name:'Algo', sub:'un rato al día', core:3},
+    {id:'bastante', emoji:'🕰️', name:'Bastante', sub:'quiero exigirme', core:4},
+  ];
+
+  function generarHabitos(d){
+    const nid = () => 'h' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+    const out = [];
+    const desp = ONB_DESPERTAR.find(x => x.id === d.despertar);
+    out.push({id:nid(), name:'Despertar' + (desp && desp.hora ? ' ' + desp.hora : ''), hint:'Pies al piso, sin snooze', core:true, days:'all'});
+    (d.construir || []).forEach(aid => {
+      const a = ONB_AREAS.find(x => x.id === aid); if(!a) return;
+      if(a.hab)   out.push({id:nid(), name:a.hab.name,   hint:a.hab.hint,   core:a.hab.core,   days:'all'});
+      if(a.extra) out.push({id:nid(), name:a.extra.name, hint:a.extra.hint, core:a.extra.core, days:'all'});
+    });
+    let list = out.slice(0, MAX_HABITS);
+    // ajustar core al tiempo disponible (2/3/4), respetando 2..4
+    const maxCore = (ONB_TIEMPO.find(x => x.id === d.tiempo) || {core:3}).core;
+    let cores = list.filter(h => h.core);
+    if(cores.length > maxCore) cores.slice(maxCore).forEach(h => h.core = false);
+    cores = list.filter(h => h.core);
+    if(cores.length < MIN_CORE){
+      list.filter(h => !h.core).slice(0, MIN_CORE - cores.length).forEach(h => h.core = true);
+    }
+    if(list.length < 2) list.push({id:nid(), name:'Cama tendida', hint:'Un ancla fácil', core:false, days:'all'});
+    return sanearHabitos(list) || HABITS_DEFAULT.map(h => Object.assign({}, h));
+  }
+
+  // --- el asistente paso a paso ---
+  let onb = null;
+  const ONB_PASOS = 6; // 0 intro · 1 nombre · 2 despertar · 3 construir · 4 tiempo · 5 preview
+  function abrirBienvenida(){
+    onb = { step:0, nombre:'', despertar:null, construir:[], tiempo:null };
+    $('welcome').hidden = false;
+    renderOnb();
+  }
+  function opBtn(label, sub, activo, onClick){
+    const b = document.createElement('button');
+    b.className = 'wel-op' + (activo ? ' on' : '');
+    b.type = 'button';
+    const t = document.createElement('div'); t.className = 'wo-t'; t.textContent = label; b.appendChild(t);
+    if(sub){ const s = document.createElement('div'); s.className = 'wo-s'; s.textContent = sub; b.appendChild(s); }
+    b.addEventListener('click', onClick);
+    return b;
+  }
+  function renderOnb(){
+    const body = $('welBody'); body.innerHTML = '';
+    const next = $('welNext'), back = $('welBack');
+    back.hidden = onb.step === 0;
+    next.hidden = false; next.disabled = false; next.textContent = 'Siguiente ›';
+
+    // puntos de progreso
+    const dots = $('welDots'); dots.innerHTML = '';
+    for(let i = 0; i < ONB_PASOS; i++){
+      const d = document.createElement('span'); d.className = 'wd' + (i === onb.step ? ' on' : '');
+      dots.appendChild(d);
+    }
+
+    const title = (t, s) => {
+      const h = document.createElement('div'); h.className = 'wel-title'; h.textContent = t; body.appendChild(h);
+      if(s){ const p = document.createElement('div'); p.className = 'wel-sub'; p.textContent = s; body.appendChild(p); }
+    };
+    const grid = () => { const g = document.createElement('div'); g.className = 'wel-grid'; body.appendChild(g); return g; };
+
+    if(onb.step === 0){
+      const logo = document.createElement('div'); logo.className = 'wel-logo'; logo.innerHTML = 'REPS<span>.</span>'; body.appendChild(logo);
+      title('Vamos a armar tu sistema', 'Unas preguntas rápidas y la app se adapta a ti. Nada invasivo — en un minuto estás listo.');
+      next.textContent = 'Empezar ›';
+      const skip = document.createElement('button');
+      skip.className = 'wel-skip'; skip.type = 'button'; skip.textContent = 'Prefiero usar el de ejemplo';
+      skip.addEventListener('click', saltarBienvenida);
+      body.appendChild(skip);
+    }
+    else if(onb.step === 1){
+      title('¿Cómo te llamas?', 'Solo para saludarte. Puedes dejarlo en blanco.');
+      const inp = document.createElement('input');
+      inp.type = 'text'; inp.className = 'wel-input'; inp.maxLength = 20; inp.placeholder = 'Tu nombre';
+      inp.value = onb.nombre;
+      inp.addEventListener('input', ()=> onb.nombre = inp.value);
+      body.appendChild(inp);
+    }
+    else if(onb.step === 2){
+      title('¿A qué hora despiertas?', 'Tu primer innegociable se ajusta a esto.');
+      const g = grid();
+      ONB_DESPERTAR.forEach(o => g.appendChild(opBtn(o.emoji + ' ' + o.name, o.sub, onb.despertar === o.id, ()=>{
+        onb.despertar = o.id; onb.step++; renderOnb();
+      })));
+      next.hidden = true; // se avanza al elegir
+    }
+    else if(onb.step === 3){
+      title('¿Qué quieres construir?', 'Elige 1 a 3. La app arma tus hábitos con esto.');
+      const g = grid();
+      ONB_AREAS.forEach(o => g.appendChild(opBtn(o.emoji + ' ' + o.name, '', onb.construir.includes(o.id), ()=>{
+        if(onb.construir.includes(o.id)) onb.construir = onb.construir.filter(x => x !== o.id);
+        else if(onb.construir.length < 3) onb.construir.push(o.id);
+        else { toast('Máximo 3 por ahora. Menos es más.'); return; }
+        renderOnb();
+      })));
+      next.disabled = onb.construir.length === 0;
+    }
+    else if(onb.step === 4){
+      title('¿Cuánto tiempo real tienes?', 'Define cuántos innegociables al día.');
+      const g = grid();
+      ONB_TIEMPO.forEach(o => g.appendChild(opBtn(o.emoji + ' ' + o.name, o.sub, onb.tiempo === o.id, ()=>{
+        onb.tiempo = o.id; onb.step++; renderOnb();
+      })));
+      next.hidden = true;
+    }
+    else if(onb.step === 5){
+      const habs = generarHabitos(onb);
+      title('Tu sistema', 'Así queda. Podrás editarlo cuando quieras.');
+      const lista = document.createElement('div'); lista.className = 'wel-preview';
+      habs.forEach(h => {
+        const row = document.createElement('div'); row.className = 'wp-prev-row';
+        const nm = document.createElement('span'); nm.textContent = h.name;
+        row.appendChild(nm);
+        if(h.core){ const c = document.createElement('span'); c.className = 'wp-core'; c.textContent = 'CORE'; row.appendChild(c); }
+        lista.appendChild(row);
+      });
+      body.appendChild(lista);
+      next.textContent = 'Empezar mi sistema 🔥';
+    }
+  }
+  function saltarBienvenida(){
+    perfil = { saltado:true, creado:new Date().toISOString() };
+    savePerfil();
+    aplicarNombre();
+    $('welcome').hidden = true;
+  }
+  function finalizarBienvenida(){
+    // confirma solo si hay historial REAL (un registro de hoy vacío no cuenta)
+    const tieneHistorial = Object.keys(dias).some(k => dias[k] && Object.keys(dias[k]).length > 0);
+    if(tieneHistorial){
+      if(!confirm('Esto reemplazará tus hábitos actuales por los nuevos. Tu historial de días se conserva. ¿Continuar?')) return;
+    }
+    perfil = { nombre: onb.nombre.trim(), despertar: onb.despertar, construir: onb.construir, tiempo: onb.tiempo, creado: new Date().toISOString() };
+    savePerfil();
+    HABITS = generarHabitos(onb); rebuildCore(); saveHabitos();
+    aplicarNombre();
+    $('welcome').hidden = true;
+    render();
+    toast('¡Tu sistema está listo! A ganar el día. 🔥');
+  }
+  $('welNext').addEventListener('click', ()=>{
+    if(onb.step === 5){ finalizarBienvenida(); return; }
+    onb.step++; renderOnb();
+  });
+  $('welBack').addEventListener('click', ()=>{ if(onb.step > 0){ onb.step--; renderOnb(); } });
+  $('welcome').addEventListener('click', (e)=>{ /* fondo no cierra: es un flujo */ });
+  $('rehacerBienvenida').addEventListener('click', ()=>{ $('themeWrap').hidden = true; abrirBienvenida(); });
+
   // ===== Esquema y migraciones =====
   // reps-schema versiona el FORMATO de los datos (no confundir con la
   // versión del cache en sw.js, que versiona los archivos de la app).
@@ -1650,7 +1836,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -1781,7 +1967,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -1851,6 +2037,9 @@
         const cs = b.data['reps-cierre-semana'];
         if(esMapa(cs)) localStorage.setItem(CIERRE_SEM_KEY, JSON.stringify(cs));
         else localStorage.removeItem(CIERRE_SEM_KEY);
+        const pf = b.data['reps-perfil'];
+        if(esMapa(pf)) localStorage.setItem(PERFIL_KEY, JSON.stringify(pf));
+        else localStorage.removeItem(PERFIL_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -1867,6 +2056,7 @@
       caidas = {}; loadCaidas();
       hitosVistos = []; loadHitos();
       cierreSemana = {}; loadCierreSemana();
+      perfil = null; loadPerfil(); aplicarNombre();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -1883,8 +2073,14 @@
     $('importFile').value = ''; // permite re-elegir el mismo archivo después
   });
 
+  // instalación nueva de verdad: ni datos, ni perfil, ni hábitos guardados
+  const instalacionNueva = !localStorage.getItem('reps-dias')
+    && !localStorage.getItem('reps-perfil') && !localStorage.getItem('reps-habitos');
+
   migrate();       // ANTES que todo: los datos suben al formato actual
   loadHabitos();   // antes de load/render: la racha y las vistas usan HABITS/CORE
+  loadPerfil();    // perfil del usuario (nombre para el saludo)
+  aplicarNombre();
   loadTheme();
   applyThemeSel(); // primero el tema: la app ya nace pintada del color elegido
   loadDist();
@@ -1905,6 +2101,9 @@
   renderSemana();
   fillCierreForm();
   renderPlanHoy();
+
+  // usuario nuevo: tras la intro, abre el cuestionario de bienvenida
+  if(instalacionNueva) setTimeout(abrirBienvenida, 2100);
 
   // ===== Intro: saludo según la hora + racha; el CSS la desvanece solo =====
   (function(){

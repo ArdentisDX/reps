@@ -18,7 +18,7 @@
   </div>
 
   <button class="gear" id="themeBtn" aria-label="Cambiar tema">⚙</button>
-  <div class="eyebrow">Sistema diario · Luis Fernando</div>
+  <div class="eyebrow" id="eyebrow">Sistema diario · Luis Fernando</div>
   <h1>REPS<span>.</span></h1>
   <div class="fecha" id="fecha"></div>
 
@@ -272,6 +272,9 @@
         <button class="dist-opt fx-opt" data-fx="clay">Arcilla</button>
       </div>
       <div class="t-note">El efecto se combina con cualquier tema o color personalizado.</div>
+      <div class="t-sub">Tu perfil</div>
+      <button class="hab-add" id="rehacerBienvenida" style="margin-top:0">🙋 Rehacer la bienvenida</button>
+      <div class="t-note">Vuelve a hacer el cuestionario para rearmar tus hábitos.</div>
     </div>
   </div>
 
@@ -290,6 +293,17 @@
       <div class="cel-title" id="celTitle"></div>
       <div class="cel-sub" id="celSub"></div>
       <button class="cel-btn" id="celBtn">¡Seguir!</button>
+    </div>
+  </div>
+
+  <div class="welcome" id="welcome" hidden>
+    <div class="wel-card">
+      <div class="wel-body" id="welBody"></div>
+      <div class="wel-foot">
+        <button class="wel-back" id="welBack" hidden>‹ Atrás</button>
+        <div class="wel-dots" id="welDots"></div>
+        <button class="wel-next" id="welNext">Siguiente ›</button>
+      </div>
     </div>
   </div>
 

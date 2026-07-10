@@ -184,6 +184,38 @@ h1 span{color:var(--amber)}
 .cel-sub{font-size:14px;color:var(--muted);line-height:1.5;margin-top:8px}
 .cel-btn{margin-top:20px;background:var(--amber);border:none;border-radius:12px;color:var(--on-accent);font:inherit;font-weight:800;font-size:15px;padding:12px 28px;cursor:pointer}
 .cel-btn:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+
+/* ===== Bienvenida (cuestionario) ===== */
+.welcome{position:fixed;inset:0;z-index:95;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px 16px}
+.welcome[hidden]{display:none}
+.wel-card{width:100%;max-width:440px;display:flex;flex-direction:column;gap:18px}
+.wel-body{min-height:340px;display:flex;flex-direction:column;justify-content:center;gap:12px}
+.wel-logo{font-size:40px;font-weight:800;letter-spacing:-.02em;text-align:center}
+.wel-logo span{color:var(--amber)}
+.wel-title{font-size:24px;font-weight:800;line-height:1.2}
+.wel-sub{font-size:14px;color:var(--muted);line-height:1.5}
+.wel-input{background:var(--card);border:1px solid var(--line);border-radius:12px;color:var(--text);font:inherit;font-size:17px;padding:14px 16px;outline:none}
+.wel-input:focus{border-color:var(--amber)}
+.wel-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:4px}
+.wel-op{background:var(--card);border:1px solid var(--line);border-radius:14px;color:var(--text);font:inherit;padding:15px 14px;cursor:pointer;text-align:left}
+.wel-op.on{border-color:var(--amber);background:var(--amber-dim)}
+.wel-op:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.wel-op .wo-t{font-size:15px;font-weight:700}
+.wel-op .wo-s{font-size:12px;color:var(--muted);margin-top:2px}
+.wel-preview{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px 14px}
+.wp-prev-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);font-size:15px;font-weight:600}
+.wp-prev-row:last-child{border-bottom:none}
+.wp-core{font-size:10px;font-weight:800;letter-spacing:.12em;color:var(--amber);border:1px solid color-mix(in srgb, var(--amber) 40%, transparent);border-radius:6px;padding:3px 6px}
+.wel-skip{background:none;border:none;color:var(--muted);font:inherit;font-size:13px;text-decoration:underline;cursor:pointer;margin-top:8px;align-self:flex-start}
+.wel-foot{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.wel-back{background:none;border:none;color:var(--muted);font:inherit;font-size:14px;font-weight:600;cursor:pointer;padding:8px}
+.wel-back[hidden]{visibility:hidden;display:block}
+.wel-dots{display:flex;gap:6px}
+.wel-dots .wd{width:7px;height:7px;border-radius:50%;background:var(--line)}
+.wel-dots .wd.on{background:var(--amber)}
+.wel-next{background:var(--amber);border:none;border-radius:12px;color:var(--on-accent);font:inherit;font-weight:800;font-size:15px;padding:12px 22px;cursor:pointer}
+.wel-next:disabled{opacity:.4;cursor:default}
+.wel-next:focus-visible{outline:2px solid var(--text);outline-offset:2px}
 .cal{margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
 .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .cal-title{font-size:14px;font-weight:700;text-transform:capitalize}
