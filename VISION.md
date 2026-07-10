@@ -170,10 +170,12 @@ Hacerlo antes del primer modo nuevo; el modo minimalista es el piloto.
 | ✅ | Desbloqueables (temas por hitos) | medio | chico | HECHO jul 2026 |
 | ✅ | Cierre de semana | medio | chico | HECHO jul 2026 (reps-cierre-semana) |
 | ✅ | Hábitos por día de la semana | alto | grande | HECHO jul 2026 (migración v5→v6, 3 estados: ganado/descanso/perdido) |
-| 1 | Plan B por hábito (versión mínima) | alto | chico | Cierra el anti-castigo de hábitos |
-| 3 | Temporizador de foco (Forest) | medio | mediano | Wake Lock + marca el hábito solo |
+| ✅ | Plan B por hábito (versión mínima) | alto | chico | HECHO jul 2026 (campo planB) |
+| ✅ | Temporizador de foco (Forest) | medio | mediano | HECHO jul 2026 (reps-foco + sonidos + ruido de fondo) |
 | ✅ | Test de bienvenida (onboarding) | medio | mediano | HECHO jul 2026 (reps-perfil; moldea hábitos al usuario nuevo) |
-| 4 | Metas corto/mediano/largo plazo (Capa 2) | medio | mediano | Falta la otra mitad de la Capa 2 |
+| ✅ | Metas corto/mediano/largo plazo (Capa 2) | medio | mediano | HECHO jul 2026 (reps-metas + recompensas) |
+| ✅ | Rutina editable + paquete emocional + crecimiento | alto | mediano | HECHO jul 2026 (reps-rutina, presencia, empujón, carta, museo, mes vs mes, año en imagen, compañero 🌱) |
+| 1 | **Hábitos con meta numérica** (contador +/−) | alto | mediano ⚠️ | **Siguiente sesión propia**: cambia qué significa "hecho" (count ≥ meta) y toca `isWon`/parciales en ~10 sitios — misma cirugía aislada que hábitos-por-día |
 | 5 | Gráficas de tendencia extra en Stats | medio | chico | Amplía el Pulso |
 | 6 | Refactor view-models (habilita modos) | medio | mediano | Puerta a Bento / UI Espacial / HUD |
 | 7 | XP y niveles (Habitica) | medio | mediano | Después del retro/pixel gana más |
