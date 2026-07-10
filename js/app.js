@@ -1567,6 +1567,19 @@
   // ⏰ alarma del sistema vía intent de Android (una PWA no puede programar
   // alarmas por sí sola; el Reloj se abre prellenado y el usuario confirma)
   const esAndroid = /android/i.test(navigator.userAgent);
+  // dispara UNA alarma del sistema. skipUi=true la crea sin abrir la pantalla
+  // del Reloj (para armar varias de golpe); false abre el Reloj prellenado.
+  function dispararAlarma(hora, nombre, skipUi){
+    const [h, m] = hora.split(':').map(x => parseInt(x, 10));
+    const uri = 'intent://alarma/#Intent;action=android.intent.action.SET_ALARM;' +
+      'i.android.intent.extra.alarm.HOUR=' + h + ';' +
+      'i.android.intent.extra.alarm.MINUTES=' + m + ';' +
+      (skipUi ? 'B.android.intent.extra.alarm.SKIP_UI=true;' : '') +
+      'S.android.intent.extra.alarm.MESSAGE=' + encodeURIComponent('REPS · ' + nombre) + ';' +
+      'S.browser_fallback_url=' + encodeURIComponent(location.href) + ';end';
+    const a = document.createElement('a');
+    a.href = uri; document.body.appendChild(a); a.click(); a.remove();
+  }
   function botonAlarma(s){
     const btn = document.createElement('button');
     btn.className = 'slot-alarm';
@@ -1574,17 +1587,20 @@
     btn.setAttribute('aria-label', 'Poner alarma: ' + s.nombre + ' a las ' + s.hora);
     btn.addEventListener('click', ()=>{
       if(!esAndroid){ toast('Las alarmas se ponen desde el celular. 📱'); return; }
-      const [h, m] = s.hora.split(':').map(x => parseInt(x, 10));
-      const uri = 'intent://alarma/#Intent;action=android.intent.action.SET_ALARM;' +
-        'i.android.intent.extra.alarm.HOUR=' + h + ';' +
-        'i.android.intent.extra.alarm.MINUTES=' + m + ';' +
-        'S.android.intent.extra.alarm.MESSAGE=' + encodeURIComponent('REPS · ' + s.nombre) + ';' +
-        'S.browser_fallback_url=' + encodeURIComponent(location.href) + ';end';
       toast('Abriendo el Reloj… confirma la alarma ahí.');
-      const a = document.createElement('a');
-      a.href = uri; document.body.appendChild(a); a.click(); a.remove();
+      dispararAlarma(s.hora, s.nombre, false);
     });
     return btn;
+  }
+  // arma de una las alarmas de todos los bloques del día (recordatorio real
+  // con la app cerrada: lo dispara el reloj de Android, no la PWA). Escalonadas
+  // para que el sistema no las atropelle; SKIP_UI evita abrir el Reloj cada vez.
+  function armarDia(){
+    if(!esAndroid){ toast('Las alarmas se ponen desde el celular. 📱'); return; }
+    const bloques = rutinaOrdenada();
+    if(!bloques.length){ toast('No hay bloques que armar.'); return; }
+    toast('Armando ' + bloques.length + ' alarmas… acepta si el Reloj lo pide.');
+    bloques.forEach((s, i) => setTimeout(() => dispararAlarma(s.hora, s.nombre, true), i * 900));
   }
 
   // minutos crudos del día (0–1439), SIN el corrimiento de madrugada: para
@@ -1703,6 +1719,7 @@
     });
   }
   $('editRutBtn').addEventListener('click', ()=>{ renderRutEditor(); $('rutWrap').hidden = false; });
+  $('armarBtn').addEventListener('click', armarDia);
   $('rutClose').addEventListener('click', ()=>{ $('rutWrap').hidden = true; });
   $('rutWrap').addEventListener('click', (e)=>{ if(e.target === $('rutWrap')) $('rutWrap').hidden = true; });
   $('rutAdd').addEventListener('click', ()=>{

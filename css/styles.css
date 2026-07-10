@@ -409,6 +409,10 @@ body.minimal .ahora .ah-bar,body.minimal .ahora .ah-next{display:none}
 .edit-hab{text-align:center;margin-top:14px}
 .edit-hab button{background:none;border:1px solid var(--line);border-radius:10px;color:var(--muted);font:inherit;font-size:13px;font-weight:600;padding:9px 16px;cursor:pointer}
 .edit-hab button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.rut-acts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.rut-acts button{background:none;border:1px solid var(--line);border-radius:10px;color:var(--muted);font:inherit;font-size:13px;font-weight:600;padding:9px 16px;cursor:pointer}
+.rut-acts #armarBtn{border-color:color-mix(in srgb,var(--amber) 45%,var(--line));color:var(--amber)}
+.rut-acts button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .hab-row{background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px}
 .hab-top{display:flex;align-items:center;gap:8px}
 .hab-star{background:none;border:none;font-size:20px;cursor:pointer;padding:2px;line-height:1;filter:grayscale(1);opacity:.5}
