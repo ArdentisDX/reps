@@ -1248,43 +1248,162 @@
   $('wpPrev').addEventListener('click', ()=>{ weekOff--; renderSemana(); });
   $('wpNext').addEventListener('click', ()=>{ weekOff++; renderSemana(); });
 
-  // ===== Alarmas de bloques (Mi día) =====
-  // Una PWA no puede programar alarmas del sistema por sí sola. Lo que SÍ
-  // puede en Android: lanzar un "intent" SET_ALARM que abre la app de
-  // Reloj con la alarma prellenada (hora + nombre) — el usuario confirma.
-  const esAndroid = /android/i.test(navigator.userAgent);
-  document.querySelectorAll('#p-dia .slot').forEach(slot => {
-    const t = slot.querySelector('.t'), n = slot.querySelector('.n');
-    if(!t || !n) return;
-    const hm = t.textContent.trim().match(/^(\d{1,2}):(\d{2})$/);
-    if(!hm) return; // sin hora reconocible, sin botón
+  // ===== Rutina de Mi día (editable) =====
+  // Los bloques del timeline dejaron de estar clavados en el código: viven
+  // en reps-rutina. Ausente = la rutina de fábrica (comportamiento previo).
+  const RUTINA_KEY = 'reps-rutina';
+  const MAX_BLOQUES = 16;
+  const RUTINA_DEFAULT = [
+    {id:'r1',  hora:'8:30',  nombre:'Despertar', desc:'Cama · dientes · sol 5 min. La PC NO se enciende todavía.', tipo:'core'},
+    {id:'r2',  hora:'9:00',  nombre:'Correr + perrita 🐕', desc:'20–30 min. Al volver: 10 min de calistenia.', tipo:'core'},
+    {id:'r3',  hora:'9:45',  nombre:'Baño + desayuno', desc:'Tranquilo, sin prisa.', tipo:'free'},
+    {id:'r4',  hora:'10:30', nombre:'Bloque de construcción (2 hrs)', desc:'Celular en otro cuarto. Mínimo 1 hr para que el día cuente.', tipo:'core'},
+    {id:'r5',  hora:'12:30', nombre:'Libre', desc:'Juega, videos, cero culpa. Te lo ganaste.', tipo:'free'},
+    {id:'r6',  hora:'14:30', nombre:'Comida', desc:'Sin celular = tiempo de familia gratis.', tipo:'free'},
+    {id:'r7',  hora:'15:00', nombre:'Bloque corto (1 hr)', desc:'Aprender, leer, practicar.', tipo:'core'},
+    {id:'r8',  hora:'16:00', nombre:'Libre total', desc:'Juegos, amigos, salir. Horas tuyas.', tipo:'free'},
+    {id:'r9',  hora:'22:00', nombre:'Bajando revoluciones', desc:'Última sesión libre, ya sin empezar nada intenso.', tipo:'free'},
+    {id:'r10', hora:'0:40',  nombre:'Leer 20 min 📖', desc:'En cama, celular cargando LEJOS.', tipo:'core'},
+    {id:'r11', hora:'1:00',  nombre:'A dormir', desc:'La meta es constante, no perfecta.', tipo:'core'},
+  ];
+  let rutina = [];
 
+  function sanearRutina(v){
+    if(!Array.isArray(v)) return null;
+    const limpio = v
+      .filter(s => s && typeof s.nombre === 'string' && s.nombre.trim() &&
+                   typeof s.hora === 'string' && /^\d{1,2}:\d{2}$/.test(s.hora.trim()))
+      .map(s => ({
+        id: typeof s.id === 'string' ? s.id : 'r' + Math.random().toString(36).slice(2,8),
+        hora: s.hora.trim(),
+        nombre: s.nombre.trim(),
+        desc: typeof s.desc === 'string' ? s.desc.trim() : '',
+        tipo: s.tipo === 'core' ? 'core' : 'free',
+      }))
+      .slice(0, MAX_BLOQUES);
+    return limpio.length ? limpio : null;
+  }
+  function loadRutina(){
+    let crudo = null;
+    try{ crudo = localStorage.getItem(RUTINA_KEY); }catch(e){}
+    let v = null;
+    try{ v = sanearRutina(JSON.parse(crudo)); }catch(e){}
+    rutina = v || RUTINA_DEFAULT.map(s => Object.assign({}, s));
+    if(crudo === null || !v) saveRutina(); // persiste/sanea desde el arranque
+  }
+  function saveRutina(){
+    try{ localStorage.setItem(RUTINA_KEY, JSON.stringify(rutina)); }
+    catch(e){ toast('No se pudo guardar. Reintenta.'); }
+  }
+  // orden del día real: la madrugada (antes de las 4) va al FINAL
+  function minutosDe(hora){
+    const [h, m] = hora.split(':').map(x => parseInt(x, 10));
+    return (h < 4 ? h + 24 : h) * 60 + m;
+  }
+  const rutinaOrdenada = () => [...rutina].sort((a, b) => minutosDe(a.hora) - minutosDe(b.hora));
+
+  // ⏰ alarma del sistema vía intent de Android (una PWA no puede programar
+  // alarmas por sí sola; el Reloj se abre prellenado y el usuario confirma)
+  const esAndroid = /android/i.test(navigator.userAgent);
+  function botonAlarma(s){
     const btn = document.createElement('button');
     btn.className = 'slot-alarm';
     btn.textContent = '⏰';
-    btn.setAttribute('aria-label', 'Poner alarma: ' + n.textContent + ' a las ' + t.textContent);
+    btn.setAttribute('aria-label', 'Poner alarma: ' + s.nombre + ' a las ' + s.hora);
     btn.addEventListener('click', ()=>{
-      if(!esAndroid){
-        toast('Las alarmas se ponen desde el celular. 📱');
-        return;
-      }
-      // navegar por código (location.href) a un intent suele bloquearse en
-      // PWA instalada; un <a> real con click sí cuenta como gesto del usuario
-      const uri = 'intent://alarma/#Intent;' +
-        'action=android.intent.action.SET_ALARM;' +
-        'i.android.intent.extra.alarm.HOUR=' + parseInt(hm[1], 10) + ';' +
-        'i.android.intent.extra.alarm.MINUTES=' + parseInt(hm[2], 10) + ';' +
-        'S.android.intent.extra.alarm.MESSAGE=' + encodeURIComponent('REPS · ' + n.textContent) + ';' +
-        'S.browser_fallback_url=' + encodeURIComponent(location.href) + ';' +
-        'end';
+      if(!esAndroid){ toast('Las alarmas se ponen desde el celular. 📱'); return; }
+      const [h, m] = s.hora.split(':').map(x => parseInt(x, 10));
+      const uri = 'intent://alarma/#Intent;action=android.intent.action.SET_ALARM;' +
+        'i.android.intent.extra.alarm.HOUR=' + h + ';' +
+        'i.android.intent.extra.alarm.MINUTES=' + m + ';' +
+        'S.android.intent.extra.alarm.MESSAGE=' + encodeURIComponent('REPS · ' + s.nombre) + ';' +
+        'S.browser_fallback_url=' + encodeURIComponent(location.href) + ';end';
       toast('Abriendo el Reloj… confirma la alarma ahí.');
       const a = document.createElement('a');
-      a.href = uri;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      a.href = uri; document.body.appendChild(a); a.click(); a.remove();
     });
-    slot.appendChild(btn);
+    return btn;
+  }
+
+  function renderRutina(){
+    const tl = $('tlList'); tl.innerHTML = '';
+    rutinaOrdenada().forEach(s => {
+      const slot = document.createElement('div');
+      slot.className = 'slot ' + (s.tipo === 'core' ? 'core' : 'free');
+      // textContent siempre: nombre y descripción son texto del usuario
+      const t = document.createElement('div'); t.className = 't'; t.textContent = s.hora;
+      const n = document.createElement('div'); n.className = 'n'; n.textContent = s.nombre;
+      slot.append(t, n);
+      if(s.desc){
+        const d = document.createElement('div'); d.className = 'd'; d.textContent = s.desc;
+        slot.appendChild(d);
+      }
+      slot.appendChild(botonAlarma(s));
+      tl.appendChild(slot);
+    });
+  }
+
+  // --- editor de rutina (misma receta que el editor de hábitos) ---
+  function renderRutEditor(){
+    const list = $('rutList'); list.innerHTML = '';
+    rutinaOrdenada().forEach(s => {
+      const row = document.createElement('div'); row.className = 'hab-row';
+
+      // ⏰ = bloque de estructura; apagado = tiempo libre
+      const tipo = document.createElement('button');
+      tipo.className = 'hab-star' + (s.tipo === 'core' ? ' on' : '');
+      tipo.textContent = '⏰';
+      tipo.setAttribute('aria-label', s.tipo === 'core' ? 'Cambiar a libre' : 'Cambiar a estructura');
+      tipo.addEventListener('click', ()=>{
+        s.tipo = s.tipo === 'core' ? 'free' : 'core';
+        saveRutina(); renderRutina(); renderRutEditor();
+      });
+
+      // hora (input nativo de tiempo, guarda sin cero inicial)
+      const hora = document.createElement('input');
+      hora.type = 'time'; hora.className = 'hab-name rut-hora';
+      const [hh, mm] = s.hora.split(':');
+      hora.value = hh.padStart(2, '0') + ':' + mm;
+      hora.setAttribute('aria-label', 'Hora del bloque');
+      hora.addEventListener('change', ()=>{
+        if(!/^\d{2}:\d{2}$/.test(hora.value)) return;
+        s.hora = hora.value.replace(/^0(\d)/, '$1'); // '08:30' → '8:30'
+        saveRutina(); renderRutina(); renderRutEditor(); // re-ordena
+      });
+
+      const nombre = document.createElement('input');
+      nombre.type = 'text'; nombre.className = 'hab-name'; nombre.value = s.nombre; nombre.maxLength = 50;
+      nombre.setAttribute('aria-label', 'Nombre del bloque');
+      nombre.addEventListener('input', ()=>{ s.nombre = nombre.value; saveRutina(); renderRutina(); });
+
+      const del = document.createElement('button');
+      del.className = 'hab-del'; del.textContent = '✕'; del.setAttribute('aria-label', 'Borrar bloque');
+      del.addEventListener('click', ()=>{
+        if(rutina.length <= 1){ toast('Deja al menos un bloque.'); return; }
+        if(!confirm('¿Borrar «' + s.nombre + '» de tu rutina?')) return;
+        rutina = rutina.filter(x => x.id !== s.id);
+        saveRutina(); renderRutina(); renderRutEditor();
+      });
+
+      const desc = document.createElement('input');
+      desc.type = 'text'; desc.className = 'hab-hint'; desc.value = s.desc; desc.maxLength = 100;
+      desc.placeholder = 'Descripción (opcional)';
+      desc.setAttribute('aria-label', 'Descripción del bloque');
+      desc.addEventListener('input', ()=>{ s.desc = desc.value; saveRutina(); renderRutina(); });
+
+      const top = document.createElement('div'); top.className = 'hab-top';
+      top.append(tipo, hora, nombre, del);
+      row.append(top, desc);
+      list.appendChild(row);
+    });
+  }
+  $('editRutBtn').addEventListener('click', ()=>{ renderRutEditor(); $('rutWrap').hidden = false; });
+  $('rutClose').addEventListener('click', ()=>{ $('rutWrap').hidden = true; });
+  $('rutWrap').addEventListener('click', (e)=>{ if(e.target === $('rutWrap')) $('rutWrap').hidden = true; });
+  $('rutAdd').addEventListener('click', ()=>{
+    if(rutina.length >= MAX_BLOQUES){ toast('Máximo ' + MAX_BLOQUES + ' bloques.'); return; }
+    rutina.push({ id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2,5), hora:'12:00', nombre:'Nuevo bloque', desc:'', tipo:'free' });
+    saveRutina(); renderRutina(); renderRutEditor();
   });
 
   // ===== Cierre del día =====
@@ -2153,7 +2272,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -2284,7 +2403,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -2366,6 +2485,9 @@
         // sonido: solo se guarda cuando está APAGADO (ausente = encendido)
         if(b.data['reps-foco-sonido'] === false) localStorage.setItem(SONIDO_KEY, '0');
         else localStorage.removeItem(SONIDO_KEY);
+        const rt = b.data['reps-rutina'];
+        if(Array.isArray(rt)) localStorage.setItem(RUTINA_KEY, JSON.stringify(rt));
+        else localStorage.removeItem(RUTINA_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -2385,6 +2507,7 @@
       perfil = null; loadPerfil(); aplicarNombre();
       focoTotal = 0; loadFoco(); loadSonido();
       metas = []; loadMetas(); renderMetas();
+      rutina = []; loadRutina(); renderRutina();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -2427,8 +2550,10 @@
   loadFoco();      // antes de render(): el total de foco se muestra en Stats
   loadSonido();
   loadMetas();
+  loadRutina();
   render();
   renderMetas();
+  renderRutina();
   renderTray();
   renderSemana();
   fillCierreForm();

@@ -120,19 +120,8 @@
       <span class="a"><i></i>Estructura (3 hrs)</span>
       <span class="b"><i></i>Libre (~11 hrs)</span>
     </div>
-    <div class="tl">
-      <div class="slot core"><div class="t">8:30</div><div class="n">Despertar</div><div class="d">Cama · dientes · sol 5 min. La PC NO se enciende todavía.</div></div>
-      <div class="slot core"><div class="t">9:00</div><div class="n">Correr + perrita 🐕</div><div class="d">20–30 min. Al volver: 10 min de calistenia (lagartijas, sentadillas, plancha).</div></div>
-      <div class="slot free"><div class="t">9:45</div><div class="n">Baño + desayuno</div><div class="d">Tranquilo, sin prisa.</div></div>
-      <div class="slot core"><div class="t">10:30</div><div class="n">Bloque de construcción (2 hrs)</div><div class="d">Proyecto actual: <b>la app REPS instalable</b>. Celular en otro cuarto. Mínimo 1 hr para que el día cuente.</div></div>
-      <div class="slot free"><div class="t">12:30</div><div class="n">Libre</div><div class="d">Juega, videos, cero culpa. Te lo ganaste.</div></div>
-      <div class="slot free"><div class="t">14:30</div><div class="n">Comida</div><div class="d">Sin celular = tiempo de familia gratis.</div></div>
-      <div class="slot core"><div class="t">15:00</div><div class="n">Bloque corto (1 hr)</div><div class="d">Hoy: seguirle a la app o leer/aprender. Futuro: aquí entra la Capa 2.</div></div>
-      <div class="slot free"><div class="t">16:00</div><div class="n">Libre total</div><div class="d">Juegos, amigos, salir, scroll con horario. 6 horas tuyas.</div></div>
-      <div class="slot free"><div class="t">22:00</div><div class="n">Bajando revoluciones</div><div class="d">Última sesión libre, ya sin empezar nada intenso.</div></div>
-      <div class="slot core"><div class="t">0:40</div><div class="n">Leer 20 min 📖</div><div class="d">En cama, celular cargando LEJOS. Te ayuda a dormir.</div></div>
-      <div class="slot core"><div class="t">1:00</div><div class="n">A dormir</div><div class="d">Meta actual: 1:00 am. En 2 semanas bajamos a 12:00.</div></div>
-    </div>
+    <div class="tl" id="tlList"></div>
+    <div class="edit-hab"><button id="editRutBtn">✏️ Editar rutina</button></div>
     <div class="regla" style="margin-top:14px">
       <b>Proporción:</b> 20% orden, 80% libertad. Un sistema que sobrevive a los días sin motivación.
     </div>
@@ -302,6 +291,15 @@
       <div id="habList"></div>
       <button class="hab-add" id="habAdd">＋ Agregar hábito</button>
       <div class="t-note">La ⭐ marca los <b>core</b>: los que definen tu «día ganado» (entre 2 y 4). Máx. 8 hábitos. Renombrar nunca borra tu historial.</div>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="rutWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Editar rutina</h2><button id="rutClose" aria-label="Cerrar">✕</button></div>
+      <div id="rutList"></div>
+      <button class="hab-add" id="rutAdd">＋ Agregar bloque</button>
+      <div class="t-note">La ⏰ marca los bloques de <b>estructura</b>; el resto es tiempo libre. Se ordenan solos por hora (la madrugada va al final).</div>
     </div>
   </div>
 

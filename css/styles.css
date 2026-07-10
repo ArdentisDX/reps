@@ -385,6 +385,7 @@ h1 span{color:var(--amber)}
 .hab-name:focus{border-color:var(--amber)}
 .hab-hint{width:100%;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--muted);font:inherit;font-size:12px;padding:7px 10px;outline:none;margin-top:6px}
 .hab-hint:focus{border-color:var(--amber)}
+.rut-hora{flex:0 0 92px;min-width:92px;font-variant-numeric:tabular-nums}
 .hab-days{display:flex;gap:4px;margin-top:8px}
 .hab-day{flex:1;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--muted);font:inherit;font-size:12px;font-weight:700;padding:6px 0;cursor:pointer}
 .hab-day.on{background:color-mix(in srgb, var(--amber) 20%, transparent);border-color:color-mix(in srgb, var(--amber) 45%, transparent);color:var(--text)}
@@ -469,5 +470,6 @@ body.minimal #p-hoy .regla{display:none}
 
 /* ===== Detalle de día y alarmas ===== */
 .cal-detail .cd-estado{font-size:13px;font-weight:700;color:var(--amber);margin-bottom:2px}
+.slot{padding-right:46px} /* aire para el botón de alarma */
 .slot-alarm{position:absolute;top:10px;right:10px;background:var(--card-2);border:1px solid var(--line);border-radius:8px;color:var(--muted);font-size:13px;padding:4px 7px;cursor:pointer}
 .slot-alarm:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
