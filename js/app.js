@@ -1,13 +1,14 @@
 (function(){
   // Lista de fábrica: la migración v4→v5 siembra reps-habitos con esto.
   // Sus IDs son sagrados: el historial de reps-dias se guarda por ID.
+  // days: 'all' = todos los días, o un array de días de semana (0=domingo..6=sábado)
   const HABITS_DEFAULT = [
-    {id:'despertar', name:'Despertar 8:30', hint:'Pies al piso, sin snooze', core:true},
-    {id:'correr',    name:'Correr / perrita + 10 min calistenia', hint:'20–30 min, antes de la PC', core:true},
-    {id:'bloque1',   name:'Bloque de construcción', hint:'Mínimo 1 hr, celular en otro cuarto', core:true},
-    {id:'cama',      name:'Cama tendida', hint:'Ya lo tienes automático', core:false},
-    {id:'bloque2',   name:'Bloque corto (1 hr)', hint:'App, leer, practicar', core:false},
-    {id:'dormir',    name:'Leer 20 min + dormir 1:00 am', hint:'Celular a cargar lejos de la cama', core:false},
+    {id:'despertar', name:'Despertar 8:30', hint:'Pies al piso, sin snooze', core:true, days:'all'},
+    {id:'correr',    name:'Correr / perrita + 10 min calistenia', hint:'20–30 min, antes de la PC', core:true, days:'all'},
+    {id:'bloque1',   name:'Bloque de construcción', hint:'Mínimo 1 hr, celular en otro cuarto', core:true, days:'all'},
+    {id:'cama',      name:'Cama tendida', hint:'Ya lo tienes automático', core:false, days:'all'},
+    {id:'bloque2',   name:'Bloque corto (1 hr)', hint:'App, leer, practicar', core:false, days:'all'},
+    {id:'dormir',    name:'Leer 20 min + dormir 1:00 am', hint:'Celular a cargar lejos de la cama', core:false, days:'all'},
   ];
   const HABITS_KEY = 'reps-habitos';
   const MAX_HABITS = 8, MIN_CORE = 2, MAX_CORE = 4;
@@ -26,9 +27,31 @@
     return new Date(d.getTime() - off*60000).toISOString().slice(0,10);
   }
   const today = () => localISO(new Date());
-  // sin core definido, un registro NUNCA está ganado (evita el "true vacío"
-  // de [].every, que marcaría cualquier día como ganado)
-  function isWon(rec){ return !!rec && CORE.length > 0 && CORE.every(id => rec[id]); }
+  const dowDe = k => new Date(k + 'T12:00:00').getDay(); // día de semana de una fecha
+
+  // ¿el hábito aplica ese día de la semana?
+  function habAplica(h, dow){
+    return h.days === 'all' || (Array.isArray(h.days) && h.days.includes(dow));
+  }
+  // ids de los hábitos CORE programados para ese día (según su calendario)
+  function coreDelDia(dateKey){
+    const dow = dowDe(dateKey);
+    return HABITS.filter(h => h.core && habAplica(h, dow)).map(h => h.id);
+  }
+  // día de DESCANSO = ese día no tiene ningún core programado (neutral)
+  function esDescanso(dateKey){ return coreDelDia(dateKey).length === 0; }
+  // día GANADO = tiene core programado y TODOS están hechos
+  function esGanado(dateKey){
+    const c = coreDelDia(dateKey), rec = dias[dateKey];
+    return c.length > 0 && !!rec && c.every(id => rec[id]);
+  }
+  // isWon date-aware: con fecha usa el core de ESE día; sin fecha, todos los
+  // core (compatibilidad). Un día de descanso nunca es "ganado" (es neutral).
+  function isWon(rec, dateKey){
+    if(!rec) return false;
+    const c = dateKey ? coreDelDia(dateKey) : CORE;
+    return c.length > 0 && c.every(id => rec[id]);
+  }
 
   document.querySelectorAll('.tab').forEach(t=>{
     t.addEventListener('click', ()=>{
@@ -55,13 +78,20 @@
 
   // depura una lista de hábitos cruda a la forma correcta; devuelve null
   // si no queda nada usable (para caer a la lista de fábrica)
+  // un 'days' válido: 'all', o un array con al menos un día de semana (0-6).
+  // Vacío o inválido → 'all' (mejor mostrar el hábito que esconderlo por error).
+  function sanearDays(d){
+    if(!Array.isArray(d)) return 'all';
+    const ds = [...new Set(d.map(x => parseInt(x, 10)).filter(x => x >= 0 && x <= 6))].sort();
+    return (ds.length === 0 || ds.length === 7) ? 'all' : ds;
+  }
   function sanearHabitos(v){
     if(!Array.isArray(v)) return null;
     const vistos = {};
     const limpio = v
       .filter(h => h && typeof h.id === 'string' && h.id && typeof h.name === 'string' && h.name.trim())
       .filter(h => vistos[h.id] ? false : (vistos[h.id] = true)) // ids únicos
-      .map(h => ({ id: h.id, name: h.name.trim(), hint: typeof h.hint === 'string' ? h.hint.trim() : '', core: !!h.core }))
+      .map(h => ({ id: h.id, name: h.name.trim(), hint: typeof h.hint === 'string' ? h.hint.trim() : '', core: !!h.core, days: sanearDays(h.days) }))
       .slice(0, MAX_HABITS);
     return limpio.length ? limpio : null;
   }
@@ -83,12 +113,19 @@
   }
   const nuevoHabId = () => 'h' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
 
-  // racha "pura": solo días ganados, sin congeladores (la usa procesarRacha)
+  // racha "pura": ganados consecutivos, saltando descansos (neutrales),
+  // sin contar congeladores (la usa procesarRacha para sembrar fabRun)
   function streakBase(){
     let n = 0;
     const d = new Date();
-    if(!isWon(dias[localISO(d)])) d.setDate(d.getDate()-1);
-    while(isWon(dias[localISO(d)])){ n++; d.setDate(d.getDate()-1); }
+    if(!esGanado(today())) d.setDate(d.getDate()-1); // hoy en curso: no lo exijas
+    while(true){
+      const k = localISO(d);
+      if(esGanado(k)) n++;
+      else if(esDescanso(k)){ /* descanso: salta sin contar ni romper */ }
+      else break;
+      d.setDate(d.getDate()-1);
+    }
     return n;
   }
 
@@ -132,7 +169,9 @@
     d.setDate(d.getDate() + 1);
     while(localISO(d) <= ayerKey){
       const k = localISO(d);
-      if(isWon(dias[k])){
+      if(esDescanso(k)){
+        /* día de descanso: neutral, ni fabrica ni consume ni rompe */
+      } else if(esGanado(k)){
         racha.fabRun++;
         if(racha.fabRun % 7 === 0 && racha.congeladores < 2){ racha.congeladores++; fabricados++; }
       } else if(racha.congeladores > 0){
@@ -150,15 +189,16 @@
     else if(fabricados) toast('🧊 Fabricaste un congelador de racha.');
   }
 
-  // racha visible: los días congelados no suman, pero tampoco rompen
+  // racha visible: descansos y congelados no suman, pero tampoco rompen
   function streak(){
     let n = 0;
     const d = new Date();
-    if(!isWon(dias[localISO(d)])) d.setDate(d.getDate()-1);
+    if(!esGanado(today())) d.setDate(d.getDate()-1);
     while(true){
       const k = localISO(d);
-      if(isWon(dias[k])) n++;
-      else if(!racha.congelados[k]) break;
+      if(esGanado(k)) n++;
+      else if(esDescanso(k) || racha.congelados[k]){ /* salta */ }
+      else break;
       d.setDate(d.getDate()-1);
     }
     return n;
@@ -166,7 +206,7 @@
   function lostYesterday(){
     const y = new Date(); y.setDate(y.getDate()-1);
     const key = localISO(y);
-    return (key in dias) && !isWon(dias[key]) && !racha.congelados[key];
+    return (key in dias) && !esGanado(key) && !esDescanso(key) && !racha.congelados[key];
   }
 
   // ===== Levantarse: rescate, ritual de derrota, regresos =====
@@ -204,8 +244,8 @@
     const d = new Date(); d.setDate(d.getDate() - 1);
     while(localISO(d) >= primero){
       const k = localISO(d);
-      if(isWon(dias[k]) || racha.congelados[k]) break;
-      n++;
+      if(esGanado(k) || racha.congelados[k]) break;
+      if(!esDescanso(k)) n++; // el descanso es neutral: no cuenta ni rompe
       d.setDate(d.getDate() - 1);
     }
     return n;
@@ -217,24 +257,35 @@
     const d = new Date(k + 'T12:00:00'); d.setDate(d.getDate() - 1);
     while(true){
       const pk = localISO(d);
-      if(isWon(dias[pk])) n++;
-      else if(!racha.congelados[pk]) break;
+      if(esGanado(pk)) n++;
+      else if(esDescanso(pk) || racha.congelados[pk]){ /* salta */ }
+      else break;
       d.setDate(d.getDate() - 1);
     }
     return n;
   }
 
-  // regresos: días ganados cuyo día anterior (dentro de tu historia) fue una
-  // caída. Las rachas se rompen; volver es la habilidad — y solo crece.
+  // el día "juzgable" (no descanso) anterior a k, dentro de la historia
+  function diaJuzgableAntes(k, primero){
+    const d = new Date(k + 'T12:00:00'); d.setDate(d.getDate() - 1);
+    while(localISO(d) >= primero){
+      const pk = localISO(d);
+      if(!esDescanso(pk)) return pk;
+      d.setDate(d.getDate() - 1);
+    }
+    return null;
+  }
+
+  // regresos: días ganados cuyo día juzgable anterior fue una caída. Las
+  // rachas se rompen; volver es la habilidad — y solo crece.
   function contarRegresos(){
     const primero = primerDia();
     if(!primero) return 0;
     let n = 0;
     Object.keys(dias).forEach(k => {
-      if(!isWon(dias[k])) return;
-      const p = new Date(k + 'T12:00:00'); p.setDate(p.getDate() - 1);
-      const pk = localISO(p);
-      if(pk >= primero && !isWon(dias[pk]) && !racha.congelados[pk]) n++;
+      if(!esGanado(k)) return;
+      const pk = diaJuzgableAntes(k, primero);
+      if(pk && !esGanado(pk) && !racha.congelados[pk]) n++;
     });
     return n;
   }
@@ -252,7 +303,7 @@
         const k = localISO(d);
         if(k < primero) break;
         if(k in caidas) continue;                 // ya reconocido
-        const esCaida = (k in dias) && !isWon(dias[k]) && !racha.congelados[k];
+        const esCaida = (k in dias) && !esGanado(k) && !esDescanso(k) && !racha.congelados[k];
         if(!esCaida) continue;
         const n = rachaAntesDe(k);                // racha que murió ese día
         if(n >= 2){ target = k; largo = n; break; } // el más reciente
@@ -311,12 +362,12 @@
       // la pantalla, el "rec" viejo pertenece a AYER y no debe tocarse
       const k = today();
       const cur = dias[k] || {};
-      const wasWon = isWon(cur);
+      const wasWon = isWon(cur, k);
       cur[h.id] = !cur[h.id];
       dias[k] = cur;
       save();
       render();
-      if(!wasWon && isWon(cur)) toast('Día ganado. Una rep más. 🔥');
+      if(!wasWon && isWon(cur, k)) toast('Día ganado. Una rep más. 🔥');
     });
     return b;
   }
@@ -326,37 +377,47 @@
     const rec = dias[today()] || {};
     dias[today()] = rec;
 
+    // solo se muestran los hábitos que aplican HOY (según su calendario)
+    const hoyKey = today(), hoyDow = dowDe(hoyKey);
+    const hoyHabs = HABITS.filter(h => habAplica(h, hoyDow));
+    const coreHoy = coreDelDia(hoyKey); // ids de core programados hoy
+    const desc = coreHoy.length === 0;  // hoy es día de descanso
+
     const coreL = $('coreList'), extraL = $('extraList');
     coreL.innerHTML=''; extraL.innerHTML='';
-    HABITS.forEach(h=> (h.core?coreL:extraL).appendChild(habitBtn(h,rec)) );
-    // sin hábitos extra, la sección "Suman puntos" se oculta
+    hoyHabs.forEach(h=> (h.core?coreL:extraL).appendChild(habitBtn(h,rec)) );
+    // secciones vacías se ocultan (según lo que toca hoy)
     const secExtra = $('secExtra');
-    if(secExtra) secExtra.hidden = !HABITS.some(h => !h.core);
-    const coreDone = CORE.filter(id => rec[id]).length;
-    $('coreTag').textContent = coreDone + '/' + CORE.length + ' = día ganado';
+    if(secExtra) secExtra.hidden = !hoyHabs.some(h => !h.core);
+    const secCore = $('secCore');
+    if(secCore) secCore.hidden = !hoyHabs.some(h => h.core);
 
-    const won = isWon(rec);
+    const coreDone = coreHoy.filter(id => rec[id]).length;
+    $('coreTag').textContent = desc ? 'descanso' : (coreDone + '/' + coreHoy.length + ' = día ganado');
+
+    const won = esGanado(hoyKey);
     $('stamp').classList.toggle('show', won);
 
-    const done = HABITS.filter(h=>rec[h.id]).length;
-    const pct = Math.round(done/HABITS.length*100);
+    const done = hoyHabs.filter(h=>rec[h.id]).length;
+    const pct = hoyHabs.length ? Math.round(done/hoyHabs.length*100) : 0;
     $('progPct').textContent = pct+'%';
     $('progBar').style.width = pct+'%';
+    $('prog').hidden = desc; // sin nada que cumplir, no hay barra
 
     const s = streak();
     $('streakNum').textContent = s;
     $('streakSub').textContent =
+      desc ? 'Hoy es descanso. Tu racha te espera intacta.' :
       won ? 'Hoy ya cayó. Bien.' :
-      s>0 ? 'La racha vive. Cierra hoy los ' + CORE.length + ' core.' :
+      s>0 ? 'La racha vive. Cierra hoy los ' + coreHoy.length + ' core.' :
       'Gana hoy para encenderla.';
     $('frzInfo').hidden = racha.congeladores === 0;
     $('frzInfo').textContent = '🧊 ×' + racha.congeladores +
       (racha.congeladores === 1 ? ' congelador listo' : ' congeladores listos');
 
-    // modo rescate: 2+ días caídos y hoy aún sin ganar → apoyo, no regaño.
-    // El aviso rojo simple solo sale si NO estamos ya en rescate.
+    // modo rescate: 2+ días caídos y hoy aún sin ganar (y hoy NO es descanso).
     const caidosN = diasCaidosSeguidos();
-    const enPeligro = caidosN >= 2 && !won;
+    const enPeligro = caidosN >= 2 && !won && !desc;
     $('rescate').hidden = !enPeligro;
     if(enPeligro){
       $('rescateTxt').textContent = 'Llevas ' + caidosN + ' días fuera. No busques el día perfecto: ' +
@@ -371,14 +432,15 @@
     for(let i=6;i>=0;i--){
       const d = new Date(); d.setDate(d.getDate()-i);
       const key = localISO(d), r = dias[key];
-      const w = isWon(r);
-      const partial = !w && r && HABITS.some(h=>r[h.id]);
+      const w = esGanado(key);
+      const rest = esDescanso(key);
+      const partial = !w && !rest && r && HABITS.some(h=>r[h.id]);
       const el = document.createElement('div');
       el.className='day';
       el.innerHTML =
         '<div class="d-lbl">'+names[d.getDay()]+'</div>' +
-        '<div class="dot'+(w?' won':'')+(partial?' partial':'')+(i===0?' today':'')+'">' +
-        (w?'✓':(partial?'·':'')) + '</div>';
+        '<div class="dot'+(w?' won':'')+(partial?' partial':'')+(rest?' rest':'')+(i===0?' today':'')+'">' +
+        (w?'✓':(rest?'·':(partial?'·':''))) + '</div>';
       wk.appendChild(el);
     }
 
@@ -393,7 +455,7 @@
   function updateBadge(){
     if(!('setAppBadge' in navigator)) return;
     const rec = dias[today()] || {};
-    const pend = CORE.filter(id => !rec[id]).length;
+    const pend = coreDelDia(today()).filter(id => !rec[id]).length;
     if(pend > 0) navigator.setAppBadge(pend).catch(()=>{});
     else navigator.clearAppBadge().catch(()=>{});
   }
@@ -574,30 +636,36 @@
   let calY = null, calM = null; // año y mes que muestra el calendario
 
   function statsData(){
-    // conjunto de fechas ganadas: buscar en un Set es instantáneo
-    const wonSet = new Set(Object.keys(dias).filter(k => isWon(dias[k])));
+    // total = fechas registradas que están ganadas (descansos no cuentan)
+    const total = Object.keys(dias).filter(k => esGanado(k)).length;
 
-    // mejor racha: desde cada día que INICIA una racha (su víspera no está
-    // ganada), avanza día a día contando hasta que se rompa
-    let best = 0;
-    wonSet.forEach(k => {
-      const d = new Date(k + 'T12:00:00'); // mediodía local: evita líos de zona horaria
-      d.setDate(d.getDate() - 1);
-      if(wonSet.has(localISO(d))) return;  // no es inicio de racha
-      let len = 0;
-      d.setDate(d.getDate() + 1);
-      while(wonSet.has(localISO(d))){ len++; d.setDate(d.getDate() + 1); }
-      if(len > best) best = len;
-    });
-
-    // % de días ganados en los últimos 30 días
-    let won30 = 0;
-    for(let i = 0; i < 30; i++){
-      const d = new Date(); d.setDate(d.getDate() - i);
-      if(wonSet.has(localISO(d))) won30++;
+    // mejor racha histórica: recorre del primer día a hoy contando ganados
+    // seguidos; descanso y congelado sostienen (saltan), una caída reinicia
+    let best = 0, run = 0;
+    const primero = primerDia();
+    if(primero){
+      const hoyKey = today();
+      const d = new Date(primero + 'T12:00:00');
+      while(localISO(d) <= hoyKey){
+        const k = localISO(d);
+        if(esGanado(k)){ run++; if(run > best) best = run; }
+        else if(esDescanso(k) || racha.congelados[k]){ /* sostiene */ }
+        else if(k === hoyKey){ /* hoy en curso: no rompe la racha */ }
+        else { run = 0; }
+        d.setDate(d.getDate() + 1);
+      }
     }
 
-    return { total: wonSet.size, best, now: streak(), pct30: Math.round(won30/30*100) };
+    // % de días ganados en los últimos 30 días CON requisito (sin descansos)
+    let g30 = 0, req30 = 0;
+    for(let i = 0; i < 30; i++){
+      const k = localISO(new Date(Date.now() - i*86400000));
+      if(esDescanso(k)) continue;
+      req30++;
+      if(esGanado(k)) g30++;
+    }
+
+    return { total, best, now: streak(), pct30: req30 ? Math.round(g30/req30*100) : 0 };
   }
 
   // El Espejo: correlaciones simples entre TUS datos — pura aritmética
@@ -617,12 +685,14 @@
     });
     if(mejor) out.push('Los días con «' + mejor.nombre + '», tu ánimo es 🔥 el ' + mejor.pct + '%.');
 
-    // 2) mejor y peor día de la semana (mínimo 3 muestras por día)
+    // 2) mejor y peor día de la semana (mínimo 3 muestras por día; los días
+    // de descanso no cuentan porque no hay nada que ganar)
     const porDow = Array.from({length:7}, ()=>({won:0, tot:0}));
     keys.forEach(k => {
+      if(esDescanso(k)) return;
       const dow = new Date(k + 'T12:00:00').getDay();
       porDow[dow].tot++;
-      if(isWon(dias[k])) porDow[dow].won++;
+      if(esGanado(k)) porDow[dow].won++;
     });
     const conDatos = porDow
       .map((x,i) => ({i, pct: x.tot >= 3 ? Math.round(x.won / x.tot * 100) : null}))
@@ -636,11 +706,12 @@
     }
 
     // 3) ¿en qué día mueren tus rachas? (mínimo 3 muertes registradas)
+    const primero3 = primerDia();
     const muertes = Array.from({length:7}, ()=>0); let total = 0;
-    Object.keys(dias).forEach(k => {
-      if(isWon(dias[k]) || racha.congelados[k]) return;
-      const prev = new Date(k + 'T12:00:00'); prev.setDate(prev.getDate() - 1);
-      if(isWon(dias[localISO(prev)])){ muertes[new Date(k + 'T12:00:00').getDay()]++; total++; }
+    if(primero3) Object.keys(dias).forEach(k => {
+      if(esGanado(k) || esDescanso(k) || racha.congelados[k]) return; // solo caídas reales
+      const pk = diaJuzgableAntes(k, primero3);
+      if(pk && esGanado(pk)){ muertes[new Date(k + 'T12:00:00').getDay()]++; total++; }
     });
     if(total >= 3){
       const peor = muertes.indexOf(Math.max(...muertes));
@@ -737,8 +808,9 @@
         if(k > todayKey){ cell.classList.add('fut'); }
         else {
           const r = dias[k];
-          if(isWon(r)){ cell.classList.add('won'); ganados++; }
+          if(esGanado(k)){ cell.classList.add('won'); ganados++; }
           else if(racha.congelados[k]) cell.classList.add('frozen');
+          else if(esDescanso(k)) cell.classList.add('rest');
           else if(r && HABITS.some(h => r[h.id])) cell.classList.add('partial');
         }
         col.appendChild(cell);
@@ -755,9 +827,14 @@
     const conAnimo = Object.keys(cierres).filter(k => cierres[k] && cierres[k].animo).sort();
     const ult = conAnimo.slice(-5); // los 5 cierres con ánimo más recientes
     const animoAvg = ult.length ? ult.reduce((s,k)=> s + ANIMO_SCORE[cierres[k].animo], 0) / ult.length : null;
-    let won7 = 0;
-    for(let i = 0; i < 7; i++){ const d = new Date(); d.setDate(d.getDate() - i); if(isWon(dias[localISO(d)])) won7++; }
-    const consist = won7 / 7;
+    // consistencia de los últimos 7 días CON requisito (los descansos no cuentan)
+    let g7 = 0, req7 = 0;
+    for(let i = 0; i < 7; i++){
+      const k = localISO(new Date(Date.now() - i*86400000));
+      if(esDescanso(k)) continue;
+      req7++; if(esGanado(k)) g7++;
+    }
+    const consist = req7 ? g7 / req7 : 0;
     if(animoAvg === null && Object.keys(dias).length < 3) return { nivel: null };
     // el ánimo pesa más (es el dato que el cierre nocturno alimenta)
     const pulso = animoAvg === null ? Math.round(consist * 100)
@@ -890,12 +967,14 @@
     for(let day = 1; day <= daysInMonth; day++){
       const key = localISO(new Date(calY, calM, day));
       const r = dias[key];
-      const w = isWon(r);
-      const partial = !w && r && HABITS.some(h => r[h.id]);
+      const w = esGanado(key);
+      const rest = esDescanso(key);
+      const partial = !w && !rest && r && HABITS.some(h => r[h.id]);
       const el = document.createElement('div');
       el.className = 'cal-day'
         + (w ? ' won' : '') + (partial ? ' partial' : '')
         + (racha.congelados[key] ? ' frozen' : '')
+        + (rest && key <= todayKey ? ' rest' : '')
         + (key === todayKey ? ' today' : '') + (key > todayKey ? ' future' : '');
       el.textContent = day;
       if(key <= todayKey){
@@ -945,7 +1024,7 @@
     const daysInMonth = new Date(calY, calM + 1, 0).getDate();
     let wonMes = 0;
     for(let d = 1; d <= daysInMonth; d++){
-      if(isWon(dias[localISO(new Date(calY, calM, d))])) wonMes++;
+      if(esGanado(localISO(new Date(calY, calM, d)))) wonMes++;
     }
     ctx.fillStyle = accent;
     ctx.font = '800 88px ' + FONT;
@@ -970,8 +1049,8 @@
     for(let day = 1; day <= daysInMonth; day++){
       const x = PAD + col*(cell+gap);
       const key = localISO(new Date(calY, calM, day));
-      const r = dias[key], w = isWon(r);
-      const partial = !w && r && HABITS.some(h => r[h.id]);
+      const r = dias[key], w = esGanado(key);
+      const partial = !w && !esDescanso(key) && r && HABITS.some(h => r[h.id]);
       ctx.globalAlpha = key > todayKey ? 0.3 : 1; // días futuros: fantasmas
       ctx.beginPath();
       ctx.roundRect(x, rowY, cell, cell, 22);
@@ -1257,12 +1336,14 @@
       new Date(key + 'T12:00:00').toLocaleDateString('es-MX', {weekday:'long', day:'numeric', month:'long'});
     $('cdMood').textContent = m ? (m.emoji + ' ' + m.name) : '';
 
-    // estado del día: ganado, parcial (n/3 core) o sin registro
-    const coreHechos = CORE.filter(id => r && r[id]).length;
+    // estado del día: ganado, descanso, congelado, parcial o sin registro
+    const coreDia = coreDelDia(key);
+    const coreHechos = coreDia.filter(id => r && r[id]).length;
     $('cdEstado').textContent =
-      isWon(r) ? 'Día ganado 🔥' :
+      esGanado(key) ? 'Día ganado 🔥' :
+      esDescanso(key) ? 'Descanso · no tocaba ningún core' :
       racha.congelados[key] ? 'Congelado 🧊 · un congelador salvó la racha' :
-      (r && HABITS.some(h => r[h.id])) ? 'Parcial · ' + coreHechos + '/' + CORE.length + ' core' :
+      (r && HABITS.some(h => r[h.id])) ? 'Parcial · ' + coreHechos + '/' + coreDia.length + ' core' :
       'Sin registro';
 
     // qué reps cayeron ese día
@@ -1524,7 +1605,31 @@
 
       const top = document.createElement('div'); top.className = 'hab-top';
       top.append(star, name, del);
-      row.append(top, hint);
+
+      // selector de días: 7 chips (L M M J V S D). Todos activos = 'all'.
+      const daysRow = document.createElement('div'); daysRow.className = 'hab-days';
+      const etiquetas = ['L','M','M','J','V','S','D']; // lunes..domingo (visual)
+      const dowReal = [1,2,3,4,5,6,0];                 // su día de semana real
+      etiquetas.forEach((et, idx) => {
+        const dw = dowReal[idx];
+        const activo = habAplica(h, dw);
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'hab-day' + (activo ? ' on' : '');
+        chip.textContent = et;
+        chip.setAttribute('aria-label', 'Día ' + et + (activo ? ' activo' : ''));
+        chip.addEventListener('click', ()=>{
+          // set actual de días activos (0-6)
+          const set = new Set(h.days === 'all' ? [0,1,2,3,4,5,6] : h.days);
+          if(set.has(dw)) set.delete(dw); else set.add(dw);
+          if(set.size === 0){ toast('Deja al menos un día.'); return; }
+          h.days = sanearDays([...set]); // 7 días → 'all'
+          saveHabitos(); render(); renderHabEditor();
+        });
+        daysRow.appendChild(chip);
+      });
+
+      row.append(top, hint, daysRow);
       list.appendChild(row);
     });
   }
@@ -1534,7 +1639,7 @@
   $('habWrap').addEventListener('click', (e)=>{ if(e.target === $('habWrap')) $('habWrap').hidden = true; });
   $('habAdd').addEventListener('click', ()=>{
     if(HABITS.length >= MAX_HABITS){ toast('Máximo ' + MAX_HABITS + ' hábitos.'); return; }
-    HABITS.push({ id: nuevoHabId(), name: 'Nuevo hábito', hint: '', core: false }); // nace como extra
+    HABITS.push({ id: nuevoHabId(), name: 'Nuevo hábito', hint: '', core: false, days: 'all' }); // nace como extra, todos los días
     rebuildCore(); saveHabitos(); render(); renderHabEditor();
   });
 
@@ -1542,7 +1647,7 @@
   // reps-schema versiona el FORMATO de los datos (no confundir con la
   // versión del cache en sw.js, que versiona los archivos de la app).
   const SCHEMA_KEY = 'reps-schema';
-  const SCHEMA = 5; // versión de formato que esta app espera
+  const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
   const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-compacto'];
@@ -1615,6 +1720,18 @@
       if(localStorage.getItem('reps-habitos') === null){
         localStorage.setItem('reps-habitos', JSON.stringify(HABITS_DEFAULT));
       }
+    },
+
+    // v5 → v6: los hábitos ganan el campo "days". Los existentes pasan a
+    // 'all' (todos los días) para conservar exactamente el comportamiento.
+    5: function(){
+      try{
+        const hs = JSON.parse(localStorage.getItem('reps-habitos'));
+        if(Array.isArray(hs)){
+          hs.forEach(h => { if(h && h.days === undefined) h.days = 'all'; });
+          localStorage.setItem('reps-habitos', JSON.stringify(hs));
+        }
+      }catch(e){ /* si está ilegible, loadHabitos caerá a fábrica */ }
     },
   };
 

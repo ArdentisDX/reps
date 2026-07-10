@@ -45,6 +45,7 @@ h1 span{color:var(--amber)}
 .dot{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--muted)}
 .dot.won{background:var(--amber);border-color:var(--amber);color:var(--on-accent)}
 .dot.partial{border-color:var(--amber);color:var(--amber)}
+.dot.rest{border-color:var(--teal);color:var(--teal);border-style:dashed}
 .dot.today{box-shadow:0 0 0 3px var(--amber-dim)}
 .sec{margin-top:22px}
 .sec-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
@@ -169,6 +170,7 @@ h1 span{color:var(--amber)}
 .heat-cell.won{background:var(--amber)}
 .heat-cell.partial{background:color-mix(in srgb, var(--amber) 40%, transparent)}
 .heat-cell.frozen{background:var(--teal)}
+.heat-cell.rest{background:color-mix(in srgb, var(--teal) 22%, transparent)}
 .heat-cell.fut{background:none}
 
 /* ===== Celebración de hitos ===== */
@@ -197,6 +199,7 @@ h1 span{color:var(--amber)}
 .cal-day.partial{border-color:var(--amber);color:var(--amber)}
 .cal-day.today{box-shadow:0 0 0 2px var(--amber-dim)}
 .cal-day.frozen{border-color:var(--teal);color:var(--teal)}
+.cal-day.rest{color:var(--muted);border:1px dashed color-mix(in srgb, var(--teal) 40%, transparent)}
 .cal-day.future{opacity:.25;background:none}
 
 /* ===== Identidad y El Espejo ===== */
@@ -295,6 +298,10 @@ h1 span{color:var(--amber)}
 .hab-name:focus{border-color:var(--amber)}
 .hab-hint{width:100%;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--muted);font:inherit;font-size:12px;padding:7px 10px;outline:none;margin-top:6px}
 .hab-hint:focus{border-color:var(--amber)}
+.hab-days{display:flex;gap:4px;margin-top:8px}
+.hab-day{flex:1;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--muted);font:inherit;font-size:12px;font-weight:700;padding:6px 0;cursor:pointer}
+.hab-day.on{background:color-mix(in srgb, var(--amber) 20%, transparent);border-color:color-mix(in srgb, var(--amber) 45%, transparent);color:var(--text)}
+.hab-day:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
 .hab-del{background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:6px 8px}
 .hab-del:focus-visible{outline:2px solid var(--amber);outline-offset:2px;border-radius:6px}
 .hab-add{width:100%;background:var(--card-2);border:1px dashed var(--line);border-radius:12px;color:var(--text);font:inherit;font-size:14px;font-weight:600;padding:11px 0;cursor:pointer;margin:2px 0 12px}

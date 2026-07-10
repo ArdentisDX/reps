@@ -169,8 +169,8 @@ Hacerlo antes del primer modo nuevo; el modo minimalista es el piloto.
 | ✅ | Mapa de calor del año | medio | mediano | HECHO jul 2026 |
 | ✅ | Desbloqueables (temas por hitos) | medio | chico | HECHO jul 2026 |
 | ✅ | Cierre de semana | medio | chico | HECHO jul 2026 (reps-cierre-semana) |
-| 1 | **Hábitos por día de la semana** | alto | grande ⚠️ | **Siguiente sesión propia** (ver nota abajo) |
-| 2 | Plan B por hábito (versión mínima) | alto | chico | Cierra el anti-castigo de hábitos |
+| ✅ | Hábitos por día de la semana | alto | grande | HECHO jul 2026 (migración v5→v6, 3 estados: ganado/descanso/perdido) |
+| 1 | Plan B por hábito (versión mínima) | alto | chico | Cierra el anti-castigo de hábitos |
 | 3 | Temporizador de foco (Forest) | medio | mediano | Wake Lock + marca el hábito solo |
 | 4 | Test de bienvenida + metas (Capa 2) | medio | mediano | Prepara el contexto para la IA |
 | 5 | Gráficas de tendencia extra en Stats | medio | chico | Amplía el Pulso |
