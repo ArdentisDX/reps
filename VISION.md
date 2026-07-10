@@ -163,25 +163,38 @@ Hacerlo antes del primer modo nuevo; el modo minimalista es el piloto.
 | ✅ | El Espejo (insights locales) | alto | mediano | HECHO jul 2026 (parcial) |
 | ✅ | Insignia del ícono (Badging API) | medio | chico | HECHO jul 2026 |
 | ✅ | Hábitos personalizables (Notion) | alto | mediano-grande | HECHO jul 2026 (migración v4→v5) |
-| 1 | Modo rescate + Ritual de derrota | alto | chico | El corazón anti-castigo de la misión |
-| 2 | Celebración de hitos + Plan B por hábito | alto | chico | Cierra el paquete Duolingo |
-| 4 | Temporizador de foco (Forest) | medio | mediano | Wake Lock + marca el hábito solo |
-| 5 | Test de bienvenida + metas (Capa 2) | medio | mediano | Prepara el contexto para la IA |
-| 6 | "Pulso" diario + gráficas de tendencia | medio | mediano | Amplía El Espejo |
-| 7 | Refactor view-models (habilita modos) | medio | mediano | Puerta a Bento / UI Espacial / HUD |
-| 8 | XP y niveles (Habitica) | medio | mediano | Después del retro/pixel gana más |
-| 9 | Museo + Carta + Cápsula | medio | chico | Rachas de features chicas, moral alta |
-| 10 | IA de la Bandeja (Capa 3, Worker) | alto | grande | El salto a online-offline |
-| 11 | Social espejo (Strava, Capa 5) | medio | grande | Al final, con cuentas |
+| ✅ | Modo rescate + Ritual de derrota + regresos | alto | chico | HECHO jul 2026 (reps-caidas) |
+| ✅ | Celebración de hitos | alto | chico | HECHO jul 2026 (reps-hitos) |
+| ✅ | "Pulso" diario + tendencia de ánimo | medio | mediano | HECHO jul 2026 |
+| ✅ | Mapa de calor del año | medio | mediano | HECHO jul 2026 |
+| ✅ | Desbloqueables (temas por hitos) | medio | chico | HECHO jul 2026 |
+| ✅ | Cierre de semana | medio | chico | HECHO jul 2026 (reps-cierre-semana) |
+| 1 | **Hábitos por día de la semana** | alto | grande ⚠️ | **Siguiente sesión propia** (ver nota abajo) |
+| 2 | Plan B por hábito (versión mínima) | alto | chico | Cierra el anti-castigo de hábitos |
+| 3 | Temporizador de foco (Forest) | medio | mediano | Wake Lock + marca el hábito solo |
+| 4 | Test de bienvenida + metas (Capa 2) | medio | mediano | Prepara el contexto para la IA |
+| 5 | Gráficas de tendencia extra en Stats | medio | chico | Amplía el Pulso |
+| 6 | Refactor view-models (habilita modos) | medio | mediano | Puerta a Bento / UI Espacial / HUD |
+| 7 | XP y niveles (Habitica) | medio | mediano | Después del retro/pixel gana más |
+| 8 | Museo + Carta al yo perdido + Cápsula | medio | chico | Rachas de features chicas, moral alta |
+| 9 | IA de la Bandeja (Capa 3, Worker) | alto | grande | El salto a online-offline |
+| 10 | Social espejo (Strava, Capa 5) | medio | grande | Al final, con cuentas |
 
-**Las próximas semanas de bloques** (2 hrs/día, un tema por semana):
+> **Hábitos por día de la semana — por qué es sesión propia:** cambia
+> `isWon`, la función más central de la app (la usan racha, congeladores,
+> total, mapa de calor, El Espejo). Cada hábito llevaría un campo `days`
+> (['1','3','5'] o 'all') y migración v5→v6. El punto fino a diseñar bien:
+> ¿un día sin ningún core programado (un descanso planeado) cuenta como
+> ganado, como neutral que la racha salta, o no cuenta? Esa decisión
+> ramifica por ~20 llamadas a `isWon`. Se hace bien, aislada y muy
+> verificada — no al vuelo al final de una sesión grande.
 
-- **S1** — Modo rescate + ritual de derrota.
-- **S2** — Celebración de hitos + Plan B por hábito.
-- **S3** — Temporizador de foco en los bloques.
+**Las próximas semanas de bloques:**
+
+- **S1–S2** — Hábitos por día de la semana (con su migración v5→v6). La sesión delicada.
+- **S3** — Plan B por hábito + temporizador de foco.
 - **S4** — Test de bienvenida + metas (cierra la Capa 2 del ROADMAP).
-- **S5** — "Pulso" diario + gráfica de tendencia en Stats.
-- **S6** — Refactor view-models (primer modo-layout real: Bento o UI Espacial).
+- **S5** — Refactor view-models (primer modo-layout real: Bento o UI Espacial).
 
 La IA (Capa 3) entra en el mes 3, con la app ya personalizable y el
 perfil listo: la IA llegará a conocerte, no a adivinarte.
