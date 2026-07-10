@@ -56,6 +56,14 @@
       <div class="ri-opts" id="ritualOpts"></div>
     </div>
     <div class="week" id="week"></div>
+    <div class="compa" id="compa" hidden>
+      <div class="co-emoji" id="compaEmoji">🌱</div>
+      <div class="co-body">
+        <div class="co-nombre" id="compaNombre"></div>
+        <div class="co-sub" id="compaSub"></div>
+        <div class="co-bar"><i id="compaBar"></i></div>
+      </div>
+    </div>
     <div class="sec" id="secCore">
       <div class="sec-head"><h2>Innegociables</h2><div class="tag" id="coreTag">3/3 = día ganado</div></div>
       <div id="coreList"></div>
@@ -146,6 +154,18 @@
         </div>
       </div>
       <div id="metasList"></div>
+    </div>
+    <div class="metas" style="margin-top:20px">
+      <div class="sec-head"><h2>Recompensas</h2><div class="tag">tratos contigo mismo</div></div>
+      <div class="meta-add">
+        <input id="recompInput" type="text" placeholder="El premio (ej: los tenis nuevos)…" autocomplete="off" maxlength="80">
+        <div class="meta-plazos">
+          <input id="recompDias" type="number" class="recomp-dias" min="1" max="999" placeholder="días" inputmode="numeric">
+          <span class="recomp-lbl">días ganados y es tuyo</span>
+          <button class="meta-go" id="recompAdd" type="button" aria-label="Agregar recompensa">＋</button>
+        </div>
+      </div>
+      <div id="recompList"></div>
     </div>
     <div class="sec-head" style="margin-top:24px"><h2>La ruta</h2><div class="tag">tu mapa de capas</div></div>
     <div class="capa activa">
@@ -353,6 +373,7 @@
       <div class="foco-run" id="focoRun" hidden>
         <div class="foco-ring" id="focoRing"><div class="foco-time" id="focoTime">25:00</div></div>
         <div class="foco-tip">Deja el celular. Vuelve cuando suene.</div>
+        <button class="foco-sonido" id="focoAmb" type="button">🌧️ Ruido de fondo</button>
         <button class="foco-done" id="focoDone" type="button">Terminar ✓</button>
         <button class="foco-x" id="focoCancel" type="button">Cancelar sesión</button>
       </div>

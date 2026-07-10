@@ -53,6 +53,7 @@ directo sobre un Date: corre el día en zonas horarias negativas.
 | `reps-metas` | `[{id, texto, plazo, hecha, creada}]` | Metas del usuario; `plazo` ∈ corto/mediano/largo. Viven arriba de la pestaña Ruta, agrupadas por plazo con barra de progreso. Cierran la mitad pendiente de la Capa 2. Clave aditiva. |
 | `reps-rutina` | `[{id, hora, nombre, desc, tipo}]` | Bloques del timeline de Mi día (antes HTML fijo). `hora` = `"H:MM"`; `tipo` ∈ core (estructura) / free. Se ordenan por hora con la madrugada (<4 am) al final (`minutosDe`). Editor en Mi día; las alarmas (`botonAlarma`) se integran en `renderRutina()`. Ausente = rutina de fábrica. Clave aditiva. |
 | `reps-carta` | `{texto, fecha}` o ausente | Carta a tu yo perdido: se escribe desde Ajustes y SOLO se muestra dentro del modo rescate (2+ días caídos). Guardar vacía = borrar. Clave aditiva. |
+| `reps-recompensas` | `[{id, premio, dias, cobrada, creada}]` | Tratos contigo mismo: "a los N días ganados, el premio". Progreso derivado de `statsData().total`; botón Cobrar al alcanzarla. Viven bajo Metas en Ruta. Clave aditiva. (El compañero 🌱 y el ruido de foco no guardan clave: etapa derivada del total / decisión por sesión.) |
 | `reps-schema` | `"N"` (número como string) | Versión del FORMATO de los datos. La gestiona `migrate()`; no tocar a mano. |
 | `reps-pre-migracion` | `{de, a, fecha, crudo}` | Copia cruda automática previa a la última migración. Solo lectura; no va en el respaldo exportado. |
 

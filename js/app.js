@@ -1148,6 +1148,8 @@
       });
     }
 
+    renderCompa(s.total);
+    renderRecompensas(s.total);
     renderMesVs();
     renderMuseo();
     renderHeatmap();
@@ -2082,6 +2084,115 @@
     rebuildCore(); saveHabitos(); render(); renderHabEditor();
   });
 
+  // ===== Compañero: crece contigo y nunca retrocede =====
+  // Su etapa depende del TOTAL de días ganados (que solo crece): a
+  // diferencia de Forest, aquí nada muere por un mal día.
+  const COMPA_ETAPAS = [
+    {min:0,   emoji:'🥚', nombre:'Semilla',            sub:'Todo empieza quieto.'},
+    {min:1,   emoji:'🌱', nombre:'Brote',              sub:'Ya rompiste la tierra.'},
+    {min:5,   emoji:'🌿', nombre:'Retoño',             sub:'Cinco días te sostienen.'},
+    {min:12,  emoji:'🪴', nombre:'Planta',             sub:'Esto ya tiene raíces.'},
+    {min:25,  emoji:'🌳', nombre:'Árbol',              sub:'Da sombra. Es tuyo.'},
+    {min:50,  emoji:'🌸', nombre:'Árbol en flor',      sub:'Cincuenta días floreciendo.'},
+    {min:100, emoji:'✨', nombre:'Árbol legendario',   sub:'Cien días. Leyenda viva.'},
+  ];
+  function renderCompa(total){
+    let etapa = COMPA_ETAPAS[0], siguiente = null;
+    for(let i = COMPA_ETAPAS.length - 1; i >= 0; i--){
+      if(total >= COMPA_ETAPAS[i].min){ etapa = COMPA_ETAPAS[i]; siguiente = COMPA_ETAPAS[i+1] || null; break; }
+    }
+    $('compa').hidden = false;
+    $('compaEmoji').textContent = etapa.emoji;
+    $('compaNombre').textContent = etapa.nombre;
+    if(siguiente){
+      const base = etapa.min, span = siguiente.min - base;
+      const pct = Math.min(100, Math.round((total - base) / span * 100));
+      $('compaSub').textContent = etapa.sub + ' · ' + (siguiente.min - total) + ' días para evolucionar';
+      $('compaBar').style.width = pct + '%';
+      $('compaBar').parentElement.hidden = false;
+    } else {
+      $('compaSub').textContent = etapa.sub;
+      $('compaBar').parentElement.hidden = true;
+    }
+  }
+
+  // ===== Recompensas: tratos contigo mismo =====
+  const RECOMP_KEY = 'reps-recompensas';
+  let recompensas = [];
+  function loadRecompensas(){
+    try{
+      const v = JSON.parse(localStorage.getItem(RECOMP_KEY));
+      if(Array.isArray(v)){
+        recompensas = v.filter(r => r && typeof r.premio === 'string' && r.premio.trim() && parseInt(r.dias, 10) > 0)
+          .map(r => ({
+            id: typeof r.id === 'string' ? r.id : 'rc' + Math.random().toString(36).slice(2,8),
+            premio: r.premio.trim(),
+            dias: parseInt(r.dias, 10),
+            cobrada: !!r.cobrada,
+            creada: r.creada || new Date().toISOString(),
+          }));
+      }
+    }catch(e){ recompensas = []; }
+  }
+  function saveRecompensas(){
+    try{ localStorage.setItem(RECOMP_KEY, JSON.stringify(recompensas)); }
+    catch(e){ toast('No se pudo guardar. Reintenta.'); }
+  }
+  function renderRecompensas(total){
+    const list = $('recompList'); list.innerHTML = '';
+    if(recompensas.length === 0){
+      const e = document.createElement('div'); e.className = 'meta-empty';
+      e.textContent = 'Ej: «a los 30 días ganados, me compro los tenis». La app te recuerda tu propio trato.';
+      list.appendChild(e);
+      return;
+    }
+    [...recompensas].sort((a,b) => a.dias - b.dias).forEach(rc => {
+      const row = document.createElement('div');
+      row.className = 'meta' + (rc.cobrada ? ' done' : '');
+      const main = document.createElement('div'); main.className = 'm-main'; main.style.cursor = 'default';
+      const box = document.createElement('span'); box.className = 'm-box'; box.textContent = '🎁';
+      if(rc.cobrada){ box.style.color = 'inherit'; }
+      const body = document.createElement('span');
+      const txt = document.createElement('div'); txt.className = 'm-text'; txt.textContent = rc.premio;
+      const sub = document.createElement('div'); sub.className = 'rc-sub';
+      const alcanzada = total >= rc.dias;
+      sub.textContent = rc.cobrada ? 'Cobrada ✓ (' + rc.dias + ' días)' :
+        alcanzada ? '¡Lo lograste! ' + rc.dias + ' días ganados.' :
+        total + '/' + rc.dias + ' días ganados';
+      body.append(txt, sub);
+      main.append(box, body);
+      row.appendChild(main);
+      if(alcanzada && !rc.cobrada){
+        const cobrar = document.createElement('button');
+        cobrar.className = 'rc-cobrar'; cobrar.textContent = 'Cobrar 🎁';
+        cobrar.addEventListener('click', ()=>{
+          rc.cobrada = true; saveRecompensas(); renderRecompensas(total);
+          sonarGanado();
+          toast('🎁 Cóbratelo. Te lo ganaste con ' + rc.dias + ' días.');
+        });
+        row.appendChild(cobrar);
+      }
+      const del = document.createElement('button');
+      del.className = 'm-del'; del.textContent = '✕'; del.setAttribute('aria-label', 'Borrar recompensa');
+      del.addEventListener('click', ()=>{
+        recompensas = recompensas.filter(x => x.id !== rc.id);
+        saveRecompensas(); renderRecompensas(total);
+      });
+      row.appendChild(del);
+      list.appendChild(row);
+    });
+  }
+  $('recompAdd').addEventListener('click', ()=>{
+    const premio = $('recompInput').value.trim();
+    const dias = parseInt($('recompDias').value, 10);
+    if(!premio || !(dias > 0)){ toast('Escribe el premio y a los cuántos días.'); return; }
+    recompensas.push({ id: 'rc' + Date.now().toString(36), premio, dias, cobrada:false, creada:new Date().toISOString() });
+    saveRecompensas();
+    $('recompInput').value = ''; $('recompDias').value = '';
+    renderRecompensas(statsData().total);
+    toast('Trato hecho. A ganarlo.');
+  });
+
   // ===== Metas (corto / mediano / largo plazo) =====
   const METAS_KEY = 'reps-metas';
   const PLAZOS = [
@@ -2231,6 +2342,44 @@
       tono(783.99, 0.26, 0.80, 0.22);
     }catch(e){}
   }
+  // ===== Ruido de fondo para el foco (marrón sintetizado, tipo lluvia) =====
+  // Sin archivos: un buffer de ruido en loop + filtro grave. Solo dura la
+  // sesión de foco; no se guarda preferencia (decisión por sesión).
+  let ambNodes = null;
+  function ambienteOn(){
+    try{
+      unlockAudio(); if(!audioCtx) return false;
+      const len = audioCtx.sampleRate * 2;
+      const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+      const data = buf.getChannelData(0);
+      let last = 0;
+      for(let i = 0; i < len; i++){
+        const w = Math.random() * 2 - 1;
+        last = (last + 0.02 * w) / 1.02; // integración: blanco → marrón
+        data[i] = last * 3.5;
+      }
+      const src = audioCtx.createBufferSource(); src.buffer = buf; src.loop = true;
+      const filt = audioCtx.createBiquadFilter(); filt.type = 'lowpass'; filt.frequency.value = 600;
+      const g = audioCtx.createGain(); g.gain.value = 0.12;
+      src.connect(filt); filt.connect(g); g.connect(audioCtx.destination);
+      src.start();
+      ambNodes = { src };
+      return true;
+    }catch(e){ return false; }
+  }
+  function ambienteOff(){
+    try{ if(ambNodes){ ambNodes.src.stop(); ambNodes = null; } }catch(e){ ambNodes = null; }
+  }
+  function pintarAmbBtn(){
+    const b = $('focoAmb');
+    b.classList.toggle('off', !ambNodes);
+    b.textContent = ambNodes ? '🌧️ Ruido de fondo (sonando)' : '🌧️ Ruido de fondo';
+  }
+  $('focoAmb').addEventListener('click', ()=>{
+    if(ambNodes) ambienteOff(); else ambienteOn();
+    pintarAmbBtn();
+  });
+
   // pop corto y satisfactorio al marcar algo como hecho (hábito, meta, idea)
   function sonarCheck(){
     try{ if(navigator.vibrate) navigator.vibrate(12); }catch(e){}
@@ -2276,6 +2425,7 @@
   function cerrarFoco(){
     if(foco.timer){ clearInterval(foco.timer); foco.timer = null; }
     soltarWakeLock();
+    ambienteOff(); pintarAmbBtn(); // el ruido de fondo muere con la sesión
     $('foco').hidden = true;
   }
   function pintarFoco(){
@@ -2528,7 +2678,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -2659,7 +2809,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -2747,6 +2897,9 @@
         const ct = b.data['reps-carta'];
         if(esMapa(ct)) localStorage.setItem(CARTA_KEY, JSON.stringify(ct));
         else localStorage.removeItem(CARTA_KEY);
+        const rcs = b.data['reps-recompensas'];
+        if(Array.isArray(rcs)) localStorage.setItem(RECOMP_KEY, JSON.stringify(rcs));
+        else localStorage.removeItem(RECOMP_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -2768,6 +2921,7 @@
       metas = []; loadMetas(); renderMetas();
       rutina = []; loadRutina(); renderRutina();
       carta = null; loadCarta();
+      recompensas = []; loadRecompensas();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -2811,6 +2965,7 @@
   loadFoco();      // antes de render(): el total de foco se muestra en Stats
   loadSonido();
   loadMetas();
+  loadRecompensas();
   loadRutina();
   render();
   renderMetas();
