@@ -659,6 +659,95 @@
     return out;
   }
 
+  // ===== Hitos: celebrar los saltos =====
+  const HITOS_KEY = 'reps-hitos';
+  let hitosVistos = [];
+
+  function hitosLogrados(){
+    const s = statsData();
+    const reg = contarRegresos();
+    const L = [];
+    const push = (cond, id, emoji, title, sub) => { if(cond) L.push({id, emoji, title, sub}); };
+    [[1,'🌱','Día 1','Empezaste. Eso ya te separa de ayer.'],
+     [7,'🔥','7 días ganados','Una semana de pruebas. Vas en serio.'],
+     [30,'💪','30 días ganados','Un mes construido. Esto ya es identidad.'],
+     [50,'⭐','50 días ganados','Medio centenar. Nadie te quita esto.'],
+     [100,'🏆','100 días ganados','Cien. Eres otra persona.'],
+     [365,'👑','365 días ganados','Un año entero. Leyenda.']
+    ].forEach(([n,e,t,su]) => push(s.total >= n, 'dias'+n, e, t, su));
+    [[7,'🧊','Racha de 7','Siete seguidos. La inercia ya juega a tu favor.'],
+     [14,'⚡','Racha de 14','Dos semanas sin fallar. Impresionante.'],
+     [30,'🌟','Racha de 30','Treinta seguidos. Élite.']
+    ].forEach(([n,e,t,su]) => push(s.best >= n, 'racha'+n, e, t, su));
+    [[5,'🔄','5 regresos','Caíste y volviste cinco veces. Esa es LA habilidad.'],
+     [10,'🛡️','10 regresos','Diez regresos. Ya no te rompe una caída.']
+    ].forEach(([n,e,t,su]) => push(reg >= n, 'reg'+n, e, t, su));
+    return L;
+  }
+  function loadHitos(){
+    let crudo = null;
+    try{ crudo = localStorage.getItem(HITOS_KEY); }catch(e){}
+    if(crudo === null){
+      // primera vez: se siembra lo YA logrado sin celebrar (evita una lluvia
+      // de celebraciones al estrenar la feature). Solo lo nuevo se festeja.
+      hitosVistos = hitosLogrados().map(h => h.id);
+      saveHitos();
+    } else {
+      try{ const v = JSON.parse(crudo); hitosVistos = Array.isArray(v) ? v.filter(x => typeof x === 'string') : []; }
+      catch(e){ hitosVistos = []; }
+    }
+  }
+  function saveHitos(){
+    try{ localStorage.setItem(HITOS_KEY, JSON.stringify(hitosVistos)); }catch(e){}
+  }
+  let colaCel = [];
+  function mostrarSiguienteCel(){
+    if(!colaCel.length){ $('celebra').hidden = true; return; }
+    const h = colaCel.shift();
+    $('celEmoji').textContent = h.emoji;
+    $('celTitle').textContent = h.title;
+    $('celSub').textContent = h.sub;
+    $('celebra').hidden = false;
+  }
+  function checkHitos(){
+    const nuevos = hitosLogrados().filter(h => !hitosVistos.includes(h.id));
+    if(!nuevos.length) return;
+    nuevos.forEach(h => hitosVistos.push(h.id));
+    saveHitos();
+    colaCel.push(...nuevos);
+    if($('celebra').hidden) mostrarSiguienteCel();
+  }
+  $('celBtn').addEventListener('click', mostrarSiguienteCel);
+  $('celebra').addEventListener('click', (e)=>{ if(e.target === $('celebra')) mostrarSiguienteCel(); });
+
+  // ===== Mapa de calor del año (estilo GitHub) =====
+  function renderHeatmap(){
+    const heat = $('heat'); heat.innerHTML = '';
+    const SEMANAS = 53;
+    const start = mondayOf(new Date());
+    start.setDate(start.getDate() - (SEMANAS - 1) * 7);
+    const todayKey = today();
+    let ganados = 0;
+    for(let w = 0; w < SEMANAS; w++){
+      const col = document.createElement('div'); col.className = 'heat-col';
+      for(let d = 0; d < 7; d++){
+        const day = new Date(start); day.setDate(day.getDate() + w*7 + d);
+        const k = localISO(day);
+        const cell = document.createElement('div'); cell.className = 'heat-cell';
+        if(k > todayKey){ cell.classList.add('fut'); }
+        else {
+          const r = dias[k];
+          if(isWon(r)){ cell.classList.add('won'); ganados++; }
+          else if(racha.congelados[k]) cell.classList.add('frozen');
+          else if(r && HABITS.some(h => r[h.id])) cell.classList.add('partial');
+        }
+        col.appendChild(cell);
+      }
+      heat.appendChild(col);
+    }
+    $('yearTag').textContent = ganados + ' días ganados';
+  }
+
   // ===== El Pulso: cómo vienes, según ánimo + consistencia =====
   const ANIMO_SCORE = { bien: 2, regular: 1, mal: 0 };
 
@@ -770,7 +859,9 @@
       });
     }
 
+    renderHeatmap();
     renderCal();
+    checkHitos(); // al final: los stats ya están calculados
   }
 
   function renderCal(){
@@ -1233,17 +1324,25 @@
   }
 
   // --- interfaz del selector ---
+  // desbloqueables: cada tema se gana con días ganados totales. Los tonos
+  // se derivan del stats, sin clave extra. (Carbón y Océano siempre libres.)
+  const THEME_UNLOCK = { carbon:0, oceano:0, bosque:3, claro:7, violeta:15, cristal:30 };
   function renderThemeUI(){
     const list = $('themeList'); list.innerHTML = '';
+    const ganados = statsData().total;
     THEMES.forEach(t => {
+      const need = THEME_UNLOCK[t.id] || 0;
+      const locked = ganados < need;
       const b = document.createElement('button');
-      b.className = 'swatch' + (themeSel.modo === 'preset' && themeSel.id === t.id ? ' active' : '');
+      b.className = 'swatch' + (themeSel.modo === 'preset' && themeSel.id === t.id ? ' active' : '') + (locked ? ' locked' : '');
       b.innerHTML =
         '<span class="s-dots">' +
           '<span class="s-dot" style="background:' + t.vars.bg + '"></span>' +
           '<span class="s-dot" style="background:' + t.vars.accent + '"></span>' +
-        '</span>' + t.name + '<span class="s-check">✓</span>';
+        '</span>' + t.name +
+        (locked ? '<span class="s-lock">🔒 ' + need + ' días</span>' : '<span class="s-check">✓</span>');
       b.addEventListener('click', ()=>{
+        if(locked){ toast('Se desbloquea a los ' + need + ' días ganados. Vas ' + ganados + '.'); return; }
         themeSel = {modo:'preset', id:t.id};
         applyThemeSel(); saveTheme(); renderThemeUI();
       });
@@ -1398,7 +1497,7 @@
   const SCHEMA = 5; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -1517,7 +1616,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -1581,6 +1680,9 @@
         const cd = b.data['reps-caidas'];
         if(esMapa(cd)) localStorage.setItem(CAIDAS_KEY, JSON.stringify(cd));
         else localStorage.removeItem(CAIDAS_KEY);
+        const ht = b.data['reps-hitos'];
+        if(Array.isArray(ht)) localStorage.setItem(HITOS_KEY, JSON.stringify(ht));
+        else localStorage.removeItem(HITOS_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -1595,6 +1697,7 @@
       racha = { congeladores: 0, fabRun: 0, procesadoHasta: null, congelados: {} };
       loadRacha(); procesarRacha();
       caidas = {}; loadCaidas();
+      hitosVistos = []; loadHitos();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -1626,6 +1729,7 @@
   loadRacha();     // antes de render(): la racha visible usa los congelados
   procesarRacha(); // aplica congeladores por los días transcurridos
   loadCaidas();    // antes de render(): el ritual y El Espejo leen las caídas
+  loadHitos();     // antes de render(): siembra lo ya logrado sin celebrar
   render();
   renderTray();
   renderSemana();
