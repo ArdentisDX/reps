@@ -1361,13 +1361,29 @@
 
   // ===== Temas =====
   // Cada tema es solo un juego de valores para las MISMAS variables CSS.
+  // Los IDs son inmutables (viven en reps-tema); los nombres son libres.
   const THEMES = [
-    {id:'carbon',  name:'Carbón · ámbar',  vars:{bg:'#12161d', card:'#1a2029', card2:'#20262f', line:'#2a3340', text:'#e9edf3', muted:'#8b95a3', accent:'#ffb454', onAccent:'#191204', teal:'#4fd6be'}},
-    {id:'oceano',  name:'Océano · azul',   vars:{bg:'#0d141f', card:'#141d2b', card2:'#1a2536', line:'#243349', text:'#e8eef6', muted:'#8b98ab', accent:'#6ab8ff', onAccent:'#04182b', teal:'#57dbb1'}},
-    {id:'bosque',  name:'Bosque · verde',  vars:{bg:'#0f1613', card:'#16201b', card2:'#1c2822', line:'#28382f', text:'#e9f2ec', muted:'#8fa398', accent:'#7fd88f', onAccent:'#08210d', teal:'#ffd166'}},
-    {id:'claro',   name:'Claro · limpio',  vars:{bg:'#f2f4f7', card:'#ffffff', card2:'#e9edf2', line:'#d4dae2', text:'#1a2230', muted:'#66717f', accent:'#c76a04', onAccent:'#ffffff', teal:'#0c8a70'}},
-    {id:'violeta', name:'Violeta · neón',  vars:{bg:'#131020', card:'#1a1629', card2:'#211c34', line:'#2f2847', text:'#ece9f6', muted:'#968fae', accent:'#b795ff', onAccent:'#160b2b', teal:'#ff8ad8'}},
-    {id:'cristal', name:'Cristal · hielo', vars:{bg:'#0b1220', card:'#141d30', card2:'#1a2540', line:'#2a3a5c', text:'#eaf1ff', muted:'#8fa0bd', accent:'#7dd3ff', onAccent:'#04263a', teal:'#b795ff'}},
+    // — oscuros —
+    {id:'carbon',     name:'Carbón',     vars:{bg:'#12161d', card:'#1a2029', card2:'#20262f', line:'#2a3340', text:'#e9edf3', muted:'#8b95a3', accent:'#ffb454', onAccent:'#191204', teal:'#4fd6be'}},
+    {id:'oceano',     name:'Océano',     vars:{bg:'#0d141f', card:'#141d2b', card2:'#1a2536', line:'#243349', text:'#e8eef6', muted:'#8b98ab', accent:'#6ab8ff', onAccent:'#04182b', teal:'#57dbb1'}},
+    {id:'medianoche', name:'Medianoche', vars:{bg:'#0a0e18', card:'#121828', card2:'#182034', line:'#232e48', text:'#e8edf8', muted:'#8a94ab', accent:'#4f8cff', onAccent:'#041028', teal:'#7dd3ff'}},
+    {id:'atardecer',  name:'Atardecer',  vars:{bg:'#1a1210', card:'#251a17', card2:'#2f211d', line:'#443029', text:'#f5ece7', muted:'#a89388', accent:'#ff7e5f', onAccent:'#2b0f06', teal:'#ffd166'}},
+    {id:'cafe',       name:'Café',       vars:{bg:'#16110d', card:'#201812', card2:'#2a2018', line:'#3c2f23', text:'#f0e8de', muted:'#a09384', accent:'#d7b899', onAccent:'#241505', teal:'#8fbf9f'}},
+    {id:'sakura',     name:'Sakura',     vars:{bg:'#171019', card:'#211826', card2:'#2a1f31', line:'#3b2c46', text:'#f4ecf4', muted:'#a391a8', accent:'#ff9ec7', onAccent:'#2b0a1c', teal:'#b6f0d0'}},
+    {id:'bosque',     name:'Bosque',     vars:{bg:'#0f1613', card:'#16201b', card2:'#1c2822', line:'#28382f', text:'#e9f2ec', muted:'#8fa398', accent:'#7fd88f', onAccent:'#08210d', teal:'#ffd166'}},
+    {id:'cereza',     name:'Cereza',     vars:{bg:'#140d10', card:'#1e1418', card2:'#281a1f', line:'#3a262e', text:'#f6eaee', muted:'#a68f97', accent:'#ff6b81', onAccent:'#2a060e', teal:'#7dd3ff'}},
+    {id:'esmeralda',  name:'Esmeralda',  vars:{bg:'#0a1410', card:'#102019', card2:'#152a21', line:'#223c30', text:'#e9f5ef', muted:'#8aa598', accent:'#3ddc97', onAccent:'#032015', teal:'#ffd166'}},
+    {id:'oxido',      name:'Óxido',      vars:{bg:'#14100e', card:'#1e1815', card2:'#28201b', line:'#3b2f26', text:'#f2ebe5', muted:'#a3948a', accent:'#e2725b', onAccent:'#260b04', teal:'#9cc5a1'}},
+    {id:'violeta',    name:'Violeta',    vars:{bg:'#131020', card:'#1a1629', card2:'#211c34', line:'#2f2847', text:'#ece9f6', muted:'#968fae', accent:'#b795ff', onAccent:'#160b2b', teal:'#ff8ad8'}},
+    {id:'terminal',   name:'Terminal',   vars:{bg:'#050805', card:'#0c120c', card2:'#111a11', line:'#1e3320', text:'#d8f2d8', muted:'#6f9873', accent:'#33ff66', onAccent:'#02180a', teal:'#ffb454'}},
+    {id:'synthwave',  name:'Synthwave',  vars:{bg:'#120c22', card:'#1a1230', card2:'#221840', line:'#35255c', text:'#efe9fb', muted:'#9d8fc0', accent:'#ff3ec8', onAccent:'#2b0320', teal:'#22d3ee'}},
+    {id:'cristal',    name:'Hielo negro', vars:{bg:'#0b1220', card:'#141d30', card2:'#1a2540', line:'#2a3a5c', text:'#eaf1ff', muted:'#8fa0bd', accent:'#7dd3ff', onAccent:'#04263a', teal:'#b795ff'}},
+    {id:'dorado',     name:'Dorado',     vars:{bg:'#0f0d08', card:'#1a160e', card2:'#232013', line:'#383418', text:'#f4efe2', muted:'#a49b7f', accent:'#e6c26e', onAccent:'#241a02', teal:'#9fd8cb'}},
+    // — claros —
+    {id:'claro',      name:'Claro',      vars:{bg:'#f2f4f7', card:'#ffffff', card2:'#e9edf2', line:'#d4dae2', text:'#1a2230', muted:'#66717f', accent:'#c76a04', onAccent:'#ffffff', teal:'#0c8a70'}},
+    {id:'hielo',      name:'Hielo',      vars:{bg:'#eef4f8', card:'#ffffff', card2:'#e2ecf3', line:'#cfdde8', text:'#14222e', muted:'#5d7181', accent:'#1273b8', onAccent:'#ffffff', teal:'#0c8a70'}},
+    {id:'matcha',     name:'Matcha',     vars:{bg:'#f3f2ea', card:'#ffffff', card2:'#eaeadd', line:'#d6d6c2', text:'#232a1e', muted:'#6f7a63', accent:'#5c8a3a', onAccent:'#ffffff', teal:'#b3593d'}},
+    {id:'lavanda',    name:'Lavanda',    vars:{bg:'#f3f0f9', card:'#ffffff', card2:'#eae5f4', line:'#d8d0e8', text:'#241f33', muted:'#6f6885', accent:'#7c5cd6', onAccent:'#ffffff', teal:'#c2508f'}},
   ];
   const TEMA_KEY = 'reps-tema';
   let themeSel = {modo:'preset', id:'carbon'};
@@ -1455,7 +1471,13 @@
   // --- interfaz del selector ---
   // desbloqueables: cada tema se gana con días ganados totales. Los tonos
   // se derivan del stats, sin clave extra. (Carbón y Océano siempre libres.)
-  const THEME_UNLOCK = { carbon:0, oceano:0, bosque:3, claro:7, violeta:15, cristal:30 };
+  const THEME_UNLOCK = {
+    carbon:0, oceano:0, medianoche:0, atardecer:0,   // libres desde el día 0
+    cafe:1, sakura:2, bosque:3, cereza:4, esmeralda:5, oxido:6,
+    claro:7, hielo:8, matcha:10, lavanda:12,
+    violeta:15, terminal:20, synthwave:25, cristal:30,
+    dorado:40,                                        // el de prestigio
+  };
   function renderThemeUI(){
     const list = $('themeList'); list.innerHTML = '';
     const ganados = statsData().total;
@@ -1468,8 +1490,8 @@
         '<span class="s-dots">' +
           '<span class="s-dot" style="background:' + t.vars.bg + '"></span>' +
           '<span class="s-dot" style="background:' + t.vars.accent + '"></span>' +
-        '</span>' + t.name +
-        (locked ? '<span class="s-lock">🔒 ' + need + ' días</span>' : '<span class="s-check">✓</span>');
+        '</span><span class="s-name">' + t.name + '</span>' +
+        (locked ? '<span class="s-lock">🔒' + need + '</span>' : '<span class="s-check">✓</span>');
       b.addEventListener('click', ()=>{
         if(locked){ toast('Se desbloquea a los ' + need + ' días ganados. Vas ' + ganados + '.'); return; }
         themeSel = {modo:'preset', id:t.id};
@@ -1497,7 +1519,7 @@
 
   // --- efecto visual (independiente del color: se combina con TODO) ---
   const FX_KEY = 'reps-efecto';
-  const FXS = ['ninguno', 'glass', 'clay'];
+  const FXS = ['ninguno', 'glass', 'clay', 'neon'];
   let fx = 'ninguno';
 
   function loadFx(){
@@ -1509,6 +1531,7 @@
   function applyFx(){
     document.body.classList.toggle('fx-glass', fx === 'glass');
     document.body.classList.toggle('fx-clay', fx === 'clay');
+    document.body.classList.toggle('fx-neon', fx === 'neon');
     document.querySelectorAll('.fx-opt').forEach(b =>
       b.classList.toggle('active', b.dataset.fx === fx));
   }
@@ -1828,6 +1851,15 @@
   $('welBack').addEventListener('click', ()=>{ if(onb.step > 0){ onb.step--; renderOnb(); } });
   $('welcome').addEventListener('click', (e)=>{ /* fondo no cierra: es un flujo */ });
   $('rehacerBienvenida').addEventListener('click', ()=>{ $('themeWrap').hidden = true; abrirBienvenida(); });
+
+  // Escape siempre cierra las hojas de Ajustes y del editor (vía de escape
+  // extra; la bienvenida no, porque es un flujo con su propio botón)
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape'){
+      $('themeWrap').hidden = true;
+      $('habWrap').hidden = true;
+    }
+  });
 
   // ===== Esquema y migraciones =====
   // reps-schema versiona el FORMATO de los datos (no confundir con la

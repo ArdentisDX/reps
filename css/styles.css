@@ -295,19 +295,20 @@ h1 span{color:var(--amber)}
 .gear:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .theme-wrap{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;z-index:60}
 .theme-wrap[hidden]{display:none}
-.theme-sheet{width:100%;max-width:460px;background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom))}
-.t-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.theme-sheet{width:100%;max-width:460px;background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;padding:0 16px calc(20px + env(safe-area-inset-bottom));max-height:86dvh;overflow-y:auto;overscroll-behavior:contain}
+.t-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;position:sticky;top:0;z-index:2;background:var(--card);padding:18px 0 10px}
 .t-head h2{font-size:14px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
 .t-head button{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px 8px}
-.t-list{display:flex;flex-direction:column;gap:8px}
-.swatch{display:flex;align-items:center;gap:12px;background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:11px 12px;color:var(--text);font:inherit;font-size:14px;font-weight:600;cursor:pointer;text-align:left}
+.t-list{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.swatch{display:flex;align-items:center;gap:8px;background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:10px 10px;color:var(--text);font:inherit;font-size:13px;font-weight:600;cursor:pointer;text-align:left;min-width:0}
 .swatch.active{border-color:var(--amber)}
-.swatch .s-dots{display:flex;gap:4px}
-.swatch .s-dot{width:18px;height:18px;border-radius:50%;border:1px solid var(--line)}
+.swatch .s-dots{display:flex;gap:3px;flex-shrink:0}
+.swatch .s-dot{width:15px;height:15px;border-radius:50%;border:1px solid var(--line)}
+.swatch .s-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .swatch .s-check{margin-left:auto;color:var(--amber);font-weight:800;visibility:hidden}
 .swatch.active .s-check{visibility:visible}
 .swatch.locked{opacity:.5}
-.swatch .s-lock{margin-left:auto;font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap}
+.swatch .s-lock{margin-left:auto;font-size:10px;color:var(--muted);font-weight:700;white-space:nowrap;flex-shrink:0}
 .t-sub{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:16px 0 8px}
 .t-row{display:flex;justify-content:space-between;align-items:center;background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:14px}
 .t-row input[type=color]{width:46px;height:32px;border:1px solid var(--line);background:none;padding:2px;cursor:pointer;border-radius:8px}
@@ -371,6 +372,20 @@ body.fx-clay .ident, body.fx-clay .espejo{
     inset -3px -3px 6px rgba(0,0,0,.22)}
 body.fx-clay .habit .check, body.fx-clay .mood, body.fx-clay .dist-opt,
 body.fx-clay .cierre textarea, body.fx-clay .wp-inp{border-radius:14px}
+
+/* ===== Efecto neón (brillo del acento, combinable con cualquier color) ===== */
+body.fx-neon .tabs, body.fx-neon .streak, body.fx-neon .week,
+body.fx-neon .habit, body.fx-neon .prog, body.fx-neon .cierre,
+body.fx-neon .capa, body.fx-neon .slot, body.fx-neon .idea,
+body.fx-neon .cal, body.fx-neon .stat-card, body.fx-neon .cal-detail,
+body.fx-neon .week-plan, body.fx-neon .theme-sheet, body.fx-neon .pulso,
+body.fx-neon .ident, body.fx-neon .espejo{
+  border-color:color-mix(in srgb, var(--amber) 45%, transparent);
+  box-shadow:0 0 14px color-mix(in srgb, var(--amber) 14%, transparent),
+             inset 0 0 10px color-mix(in srgb, var(--amber) 5%, transparent)}
+body.fx-neon .streak .num{text-shadow:0 0 16px color-mix(in srgb, var(--amber) 65%, transparent)}
+body.fx-neon .stamp{box-shadow:0 0 22px color-mix(in srgb, var(--amber) 45%, transparent)}
+body.fx-neon h1 span{text-shadow:0 0 12px color-mix(in srgb, var(--amber) 80%, transparent)}
 
 /* ===== Distribución: compacto y minimalista ===== */
 /* Clases en <body>: "compact" = densidad; "minimal" = compact + ocultar
