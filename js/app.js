@@ -1701,6 +1701,103 @@
     rebuildCore(); saveHabitos(); render(); renderHabEditor();
   });
 
+  // ===== Metas (corto / mediano / largo plazo) =====
+  const METAS_KEY = 'reps-metas';
+  const PLAZOS = [
+    {id:'corto',   name:'Corto plazo',   sub:'semanas'},
+    {id:'mediano', name:'Mediano plazo', sub:'meses'},
+    {id:'largo',   name:'Largo plazo',   sub:'el año o más'},
+  ];
+  let metas = [];
+  let metaPlazoSel = 'corto';
+
+  function loadMetas(){
+    try{
+      const v = JSON.parse(localStorage.getItem(METAS_KEY));
+      if(Array.isArray(v)){
+        metas = v.filter(m => m && typeof m.texto === 'string' && m.texto.trim()).map(m => ({
+          id: typeof m.id === 'string' ? m.id : 'm' + Math.random().toString(36).slice(2,8),
+          texto: m.texto.trim(),
+          plazo: ['corto','mediano','largo'].includes(m.plazo) ? m.plazo : 'corto',
+          hecha: !!m.hecha,
+          creada: m.creada || new Date().toISOString(),
+        }));
+      }
+    }catch(e){ metas = []; }
+  }
+  function saveMetas(){
+    try{ localStorage.setItem(METAS_KEY, JSON.stringify(metas)); }
+    catch(e){ toast('No se pudo guardar. Reintenta.'); }
+  }
+  function addMeta(texto, plazo){
+    metas.unshift({ id: 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2,5), texto, plazo, hecha:false, creada:new Date().toISOString() });
+    saveMetas(); renderMetas();
+  }
+
+  function renderMetas(){
+    const hechas = metas.filter(m => m.hecha).length;
+    $('metasTag').textContent = metas.length ? (hechas + '/' + metas.length + ' cumplidas') : '';
+
+    const list = $('metasList'); list.innerHTML = '';
+    if(metas.length === 0){
+      const e = document.createElement('div'); e.className = 'meta-empty';
+      e.textContent = 'Aún no tienes metas. Escribe una arriba 👆 — un norte le da sentido a los días.';
+      list.appendChild(e);
+      return;
+    }
+    PLAZOS.forEach(p => {
+      const grupo = metas.filter(m => m.plazo === p.id);
+      if(!grupo.length) return;
+      const done = grupo.filter(m => m.hecha).length;
+
+      const g = document.createElement('div'); g.className = 'meta-group';
+      const head = document.createElement('div'); head.className = 'mg-head';
+      const t = document.createElement('span'); t.className = 'mg-t'; t.textContent = p.name;
+      const n = document.createElement('span'); n.className = 'mg-n'; n.textContent = done + '/' + grupo.length;
+      head.append(t, n);
+      const bar = document.createElement('div'); bar.className = 'mg-bar';
+      const fill = document.createElement('i'); fill.style.width = Math.round(done/grupo.length*100) + '%';
+      bar.appendChild(fill);
+      g.append(head, bar);
+
+      grupo.forEach(m => {
+        const row = document.createElement('div'); row.className = 'meta' + (m.hecha ? ' done' : '');
+        const main = document.createElement('button');
+        main.className = 'm-main'; main.setAttribute('aria-pressed', m.hecha);
+        const box = document.createElement('span'); box.className = 'm-box'; box.textContent = '✓';
+        const txt = document.createElement('span'); txt.className = 'm-text'; txt.textContent = m.texto;
+        main.append(box, txt);
+        main.addEventListener('click', ()=>{
+          m.hecha = !m.hecha; saveMetas(); renderMetas();
+          if(m.hecha) toast(p.id === 'largo' ? '🏆 ¡Meta grande cumplida! Enorme.' : '🎯 ¡Meta cumplida!');
+        });
+        const del = document.createElement('button');
+        del.className = 'm-del'; del.textContent = '✕'; del.setAttribute('aria-label', 'Borrar meta');
+        del.addEventListener('click', ()=>{
+          metas = metas.filter(x => x.id !== m.id); saveMetas(); renderMetas();
+          toast('Meta borrada.');
+        });
+        row.append(main, del);
+        g.appendChild(row);
+      });
+      list.appendChild(g);
+    });
+  }
+
+  document.querySelectorAll('.meta-plazo').forEach(b => b.addEventListener('click', ()=>{
+    metaPlazoSel = b.dataset.plazo;
+    document.querySelectorAll('.meta-plazo').forEach(x => x.classList.toggle('on', x === b));
+  }));
+  function capturarMeta(){
+    const t = $('metaInput').value.trim();
+    if(!t) return;
+    addMeta(t, metaPlazoSel);
+    $('metaInput').value = '';
+    toast('Meta agregada. A por ella.');
+  }
+  $('metaAdd').addEventListener('click', capturarMeta);
+  $('metaInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); capturarMeta(); } });
+
   // ===== Temporizador de foco (estilo Forest) =====
   const FOCO_KEY = 'reps-foco';
   let focoTotal = 0; // minutos enfocados acumulados (solo crecen)
@@ -1975,7 +2072,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-metas', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -2106,7 +2203,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-metas': metas },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -2182,6 +2279,9 @@
         const fo = parseInt(b.data['reps-foco'], 10);
         if(fo >= 0) localStorage.setItem(FOCO_KEY, String(fo));
         else localStorage.removeItem(FOCO_KEY);
+        const mt = b.data['reps-metas'];
+        if(Array.isArray(mt)) localStorage.setItem(METAS_KEY, JSON.stringify(mt));
+        else localStorage.removeItem(METAS_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -2200,6 +2300,7 @@
       cierreSemana = {}; loadCierreSemana();
       perfil = null; loadPerfil(); aplicarNombre();
       focoTotal = 0; loadFoco();
+      metas = []; loadMetas(); renderMetas();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -2240,7 +2341,9 @@
   loadCaidas();    // antes de render(): el ritual y El Espejo leen las caídas
   loadHitos();     // antes de render(): siembra lo ya logrado sin celebrar
   loadFoco();      // antes de render(): el total de foco se muestra en Stats
+  loadMetas();
   render();
+  renderMetas();
   renderTray();
   renderSemana();
   fillCierreForm();

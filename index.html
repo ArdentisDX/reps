@@ -139,6 +139,20 @@
   </div>
 
   <div class="panel" id="p-ruta">
+    <div class="metas">
+      <div class="sec-head"><h2>Mis metas</h2><div class="tag" id="metasTag"></div></div>
+      <div class="meta-add">
+        <input id="metaInput" type="text" placeholder="Una meta que quieras cumplir…" autocomplete="off" maxlength="120">
+        <div class="meta-plazos" id="metaPlazos">
+          <button class="meta-plazo on" type="button" data-plazo="corto">Corto</button>
+          <button class="meta-plazo" type="button" data-plazo="mediano">Mediano</button>
+          <button class="meta-plazo" type="button" data-plazo="largo">Largo</button>
+          <button class="meta-go" id="metaAdd" type="button" aria-label="Agregar meta">＋</button>
+        </div>
+      </div>
+      <div id="metasList"></div>
+    </div>
+    <div class="sec-head" style="margin-top:24px"><h2>La ruta</h2><div class="tag">tu mapa de capas</div></div>
     <div class="capa activa">
       <div class="c-head"><span class="c-num">Capa 1 · Ahora</span><span class="c-status on">Activa</span></div>
       <div class="c-title">Base + primera obra</div>
