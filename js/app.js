@@ -383,10 +383,12 @@
       const cur = dias[k] || {};
       const wasWon = isWon(cur, k);
       cur[h.id] = !cur[h.id];
+      const nowOn = !!cur[h.id];
       dias[k] = cur;
       save();
       render();
-      if(!wasWon && isWon(cur, k)) toast('Día ganado. Una rep más. 🔥');
+      if(!wasWon && isWon(cur, k)){ sonarGanado(); toast('Día ganado. Una rep más. 🔥'); }
+      else if(nowOn) sonarCheck(); // solo al marcar, no al desmarcar
     });
     return b;
   }
@@ -584,7 +586,7 @@
       meta.textContent = (c ? c.name : '') + ' · ' + timeAgo(i.created) + (i.done ? ' · hecha ✓' : '');
       body.append(txt, meta);
       main.append(emoji, body);
-      main.addEventListener('click', ()=>{ i.done = !i.done; saveTray(); renderTray(); });
+      main.addEventListener('click', ()=>{ i.done = !i.done; if(i.done) sonarCheck(); saveTray(); renderTray(); });
 
       const del = document.createElement('button');
       del.className = 'i-del'; del.textContent = '✕';
@@ -1533,7 +1535,11 @@
     $('pickBg').value = v.bg;
   }
 
-  $('themeBtn').addEventListener('click', ()=>{ renderThemeUI(); $('themeWrap').hidden = false; });
+  $('themeBtn').addEventListener('click', ()=>{ renderThemeUI(); $('sonidoToggle').checked = focoSonido; $('themeWrap').hidden = false; });
+  $('sonidoToggle').addEventListener('change', ()=>{
+    focoSonido = $('sonidoToggle').checked; saveSonido();
+    if(focoSonido) sonarCheck(); // pequeña confirmación al encender
+  });
   $('themeClose').addEventListener('click', ()=>{ $('themeWrap').hidden = true; });
   $('themeWrap').addEventListener('click', (e)=>{ if(e.target === $('themeWrap')) $('themeWrap').hidden = true; });
 
@@ -1769,7 +1775,10 @@
         main.append(box, txt);
         main.addEventListener('click', ()=>{
           m.hecha = !m.hecha; saveMetas(); renderMetas();
-          if(m.hecha) toast(p.id === 'largo' ? '🏆 ¡Meta grande cumplida! Enorme.' : '🎯 ¡Meta cumplida!');
+          if(m.hecha){
+            (p.id === 'largo' ? sonarGanado : sonarCheck)();
+            toast(p.id === 'largo' ? '🏆 ¡Meta grande cumplida! Enorme.' : '🎯 ¡Meta cumplida!');
+          }
         });
         const del = document.createElement('button');
         del.className = 'm-del'; del.textContent = '✕'; del.setAttribute('aria-label', 'Borrar meta');
@@ -1845,6 +1854,27 @@
       tono(523.25, 0,    0.55, 0.28);
       tono(659.25, 0.13, 0.55, 0.24);
       tono(783.99, 0.26, 0.80, 0.22);
+    }catch(e){}
+  }
+  // pop corto y satisfactorio al marcar algo como hecho (hábito, meta, idea)
+  function sonarCheck(){
+    try{ if(navigator.vibrate) navigator.vibrate(12); }catch(e){}
+    if(!focoSonido) return;
+    try{
+      unlockAudio(); if(!audioCtx) return;
+      tono(660, 0,    0.09, 0.20);
+      tono(990, 0.05, 0.11, 0.16);
+    }catch(e){}
+  }
+  // pequeño fanfarrón al GANAR el día (los 3 core listos) o cumplir meta grande
+  function sonarGanado(){
+    try{ if(navigator.vibrate) navigator.vibrate([40, 50, 90]); }catch(e){}
+    if(!focoSonido) return;
+    try{
+      unlockAudio(); if(!audioCtx) return;
+      tono(659.25, 0,    0.18, 0.24);
+      tono(783.99, 0.09, 0.18, 0.24);
+      tono(1046.5, 0.18, 0.40, 0.22);
     }catch(e){}
   }
 
