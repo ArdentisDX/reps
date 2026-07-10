@@ -659,7 +659,73 @@
     return out;
   }
 
+  // ===== El Pulso: cómo vienes, según ánimo + consistencia =====
+  const ANIMO_SCORE = { bien: 2, regular: 1, mal: 0 };
+
+  function pulsoData(){
+    const conAnimo = Object.keys(cierres).filter(k => cierres[k] && cierres[k].animo).sort();
+    const ult = conAnimo.slice(-5); // los 5 cierres con ánimo más recientes
+    const animoAvg = ult.length ? ult.reduce((s,k)=> s + ANIMO_SCORE[cierres[k].animo], 0) / ult.length : null;
+    let won7 = 0;
+    for(let i = 0; i < 7; i++){ const d = new Date(); d.setDate(d.getDate() - i); if(isWon(dias[localISO(d)])) won7++; }
+    const consist = won7 / 7;
+    if(animoAvg === null && Object.keys(dias).length < 3) return { nivel: null };
+    // el ánimo pesa más (es el dato que el cierre nocturno alimenta)
+    const pulso = animoAvg === null ? Math.round(consist * 100)
+      : Math.round((animoAvg / 2 * 0.6 + consist * 0.4) * 100);
+    const nivel = pulso >= 66 ? 'verde' : pulso >= 40 ? 'ambar' : 'rojo';
+    return { nivel, pulso };
+  }
+
+  // promedio de ánimo por semana (lunes a domingo) de las últimas 8 semanas
+  function moodTrend(){
+    const out = [];
+    for(let w = 7; w >= 0; w--){
+      const mon = mondayOf(new Date()); mon.setDate(mon.getDate() - w * 7);
+      let sum = 0, n = 0;
+      for(let i = 0; i < 7; i++){
+        const d = new Date(mon); d.setDate(d.getDate() + i);
+        const c = cierres[localISO(d)];
+        if(c && c.animo){ sum += ANIMO_SCORE[c.animo]; n++; }
+      }
+      out.push(n ? sum / n : null);
+    }
+    return out;
+  }
+
+  function renderPulso(){
+    const p = pulsoData();
+    const nivelTxt = { verde: 'En forma', ambar: 'Sostente', rojo: 'Cuídate' };
+    const msgTxt = {
+      verde: 'Vienes fuerte. Aprovecha para subir un peldaño.',
+      ambar: 'Ritmo estable. Un día a la vez.',
+      rojo: 'Semana pesada. Hoy gana chiquito, sin culpa.',
+    };
+    const dot = $('pulsoDot');
+    dot.className = 'pu-dot' + (p.nivel ? ' ' + p.nivel : '');
+    if(!p.nivel){
+      $('pulsoNivel').textContent = 'Aún sin pulso';
+      $('pulsoMsg').textContent = 'Cierra tus días unos días y aquí verás cómo vienes.';
+    } else {
+      $('pulsoNivel').textContent = nivelTxt[p.nivel];
+      $('pulsoMsg').textContent = msgTxt[p.nivel];
+    }
+
+    // barras: una por semana; altura = ánimo promedio (0–2). Sin datos = fantasma.
+    const chart = $('pulsoChart'); chart.innerHTML = '';
+    moodTrend().forEach(avg => {
+      const bar = document.createElement('div'); bar.className = 'pu-bar';
+      if(avg === null){ bar.classList.add('empty'); }
+      else {
+        bar.style.height = Math.max(8, Math.round(avg / 2 * 100)) + '%';
+        bar.classList.add(avg >= 1.34 ? 'verde' : avg >= 0.67 ? 'ambar' : 'rojo');
+      }
+      chart.appendChild(bar);
+    });
+  }
+
   function renderStats(){
+    renderPulso();
     const s = statsData();
     $('stTotal').textContent = s.total;
     $('stBest').textContent = s.best;

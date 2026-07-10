@@ -143,6 +143,23 @@ h1 span{color:var(--amber)}
 .stat-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}
 .stat-num{font-size:30px;font-weight:800;line-height:1.1;color:var(--amber)}
 .stat-lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:4px}
+
+/* ===== El Pulso ===== */
+.pulso{margin-top:9px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}
+.pu-top{display:flex;align-items:center;gap:12px}
+.pu-dot{width:16px;height:16px;min-width:16px;border-radius:50%;background:var(--muted)}
+.pu-dot.verde{background:#4fd6be;box-shadow:0 0 0 4px color-mix(in srgb,#4fd6be 22%,transparent)}
+.pu-dot.ambar{background:var(--amber);box-shadow:0 0 0 4px var(--amber-dim)}
+.pu-dot.rojo{background:var(--red);box-shadow:0 0 0 4px color-mix(in srgb,var(--red) 22%,transparent)}
+.pu-nivel{font-size:15px;font-weight:800}
+.pu-msg{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}
+.pu-chart{display:flex;align-items:flex-end;gap:5px;height:56px;margin-top:14px}
+.pu-bar{flex:1;min-height:4px;border-radius:5px 5px 0 0;background:var(--muted);opacity:.9}
+.pu-bar.verde{background:#4fd6be}
+.pu-bar.ambar{background:var(--amber)}
+.pu-bar.rojo{background:var(--red)}
+.pu-bar.empty{height:8px;background:var(--line);opacity:.5}
+.pu-legend{font-size:11px;color:var(--muted);margin-top:8px}
 .cal{margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
 .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .cal-title{font-size:14px;font-weight:700;text-transform:capitalize}
