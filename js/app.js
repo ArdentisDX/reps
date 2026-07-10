@@ -360,6 +360,18 @@
       body.appendChild(pb);
     }
     b.append(check, body);
+    // ▶ enfocar: abre el temporizador para este hábito. role=button (no se
+    // puede anidar <button> real dentro del <button> de la tarjeta).
+    if(!done){
+      const play = document.createElement('span');
+      play.className = 'h-foco'; play.textContent = '▶';
+      play.setAttribute('role', 'button'); play.setAttribute('tabindex', '0');
+      play.setAttribute('aria-label', 'Enfocar en ' + h.name);
+      const lanzar = (e)=>{ e.stopPropagation(); e.preventDefault(); abrirFoco(h.id, h.name); };
+      play.addEventListener('click', lanzar);
+      play.addEventListener('keydown', (e)=>{ if(e.key === 'Enter' || e.key === ' ') lanzar(e); });
+      b.appendChild(play);
+    }
     if(h.core){
       const mark = document.createElement('span'); mark.className = 'core-mark'; mark.textContent = 'CORE';
       b.appendChild(mark);
@@ -915,6 +927,15 @@
       const row = document.createElement('div'); row.className = 'id-row id-regresos';
       const name = document.createElement('span'); name.textContent = '🔄 Has vuelto después de caer';
       const num = document.createElement('span'); num.className = 'id-num'; num.textContent = reg + '×';
+      row.append(name, num);
+      il.appendChild(row);
+    }
+    if(focoTotal > 0){
+      const row = document.createElement('div'); row.className = 'id-row id-regresos';
+      const name = document.createElement('span'); name.textContent = '🎯 Tiempo enfocado';
+      const h = Math.floor(focoTotal / 60), m = focoTotal % 60;
+      const num = document.createElement('span'); num.className = 'id-num';
+      num.textContent = h > 0 ? (h + 'h ' + m + 'm') : (m + 'm');
       row.append(name, num);
       il.appendChild(row);
     }
@@ -1680,6 +1701,78 @@
     rebuildCore(); saveHabitos(); render(); renderHabEditor();
   });
 
+  // ===== Temporizador de foco (estilo Forest) =====
+  const FOCO_KEY = 'reps-foco';
+  let focoTotal = 0; // minutos enfocados acumulados (solo crecen)
+  let foco = { habitId:null, habitName:'', min:25, endTime:0, totalSec:0, timer:null, wakeLock:null };
+
+  function loadFoco(){
+    try{ const v = parseInt(localStorage.getItem(FOCO_KEY), 10); if(v >= 0) focoTotal = v; }
+    catch(e){ focoTotal = 0; }
+  }
+  function saveFoco(){ try{ localStorage.setItem(FOCO_KEY, String(focoTotal)); }catch(e){} }
+
+  async function pedirWakeLock(){
+    try{ if('wakeLock' in navigator) foco.wakeLock = await navigator.wakeLock.request('screen'); }catch(e){}
+  }
+  function soltarWakeLock(){
+    try{ if(foco.wakeLock){ foco.wakeLock.release(); foco.wakeLock = null; } }catch(e){}
+  }
+
+  function abrirFoco(habitId, habitName){
+    foco.habitId = habitId; foco.habitName = habitName; foco.min = 25;
+    $('focoHab').textContent = '🎯 ' + habitName;
+    document.querySelectorAll('.foco-dur').forEach(b => b.classList.toggle('on', b.dataset.min === '25'));
+    $('focoSetup').hidden = false; $('focoRun').hidden = true;
+    $('foco').hidden = false;
+  }
+  function cerrarFoco(){
+    if(foco.timer){ clearInterval(foco.timer); foco.timer = null; }
+    soltarWakeLock();
+    $('foco').hidden = true;
+  }
+  function pintarFoco(){
+    const left = Math.max(0, Math.round((foco.endTime - Date.now()) / 1000));
+    const mm = String(Math.floor(left / 60)).padStart(2, '0');
+    const ss = String(left % 60).padStart(2, '0');
+    $('focoTime').textContent = mm + ':' + ss;
+    const pct = foco.totalSec ? (foco.totalSec - left) / foco.totalSec * 100 : 0;
+    $('focoRing').style.setProperty('--p', pct.toFixed(1) + '%');
+    if(left <= 0){ completarFoco(true); }
+  }
+  function empezarFoco(){
+    foco.totalSec = foco.min * 60;
+    foco.endTime = Date.now() + foco.totalSec * 1000; // por reloj real: sobrevive al throttle en segundo plano
+    $('focoSetup').hidden = true; $('focoRun').hidden = false;
+    pintarFoco();
+    foco.timer = setInterval(pintarFoco, 1000);
+    pedirWakeLock();
+  }
+  // completar: full = llegó a 0; si no, cuenta los minutos transcurridos
+  function completarFoco(full){
+    const transcurridos = full ? foco.min : Math.max(1, Math.round((foco.totalSec - Math.max(0, (foco.endTime - Date.now())/1000)) / 60));
+    focoTotal += transcurridos; saveFoco();
+    // marca el hábito hecho hoy (misma lógica que el clic normal, fecha fresca)
+    const k = today(); const cur = dias[k] || {}; const wasWon = isWon(cur, k);
+    cur[foco.habitId] = true; dias[k] = cur; save();
+    cerrarFoco();
+    render();
+    if(!wasWon && isWon(cur, k)) toast('Día ganado. Una rep más. 🔥');
+    else toast('🎯 ' + transcurridos + ' min de foco. Bien hecho.');
+  }
+  // re-pide el wake lock al volver a la app (el sistema lo suelta al ocultar)
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState === 'visible' && foco.timer && !foco.wakeLock) pedirWakeLock();
+  });
+  document.querySelectorAll('.foco-dur').forEach(b => b.addEventListener('click', ()=>{
+    foco.min = parseInt(b.dataset.min, 10);
+    document.querySelectorAll('.foco-dur').forEach(x => x.classList.toggle('on', x === b));
+  }));
+  $('focoStart').addEventListener('click', empezarFoco);
+  $('focoCancelSetup').addEventListener('click', cerrarFoco);
+  $('focoCancel').addEventListener('click', cerrarFoco);
+  $('focoDone').addEventListener('click', ()=> completarFoco(false));
+
   // ===== Bienvenida: cuestionario que moldea los hábitos al usuario =====
   // 100% local: construye un perfil y una lista de hábitos a la medida.
   // (El perfil será, en la fase 2, el contexto que la IA use para conocerte.)
@@ -1882,7 +1975,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -2013,7 +2106,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -2086,6 +2179,9 @@
         const pf = b.data['reps-perfil'];
         if(esMapa(pf)) localStorage.setItem(PERFIL_KEY, JSON.stringify(pf));
         else localStorage.removeItem(PERFIL_KEY);
+        const fo = parseInt(b.data['reps-foco'], 10);
+        if(fo >= 0) localStorage.setItem(FOCO_KEY, String(fo));
+        else localStorage.removeItem(FOCO_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -2103,6 +2199,7 @@
       hitosVistos = []; loadHitos();
       cierreSemana = {}; loadCierreSemana();
       perfil = null; loadPerfil(); aplicarNombre();
+      focoTotal = 0; loadFoco();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -2142,6 +2239,7 @@
   procesarRacha(); // aplica congeladores por los días transcurridos
   loadCaidas();    // antes de render(): el ritual y El Espejo leen las caídas
   loadHitos();     // antes de render(): siembra lo ya logrado sin celebrar
+  loadFoco();      // antes de render(): el total de foco se muestra en Stats
   render();
   renderTray();
   renderSemana();

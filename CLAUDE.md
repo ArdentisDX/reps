@@ -48,6 +48,7 @@ directo sobre un Date: corre el día en zonas horarias negativas.
 | `reps-caidas` | `{fecha: motivoId}` | Ritual de derrota: por qué murió una racha ese día. `motivoId` ∈ desvelo/celular/animo/imprevisto/otro. Clave aditiva (sin cambio de schema); alimenta un insight de El Espejo. |
 | `reps-hitos` | `["dias7", "racha14", ...]` | IDs de hitos ya celebrados (para no repetir). `loadHitos()` siembra los ya logrados sin celebrar la primera vez; `checkHitos()` festeja solo los nuevos. Clave aditiva. Los temas se desbloquean por `statsData().total` (sin clave). |
 | `reps-perfil` | `{nombre, despertar, construir:[], tiempo, creado}` o `{saltado:true, creado}` | Perfil del cuestionario de bienvenida (onboarding). Su presencia = onboarding completado (no reaparece). En instalación nueva (sin `reps-dias`/`reps-perfil`/`reps-habitos`) el asistente auto-abre; `generarHabitos()` arma la lista. Re-lanzable desde Ajustes. Será el contexto de la IA (fase 2). Clave aditiva. |
+| `reps-foco` | `"N"` (minutos, número como string) | Total de minutos enfocados (temporizador de foco). Solo crece; se muestra en Identidad. El temporizador usa reloj real (`endTime`) para sobrevivir al throttle en segundo plano, y Wake Lock para no apagar pantalla. Clave aditiva. |
 | `reps-schema` | `"N"` (número como string) | Versión del FORMATO de los datos. La gestiona `migrate()`; no tocar a mano. |
 | `reps-pre-migracion` | `{de, a, fecha, crudo}` | Copia cruda automática previa a la última migración. Solo lectura; no va en el respaldo exportado. |
 
