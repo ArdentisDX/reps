@@ -79,13 +79,55 @@
   el perfil del test + historial de hábitos e ideas.
 - El tono: alguien que te escucha y aconseja, que te conoce de pies a cabeza.
 
-## Capa 5 — Cuentas y sincronización
+## Capa 5 — Cuentas, login y sincronización
 
-- Inicio de sesión, datos sincronizados entre dispositivos.
-- Es la capa más delicada (seguridad y privacidad); va al final a propósito.
-- Nota técnica: el formato del respaldo JSON ya es, en la práctica, el
-  esquema de sincronización — sincronizar será "subir/bajar respaldos con
-  resolución de conflictos por fecha", no un rediseño.
+- Inicio de sesión (Gmail/Facebook/Twitter/correo) + datos en la nube,
+  sincronizados entre dispositivos.
+- Es la capa **más delicada** (seguridad y privacidad); va al final a
+  propósito, DESPUÉS del mini-backend de la Capa 3.
+
+### Verdad técnica (por qué es un proyecto propio, no un "solo agregar login")
+
+El "iniciar sesión con Google/Facebook" y guardar cuentas **necesita un
+servidor con base de datos**. Una PWA estática de GitHub Pages no puede
+hacerlo sola (OAuth necesita un secreto del lado servidor; las cuentas
+necesitan dónde vivir). Rompe la promesa de "offline eterno, sin
+dependencias" — por eso es una decisión de peso, no un incremento.
+
+**Dos caminos:**
+
+1. **Auth hospedado (recomendado para empezar): Firebase o Supabase.**
+   - No hay que levantar un servidor propio: el proveedor es el backend.
+   - Firebase Auth da Google/Facebook/Twitter/correo desde el cliente;
+     Firestore/Supabase-Postgres guarda los datos con reglas de seguridad.
+   - Costos reales: **dependencia nueva + internet obligatorio** (adiós
+     pureza offline; habría que degradar con gracia a modo local sin
+     conexión), **registrar apps de desarrollador con Google, Facebook Y
+     Twitter** por separado (Facebook/Twitter piden revisión y son un
+     dolor), y llaves del proyecto en el cliente (las de Firebase son
+     públicas por diseño, pero igual hay que configurar dominios y reglas).
+   - Encaja natural con el Worker de la Capa 3 (mismo proveedor o vecino).
+
+2. **Backend propio (Worker + D1/KV o similar).** Más control y sin atarse
+   a un proveedor, pero hay que construir el OAuth-dance, sesiones y la
+   base — mucho más trabajo y superficie de seguridad.
+
+**Diseño de la sincronización (aplica a cualquier camino):**
+- El respaldo JSON (`exportBackup`) **ya es el esquema de sync**:
+  sincronizar = "subir/bajar ese blob con resolución de conflictos".
+- Estrategia simple y robusta: por-clave y por-fecha. Los mapas indexados
+  por día (`reps-dias`, `reps-cierres`, `reps-semana`) fusionan bien
+  (gana el registro más reciente por fecha). `reps-habitos`/`reps-tema`
+  son "último que escribe gana" por dispositivo.
+- Regla de oro que NO se negocia: **la app sigue 100% funcional sin
+  cuenta y sin internet**. El login es aditivo (respalda/sincroniza), no
+  un muro de entrada. El modo actual (local + export/import manual) queda
+  como el camino sin-cuenta para siempre.
+- Privacidad: el usuario decide. Nada sale del dispositivo hasta que
+  inicia sesión a propósito. Ofrecer "exportar y borrar mi cuenta".
+
+**Precondición:** existir primero el Worker de la Capa 3 (para la clave
+de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 
 ## Reglas del proyecto
 

@@ -172,7 +172,8 @@ Hacerlo antes del primer modo nuevo; el modo minimalista es el piloto.
 | ✅ | Hábitos por día de la semana | alto | grande | HECHO jul 2026 (migración v5→v6, 3 estados: ganado/descanso/perdido) |
 | 1 | Plan B por hábito (versión mínima) | alto | chico | Cierra el anti-castigo de hábitos |
 | 3 | Temporizador de foco (Forest) | medio | mediano | Wake Lock + marca el hábito solo |
-| 4 | Test de bienvenida + metas (Capa 2) | medio | mediano | Prepara el contexto para la IA |
+| ✅ | Test de bienvenida (onboarding) | medio | mediano | HECHO jul 2026 (reps-perfil; moldea hábitos al usuario nuevo) |
+| 4 | Metas corto/mediano/largo plazo (Capa 2) | medio | mediano | Falta la otra mitad de la Capa 2 |
 | 5 | Gráficas de tendencia extra en Stats | medio | chico | Amplía el Pulso |
 | 6 | Refactor view-models (habilita modos) | medio | mediano | Puerta a Bento / UI Espacial / HUD |
 | 7 | XP y niveles (Habitica) | medio | mediano | Después del retro/pixel gana más |
@@ -193,7 +194,7 @@ Hacerlo antes del primer modo nuevo; el modo minimalista es el piloto.
 
 - **S1–S2** — Hábitos por día de la semana (con su migración v5→v6). La sesión delicada.
 - **S3** — Plan B por hábito + temporizador de foco.
-- **S4** — Test de bienvenida + metas (cierra la Capa 2 del ROADMAP).
+- **S4** — Metas corto/mediano/largo plazo (cierra la Capa 2 del ROADMAP).
 - **S5** — Refactor view-models (primer modo-layout real: Bento o UI Espacial).
 
 La IA (Capa 3) entra en el mes 3, con la app ya personalizable y el
