@@ -38,12 +38,18 @@
         <div class="lbl">Racha de días ganados</div>
         <div class="sub" id="streakSub">Gana hoy para encenderla.</div>
         <div class="frz" id="frzInfo" hidden></div>
+        <div class="pres" id="presInfo" hidden></div>
         <div class="warn" id="streakWarn" hidden>⚠ Ayer no cayó. No falles 2 seguidos.</div>
       </div>
     </div>
+    <div class="empuje" id="empuje" hidden></div>
     <div class="rescate" id="rescate" hidden>
       <div class="rs-title">🌱 Modo rescate</div>
       <div class="rs-body" id="rescateTxt"></div>
+      <div class="rs-carta" id="rsCarta" hidden>
+        <div class="rs-carta-de" id="rsCartaDe"></div>
+        <div class="rs-carta-txt" id="rsCartaTxt"></div>
+      </div>
     </div>
     <div class="ritual" id="ritual" hidden>
       <div class="ri-title" id="ritualTxt"></div>
@@ -282,6 +288,8 @@
       <div class="t-sub">Tu perfil</div>
       <button class="hab-add" id="rehacerBienvenida" style="margin-top:0">🙋 Rehacer la bienvenida</button>
       <div class="t-note">Vuelve a hacer el cuestionario para rearmar tus hábitos.</div>
+      <button class="hab-add" id="cartaBtn" style="margin-top:8px">💌 Carta a tu yo perdido</button>
+      <div class="t-note">Escríbela un día bueno. Solo aparecerá cuando lleves 2+ días caídos.</div>
     </div>
   </div>
 
@@ -300,6 +308,16 @@
       <div id="rutList"></div>
       <button class="hab-add" id="rutAdd">＋ Agregar bloque</button>
       <div class="t-note">La ⏰ marca los bloques de <b>estructura</b>; el resto es tiempo libre. Se ordenan solos por hora (la madrugada va al final).</div>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="cartaWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Carta a tu yo perdido</h2><button id="cartaClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-note" style="margin-bottom:10px">Escríbele a la persona que serás en un mal día: por qué empezaste, qué está en juego, qué le dirías. Nadie más la verá.</div>
+      <textarea id="cartaTxt" class="carta-txt" rows="7" placeholder="Ej: Empezaste porque estabas cansado de sentirte perdido. Si estás leyendo esto, no lo arruinaste — solo tropezaste. Una cosa hoy. Solo una."></textarea>
+      <button class="cel-btn" id="cartaSave" style="width:100%;margin-top:12px">Guardar carta</button>
+      <div class="t-note" style="margin-top:10px">Guardar vacía = borrar la carta.</div>
     </div>
   </div>
 

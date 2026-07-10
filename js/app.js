@@ -209,6 +209,58 @@
     return (key in dias) && !esGanado(key) && !esDescanso(key) && !racha.congelados[key];
   }
 
+  // ===== Racha de presencia: días seguidos haciendo AL MENOS una cosa =====
+  // La racha amable: aunque no ganes el día, apareciste — y eso cuenta.
+  function huboPresencia(k){
+    const rec = dias[k];
+    return !!rec && HABITS.some(h => rec[h.id]);
+  }
+  function rachaPresencia(){
+    let n = 0;
+    const d = new Date();
+    if(!huboPresencia(today())) d.setDate(d.getDate()-1);
+    while(true){
+      const k = localISO(d);
+      if(huboPresencia(k)) n++;
+      else if(esDescanso(k) || racha.congelados[k]){ /* neutral: salta */ }
+      else break;
+      d.setDate(d.getDate()-1);
+    }
+    return n;
+  }
+
+  // ===== Empujón del día: una línea que sí te conoce =====
+  // Plantillas locales según tu estado; varía con el día del mes para no
+  // repetirse, pero es estable dentro del mismo día.
+  function empujeDelDia(won, desc, s, caidosN){
+    const pick = arr => arr[new Date().getDate() % arr.length];
+    if(desc) return pick([
+      'Descansar también construye.',
+      'Día libre por diseño. Disfrútalo sin culpa.',
+    ]);
+    if(won) return pick([
+      'Ya está. Lo de hoy nadie te lo quita.',
+      'Un voto más por quien te estás volviendo.',
+      'Día ganado. Ahora sí: cero culpa.',
+    ]);
+    if(caidosN >= 2) return ''; // el modo rescate ya habla
+    if(s >= 7) return pick([
+      'Llevas ' + s + '. Hoy la única misión es no romper la cadena.',
+      'Racha de ' + s + '. Protégela con lo mínimo si hace falta.',
+      s + ' días hablan por ti. Hoy solo firma uno más.',
+    ]);
+    if(s >= 1) return pick([
+      'Día ' + (s + 1) + ' en camino. Pequeño y constante gana.',
+      'La cadena apenas nace. Aliméntala hoy.',
+      'Vas ' + s + '. El impulso se construye ahora.',
+    ]);
+    return pick([
+      'Hoy es un buen día para el primer voto.',
+      'No necesitas ganas, necesitas empezar. Una cosa.',
+      'Empieza chiquito: el primer check jala al resto.',
+    ]);
+  }
+
   // ===== Levantarse: rescate, ritual de derrota, regresos =====
   const CAIDAS_KEY = 'reps-caidas';
   let caidas = {}; // { 'YYYY-MM-DD': motivo } — por qué murió una racha ese día
@@ -289,6 +341,49 @@
     });
     return n;
   }
+
+  // ===== Carta a tu yo perdido =====
+  // Un día bueno escribes por qué empezaste. La app la guarda y SOLO la
+  // muestra cuando llevas 2+ días caídos: tu propia voz, no frases ajenas.
+  const CARTA_KEY = 'reps-carta';
+  let carta = null; // {texto, fecha}
+  function loadCarta(){
+    try{
+      const v = JSON.parse(localStorage.getItem(CARTA_KEY));
+      if(esMapa(v) && typeof v.texto === 'string' && v.texto.trim()) carta = v;
+      else carta = null;
+    }catch(e){ carta = null; }
+  }
+  function saveCarta(){
+    try{
+      if(carta) localStorage.setItem(CARTA_KEY, JSON.stringify(carta));
+      else localStorage.removeItem(CARTA_KEY);
+    }catch(e){}
+  }
+  function renderCarta(){
+    const visible = !$('rescate').hidden && !!carta;
+    $('rsCarta').hidden = !visible;
+    if(visible){
+      const f = new Date(carta.fecha + 'T12:00:00').toLocaleDateString('es-MX', {day:'numeric', month:'long'});
+      $('rsCartaDe').textContent = '💌 De tu yo del ' + f + ':';
+      $('rsCartaTxt').textContent = '«' + carta.texto + '»';
+    }
+  }
+  $('cartaBtn').addEventListener('click', ()=>{
+    $('themeWrap').hidden = true;
+    $('cartaTxt').value = carta ? carta.texto : '';
+    $('cartaWrap').hidden = false;
+  });
+  $('cartaClose').addEventListener('click', ()=>{ $('cartaWrap').hidden = true; });
+  $('cartaWrap').addEventListener('click', (e)=>{ if(e.target === $('cartaWrap')) $('cartaWrap').hidden = true; });
+  $('cartaSave').addEventListener('click', ()=>{
+    const t = $('cartaTxt').value.trim();
+    carta = t ? { texto: t, fecha: today() } : null;
+    saveCarta();
+    $('cartaWrap').hidden = true;
+    render();
+    toast(t ? '💌 Guardada. Ojalá no haga falta pronto.' : 'Carta borrada.');
+  });
 
   // ritual de derrota: busca en los últimos 7 días la muerte de racha (de 2+)
   // más reciente que aún no hayas reconocido, y pregunta qué pasó (una vez).
@@ -436,6 +531,12 @@
     $('frzInfo').textContent = '🧊 ×' + racha.congeladores +
       (racha.congeladores === 1 ? ' congelador listo' : ' congeladores listos');
 
+    // racha de presencia: solo se muestra cuando cuenta una historia DISTINTA
+    // a la racha de días ganados (si son iguales, sería ruido)
+    const pres = rachaPresencia();
+    $('presInfo').hidden = !(pres > 0 && pres !== s);
+    $('presInfo').textContent = '🙌 Te has presentado ' + pres + ' día' + (pres === 1 ? '' : 's') + ' seguidos';
+
     // modo rescate: 2+ días caídos y hoy aún sin ganar (y hoy NO es descanso).
     const caidosN = diasCaidosSeguidos();
     const enPeligro = caidosN >= 2 && !won && !desc;
@@ -446,7 +547,13 @@
     }
     $('streakWarn').hidden = !(lostYesterday() && !won) || enPeligro;
 
+    // empujón del día: una frase que sí sabe cómo vienes
+    const emp = empujeDelDia(won, desc, s, caidosN);
+    $('empuje').hidden = !emp;
+    if(emp) $('empuje').textContent = emp;
+
     renderRitual();
+    renderCarta(); // la carta aparece junto al rescate cuando hace falta
 
     const wk = $('week'); wk.innerHTML='';
     const names = ['dom','lun','mar','mié','jue','vie','sáb'];
@@ -2272,7 +2379,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -2403,7 +2510,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -2488,6 +2595,9 @@
         const rt = b.data['reps-rutina'];
         if(Array.isArray(rt)) localStorage.setItem(RUTINA_KEY, JSON.stringify(rt));
         else localStorage.removeItem(RUTINA_KEY);
+        const ct = b.data['reps-carta'];
+        if(esMapa(ct)) localStorage.setItem(CARTA_KEY, JSON.stringify(ct));
+        else localStorage.removeItem(CARTA_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -2508,6 +2618,7 @@
       focoTotal = 0; loadFoco(); loadSonido();
       metas = []; loadMetas(); renderMetas();
       rutina = []; loadRutina(); renderRutina();
+      carta = null; loadCarta();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -2546,6 +2657,7 @@
   loadRacha();     // antes de render(): la racha visible usa los congelados
   procesarRacha(); // aplica congeladores por los días transcurridos
   loadCaidas();    // antes de render(): el ritual y El Espejo leen las caídas
+  loadCarta();     // antes de render(): el rescate muestra la carta si existe
   loadHitos();     // antes de render(): siembra lo ya logrado sin celebrar
   loadFoco();      // antes de render(): el total de foco se muestra en Stats
   loadSonido();
