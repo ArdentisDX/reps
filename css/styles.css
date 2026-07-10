@@ -305,6 +305,8 @@ h1 span{color:var(--amber)}
 .es-row{padding:10px 0;border-bottom:1px solid var(--line);font-size:13px;line-height:1.55}
 .es-row:last-child{border-bottom:none}
 .es-row.es-empty{color:var(--muted)}
+.mu-fecha{color:var(--amber);font-weight:700;font-size:12px}
+.mesvs{margin-top:9px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 16px;font-size:13px;line-height:1.5}
 
 .share-btn{margin-top:12px;width:100%;background:var(--amber);border:none;border-radius:12px;color:var(--on-accent);font:inherit;font-weight:800;font-size:14px;padding:12px 0;cursor:pointer}
 .share-btn:focus-visible{outline:2px solid var(--text);outline-offset:2px}

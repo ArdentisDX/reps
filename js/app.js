@@ -1018,6 +1018,81 @@
     });
   }
 
+  // ===== Este mes contra el pasado =====
+  // Compara el RITMO (% de días juzgables ganados), no los totales crudos:
+  // a mitad de mes los totales engañan, el ritmo no.
+  function mesVsData(){
+    const hoy = new Date();
+    const ritmo = (y, m, hastaDia) => {
+      const dmax = hastaDia || new Date(y, m + 1, 0).getDate();
+      let g = 0, req = 0;
+      for(let d = 1; d <= dmax; d++){
+        const k = localISO(new Date(y, m, d));
+        if(k > today()) break;
+        if(esDescanso(k)) continue;
+        req++;
+        if(esGanado(k)) g++;
+      }
+      return { g, req, pct: req ? Math.round(g / req * 100) : null };
+    };
+    const actual = ritmo(hoy.getFullYear(), hoy.getMonth());
+    const prevDate = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+    const pasado = ritmo(prevDate.getFullYear(), prevDate.getMonth());
+    return { actual, pasado };
+  }
+  function renderMesVs(){
+    const { actual, pasado } = mesVsData();
+    const el = $('mesVs');
+    // solo habla cuando hay algo que comparar
+    if(actual.pct === null || pasado.pct === null || pasado.req < 5){ el.hidden = true; return; }
+    const diff = actual.pct - pasado.pct;
+    const signo = diff > 0 ? '📈 +' + diff : diff < 0 ? '📉 ' + diff : '➡️ igual,';
+    el.hidden = false;
+    el.textContent = 'Este mes vas al ' + actual.pct + '% · el pasado cerraste al ' + pasado.pct + '% · ' + signo + (diff !== 0 ? ' puntos' : ' que el pasado');
+  }
+
+  // ===== Museo: tus logros reales, con fecha =====
+  function museoItems(){
+    const out = [];
+    const wonDates = Object.keys(dias).filter(k => esGanado(k)).sort();
+    if(wonDates.length) out.push({ fecha: wonDates[0], txt: '🌱 Tu primer día ganado' });
+    [[7,'🔥 Llegaste a 7 días ganados'],[30,'💪 Llegaste a 30 días ganados'],
+     [50,'⭐ Medio centenar: 50 días'],[100,'🏆 Cien días ganados'],[365,'👑 365 días: un año entero']
+    ].forEach(([n, txt]) => { if(wonDates.length >= n) out.push({ fecha: wonDates[n-1], txt }); });
+
+    // mejor mes (mínimo 5 ganados para presumir)
+    const porMes = {};
+    wonDates.forEach(k => { const m = k.slice(0, 7); porMes[m] = (porMes[m] || 0) + 1; });
+    const mejorMes = Object.keys(porMes).reduce((a, b) => porMes[b] > porMes[a] ? b : a, Object.keys(porMes)[0]);
+    if(mejorMes && porMes[mejorMes] >= 5){
+      const nombre = new Date(mejorMes + '-15T12:00:00').toLocaleDateString('es-MX', {month:'long', year:'numeric'});
+      out.push({ fecha: mejorMes + '-28', txt: '📅 Tu mejor mes: ' + nombre + ' (' + porMes[mejorMes] + ' ganados)' });
+    }
+    // metas cumplidas (la fecha mostrada es la de creación: cuándo te la propusiste)
+    metas.filter(m => m.hecha).forEach(m => {
+      out.push({ fecha: (m.creada || '').slice(0, 10) || today(), txt: '🎯 Meta cumplida: ' + m.texto });
+    });
+    return out.sort((a, b) => b.fecha.localeCompare(a.fecha)); // lo más reciente arriba
+  }
+  function renderMuseo(){
+    const list = $('museoList'); list.innerHTML = '';
+    const items = museoItems();
+    if(!items.length){
+      const p = document.createElement('div'); p.className = 'es-row es-empty';
+      p.textContent = 'Tu museo se llena solo, con hechos. El primer día ganado inaugura la colección.';
+      list.appendChild(p);
+      return;
+    }
+    items.forEach(it => {
+      const p = document.createElement('div'); p.className = 'es-row';
+      const f = document.createElement('span'); f.className = 'mu-fecha';
+      f.textContent = new Date(it.fecha + 'T12:00:00').toLocaleDateString('es-MX', {day:'numeric', month:'short'}) + ' · ';
+      p.appendChild(f);
+      p.appendChild(document.createTextNode(it.txt));
+      list.appendChild(p);
+    });
+  }
+
   function renderStats(){
     renderPulso();
     const s = statsData();
@@ -1073,6 +1148,8 @@
       });
     }
 
+    renderMesVs();
+    renderMuseo();
     renderHeatmap();
     renderCal();
     checkHitos(); // al final: los stats ya están calculados
@@ -1216,18 +1293,15 @@
     return { canvas, nombre: 'reps-' + mesCorto + '-' + calY + '.png' };
   }
 
-  $('shareBtn').addEventListener('click', ()=>{
-    const { canvas, nombre } = drawMonthImage();
-    // toBlob convierte los píxeles del canvas en un archivo PNG real
+  // convierte un canvas en PNG y lo comparte (hoja nativa) o descarga (PC)
+  function compartirCanvas(canvas, nombre, titulo){
     canvas.toBlob(async (blob)=>{
       if(!blob){ toast('No se pudo generar la imagen.'); return; }
       const file = new File([blob], nombre, {type:'image/png'});
-      // en celular: hoja de compartir nativa (WhatsApp, Instagram...)
       if(navigator.canShare && navigator.canShare({files:[file]})){
-        try{ await navigator.share({files:[file], title:'Mi mes en REPS'}); return; }
+        try{ await navigator.share({files:[file], title: titulo}); return; }
         catch(err){ if(err && err.name === 'AbortError') return; } // canceló: no forzar descarga
       }
-      // en PC (o si compartir falló): descarga clásica
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = nombre;
@@ -1235,6 +1309,81 @@
       setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
       toast('Imagen descargada. 📤');
     }, 'image/png');
+  }
+  $('shareBtn').addEventListener('click', ()=>{
+    const { canvas, nombre } = drawMonthImage();
+    compartirCanvas(canvas, nombre, 'Mi mes en REPS');
+  });
+
+  // ===== Compartir año: la postal de 12 meses =====
+  function drawYearImage(){
+    const W = 1080, H = 1350, PAD = 80;
+    const css = getComputedStyle(document.documentElement);
+    const C = n => css.getPropertyValue(n).trim();
+    const bg = C('--bg'), card = C('--card-2'), text = C('--text'),
+          muted = C('--muted'), accent = C('--amber'), teal = C('--teal');
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    const FONT = 'system-ui, "Segoe UI", Roboto, sans-serif';
+
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = muted; ctx.font = '600 28px ' + FONT;
+    ctx.fillText('MI AÑO EN REPS', PAD, 100);
+    const anio = new Date().getFullYear();
+    ctx.fillStyle = text; ctx.font = '800 72px ' + FONT;
+    ctx.fillText(String(anio), PAD, 185);
+
+    // métricas: ganados (últimas 53 semanas), mejor racha, regresos
+    const s = statsData();
+    const reg = contarRegresos();
+    const met = [[String(s.total), 'DÍAS GANADOS'], [String(s.best), 'MEJOR RACHA'], [reg + '×', 'REGRESOS']];
+    met.forEach(([num, lbl], i) => {
+      const x = PAD + i * ((W - PAD*2) / 3);
+      ctx.fillStyle = accent; ctx.font = '800 72px ' + FONT; ctx.fillText(num, x, 330);
+      ctx.fillStyle = muted;  ctx.font = '600 22px ' + FONT; ctx.fillText(lbl, x, 368);
+    });
+
+    // mapa de calor de 53 semanas (mismo cálculo que renderHeatmap)
+    const SEM = 53, gap = 4;
+    const cell = Math.floor((W - PAD*2 - gap*(SEM-1)) / SEM);
+    const start = mondayOf(new Date());
+    start.setDate(start.getDate() - (SEM - 1) * 7);
+    const gridW = SEM * cell + (SEM - 1) * gap;
+    const gx = PAD + Math.floor((W - PAD*2 - gridW) / 2);
+    const gy = 470;
+    const todayKey = today();
+    for(let w = 0; w < SEM; w++){
+      for(let d = 0; d < 7; d++){
+        const day = new Date(start); day.setDate(day.getDate() + w*7 + d);
+        const k = localISO(day);
+        if(k > todayKey) continue;
+        const r = dias[k];
+        ctx.fillStyle =
+          esGanado(k) ? accent :
+          racha.congelados[k] ? teal :
+          (r && HABITS.some(h => r[h.id])) ? C('--line') : card;
+        ctx.fillRect(gx + w*(cell+gap), gy + d*(cell+gap), cell, cell);
+      }
+    }
+
+    // frase de cierre + logo
+    ctx.textAlign = 'center';
+    ctx.fillStyle = muted; ctx.font = '600 26px ' + FONT;
+    ctx.fillText('Cada cuadro ámbar es un día que nadie te quita.', W/2, gy + 7*(cell+gap) + 70);
+    ctx.font = '800 60px ' + FONT;
+    const wReps = ctx.measureText('REPS').width, wDot = ctx.measureText('.').width;
+    const x0 = W/2 - (wReps + wDot)/2;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = text;   ctx.fillText('REPS', x0, 1315);
+    ctx.fillStyle = accent; ctx.fillText('.', x0 + wReps, 1315);
+
+    return { canvas, nombre: 'reps-año-' + anio + '.png' };
+  }
+  $('shareYearBtn').addEventListener('click', ()=>{
+    const { canvas, nombre } = drawYearImage();
+    compartirCanvas(canvas, nombre, 'Mi año en REPS');
   });
 
   // ===== Plan semanal =====
