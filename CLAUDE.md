@@ -40,6 +40,7 @@ directo sobre un Date: corre el día en zonas horarias negativas.
 | `reps-bandeja` | `[{id, text, cat, done, created}]` | Ideas, más nuevas primero. `cat` ∈ ya/social/compras/aprender/algundia. `addIdea(texto, cat)` es la única puerta de entrada (pensada para la IA de fase 2). |
 | `reps-cierres` | `{fecha: {animo, notas, plan, guardado}}` | `animo` ∈ bien/regular/mal o null. El `plan` de la fecha X se muestra como "Plan de hoy" el día X+1. |
 | `reps-semana` | `{fecha: "texto"}` | Plan semanal, plano por día. Vacío = clave borrada. Una "semana" se deriva (lunes = `mondayOf`), no se guarda. |
+| `reps-cierre-semana` | `{lunesKey: {animo, mejor, intencion, guardado}}` | Cierre de semana (ritual dominical), indexado por el lunes de la semana. Vive en Mi día bajo el plan; sigue la semana visible (`weekOff`). Clave aditiva. |
 | `reps-tema` | `{modo:'preset', id}` o `{modo:'custom', accent, bg}` | Validar con `themeValido()` antes de aplicar. |
 | `reps-distribucion` | `"compacto"`, `"minimal"` o ausente (= normal) | Distribución de la interfaz: clases `compact`/`minimal` en `<body>`. Sustituyó a `reps-compacto` en el schema v3 (migración 2→3). |
 | `reps-efecto` | `"glass"`, `"clay"` o ausente (= ninguno) | Efecto visual, INDEPENDIENTE del tema/color. Clases `fx-glass`/`fx-clay` en `<body>`. En v4 se separó del tema "Cristal" (migración 3→4). |

@@ -1086,7 +1086,55 @@
       row.append(lbl, inp);
       list.appendChild(row);
     }
+    renderCierreSemana(); // el cierre de la semana visible
   }
+
+  // ===== Cierre de semana (ritual dominical) =====
+  const CIERRE_SEM_KEY = 'reps-cierre-semana';
+  let cierreSemana = {}; // { lunesKey: {animo, mejor, intencion, guardado} }
+  let wcMoodSel = null;
+
+  function loadCierreSemana(){
+    try{
+      const v = JSON.parse(localStorage.getItem(CIERRE_SEM_KEY));
+      if(esMapa(v)) cierreSemana = v;
+    }catch(e){ cierreSemana = {}; }
+  }
+  function saveCierreSemana(){
+    try{ localStorage.setItem(CIERRE_SEM_KEY, JSON.stringify(cierreSemana)); }
+    catch(e){ toast('No se pudo guardar. Reintenta.'); }
+  }
+  // el lunes (clave) de la semana que se está viendo en el plan
+  function lunesVisible(){
+    const m = mondayOf(new Date()); m.setDate(m.getDate() + weekOff * 7);
+    return localISO(m);
+  }
+  function renderCierreSemana(){
+    const c = cierreSemana[lunesVisible()] || {};
+    wcMoodSel = c.animo || null;
+    document.querySelectorAll('#wcMoods .mood').forEach(x =>
+      x.classList.toggle('active', x.dataset.wcmood === wcMoodSel));
+    $('wcMejor').value = c.mejor || '';
+    $('wcIntencion').value = c.intencion || '';
+  }
+  function guardarWc(){
+    const mk = lunesVisible();
+    const mejor = $('wcMejor').value.trim();
+    const intencion = $('wcIntencion').value.trim();
+    if(!wcMoodSel && !mejor && !intencion) delete cierreSemana[mk]; // vacío = sin cierre
+    else cierreSemana[mk] = { animo: wcMoodSel, mejor, intencion, guardado: new Date().toISOString() };
+    saveCierreSemana();
+  }
+  document.querySelectorAll('#wcMoods .mood').forEach(b => {
+    b.addEventListener('click', ()=>{
+      wcMoodSel = (wcMoodSel === b.dataset.wcmood) ? null : b.dataset.wcmood;
+      document.querySelectorAll('#wcMoods .mood').forEach(x =>
+        x.classList.toggle('active', x.dataset.wcmood === wcMoodSel));
+      guardarWc();
+    });
+  });
+  $('wcMejor').addEventListener('input', guardarWc);
+  $('wcIntencion').addEventListener('input', guardarWc);
 
   $('wpPrev').addEventListener('click', ()=>{ weekOff--; renderSemana(); });
   $('wpNext').addEventListener('click', ()=>{ weekOff++; renderSemana(); });
@@ -1497,7 +1545,7 @@
   const SCHEMA = 5; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -1616,7 +1664,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -1683,6 +1731,9 @@
         const ht = b.data['reps-hitos'];
         if(Array.isArray(ht)) localStorage.setItem(HITOS_KEY, JSON.stringify(ht));
         else localStorage.removeItem(HITOS_KEY);
+        const cs = b.data['reps-cierre-semana'];
+        if(esMapa(cs)) localStorage.setItem(CIERRE_SEM_KEY, JSON.stringify(cs));
+        else localStorage.removeItem(CIERRE_SEM_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -1698,6 +1749,7 @@
       loadRacha(); procesarRacha();
       caidas = {}; loadCaidas();
       hitosVistos = []; loadHitos();
+      cierreSemana = {}; loadCierreSemana();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -1726,6 +1778,7 @@
   loadTray();
   loadCierres();   // antes de render(): el calendario ya lee los cierres
   loadSemana();    // antes de renderPlanHoy(): el banner lee el plan semanal
+  loadCierreSemana(); // antes de renderSemana(): muestra el cierre de la semana
   loadRacha();     // antes de render(): la racha visible usa los congelados
   procesarRacha(); // aplica congeladores por los días transcurridos
   loadCaidas();    // antes de render(): el ritual y El Espejo leen las caídas

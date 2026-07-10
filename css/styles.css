@@ -225,6 +225,7 @@ h1 span{color:var(--amber)}
 .wp-inp:focus{border-color:var(--amber)}
 .wp-row.today .wp-inp{border-color:color-mix(in srgb, var(--amber) 45%, transparent)}
 .wp-note{font-size:11px;color:var(--muted);margin-top:8px;text-align:center}
+.week-cierre{margin-bottom:16px}
 
 /* ===== Cierre del día ===== */
 .plan-hoy{margin-top:16px;background:var(--teal-dim);border:1px solid color-mix(in srgb, var(--teal) 40%, transparent);border-radius:var(--radius);padding:12px 14px;font-size:13px;line-height:1.5;white-space:pre-wrap}
