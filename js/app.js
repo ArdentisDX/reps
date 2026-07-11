@@ -488,20 +488,60 @@
       b.appendChild(mark);
     }
     b.addEventListener('click', ()=>{
-      // fecha y registro FRESCOS: si pasó la medianoche desde que se pintó
-      // la pantalla, el "rec" viejo pertenece a AYER y no debe tocarse
-      const k = today();
-      const cur = dias[k] || {};
-      const wasWon = isWon(cur, k);
-      cur[h.id] = !cur[h.id];
-      const nowOn = !!cur[h.id];
-      dias[k] = cur;
-      save();
-      render();
-      if(!wasWon && isWon(cur, k)){ sonarGanado(); toast('Día ganado. Una rep más. 🔥'); }
-      else if(nowOn) sonarCheck(); // solo al marcar, no al desmarcar
+      if(b._swiped){ b._swiped = false; return; } // el gesto ya actuó: ignora el click
+      const cur = dias[today()] || {};
+      setHabit(h, !cur[h.id]); // toque = alterna
     });
+    // deslizar para completar (estilo Instagram): derecha marca, izquierda
+    // desmarca. touch-action:pan-y deja el scroll vertical intacto (CSS).
+    let sx = 0, sy = 0, drag = false;
+    const UMBRAL = 64;
+    b.addEventListener('pointerdown', (e)=>{
+      if(e.target.closest('.h-foco')) return; // el ▶ del foco maneja lo suyo
+      sx = e.clientX; sy = e.clientY; drag = false;
+    });
+    b.addEventListener('pointermove', (e)=>{
+      if(sx === 0 && sy === 0) return;
+      const dx = e.clientX - sx, dy = e.clientY - sy;
+      if(!drag && (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy))) return; // aún no es swipe horizontal
+      drag = true;
+      const cap = Math.max(-90, Math.min(90, dx));
+      b.style.transform = 'translateX(' + cap + 'px)';
+      b.style.transition = 'none';
+      b.classList.toggle('swipe-on', dx > 20);
+      b.classList.toggle('swipe-off', dx < -20);
+    });
+    const finSwipe = (e)=>{
+      if(!drag){ sx = sy = 0; return; }
+      const dx = e.clientX - sx;
+      b.style.transition = ''; b.style.transform = '';
+      b.classList.remove('swipe-on', 'swipe-off');
+      sx = sy = 0;
+      if(Math.abs(dx) >= UMBRAL){
+        b._swiped = true; // evita el click que sigue al soltar
+        setHabit(h, dx > 0); // derecha = hecho, izquierda = deshacer
+      }
+    };
+    b.addEventListener('pointerup', finSwipe);
+    b.addEventListener('pointercancel', ()=>{ b.style.transition=''; b.style.transform=''; b.classList.remove('swipe-on','swipe-off'); sx=sy=0; drag=false; });
     return b;
+  }
+  // marca/desmarca un hábito a un estado concreto (compartido por toque y
+  // swipe). Devuelve false si ya estaba así (sin cambio, sin sonido).
+  function setHabit(h, want){
+    const k = today();               // fecha FRESCA (bug de medianoche)
+    const cur = dias[k] || {};
+    if(!!cur[h.id] === want) return false;
+    const wasWon = isWon(cur, k);
+    cur[h.id] = want;
+    dias[k] = cur;
+    save();
+    render();
+    if(want){
+      if(!wasWon && isWon(cur, k)){ sonarGanado(); toast('Día ganado. Una rep más. 🔥'); }
+      else sonarCheck();
+    }
+    return true;
   }
 
   function render(){

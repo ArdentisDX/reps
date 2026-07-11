@@ -110,7 +110,9 @@ body.minimal .ahora .ah-bar,body.minimal .ahora .ah-next{display:none}
 .sec-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
 .sec-head h2{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:700}
 .sec-head .tag{font-size:11px;color:var(--amber);font-weight:700;letter-spacing:.06em}
-.habit{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:15px 16px;margin-bottom:9px;cursor:pointer;color:var(--text);font:inherit;transition:border-color .15s,background .15s}
+.habit{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:15px 16px;margin-bottom:9px;cursor:pointer;color:var(--text);font:inherit;transition:border-color .15s,background .15s;touch-action:pan-y}
+.habit.swipe-on{border-color:var(--amber);box-shadow:-6px 0 0 -2px var(--amber) inset}
+.habit.swipe-off{border-color:var(--muted);box-shadow:6px 0 0 -2px var(--muted) inset}
 .habit:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .habit .check{width:28px;height:28px;min-width:28px;border-radius:9px;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:transparent;transition:all .15s}
 .habit.done{border-color:color-mix(in srgb, var(--amber) 45%, transparent);background:var(--card-2)}
