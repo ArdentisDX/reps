@@ -546,6 +546,7 @@
 
     const s = streak();
     $('streakNum').textContent = s;
+    $('srEmoji').textContent = won ? '✅' : (s > 0 ? '🔥' : '🌅'); // anillo de Stories
     $('streakSub').textContent =
       desc ? 'Hoy es descanso. Tu racha te espera intacta.' :
       won ? 'Hoy ya cayó. Bien.' :
@@ -1767,6 +1768,10 @@
   $('rutWrap').addEventListener('click', (e)=>{ if(e.target === $('rutWrap')) $('rutWrap').hidden = true; });
   $('alarmClose').addEventListener('click', ()=>{ $('alarmWrap').hidden = true; });
   $('alarmWrap').addEventListener('click', (e)=>{ if(e.target === $('alarmWrap')) $('alarmWrap').hidden = true; });
+  $('storyRing').addEventListener('click', abrirStories);
+  $('stClose').addEventListener('click', cerrarStories);
+  $('stNext').addEventListener('click', siguienteStory);
+  $('stPrev').addEventListener('click', anteriorStory);
   $('rutAdd').addEventListener('click', ()=>{
     if(rutina.length >= MAX_BLOQUES){ toast('Máximo ' + MAX_BLOQUES + ' bloques.'); return; }
     rutina.push({ id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2,5), hora:'12:00', nombre:'Nuevo bloque', desc:'', tipo:'free' });
@@ -2224,6 +2229,82 @@
       $('compaBar').parentElement.hidden = true;
     }
   }
+
+  // ===== Stories del día (carrusel estilo Instagram) =====
+  // Tarjetas a pantalla completa que resumen tu día: derivadas del estado, se
+  // arman al vuelo. Auto-avanzan; toque izq/der navega; ✕ cierra. reps-stories
+  // guarda la última fecha mostrada para auto-abrirlas una vez por día.
+  const STORIES_KEY = 'reps-stories';
+  const ST_MS = 4500;
+  let stIdx = 0, stTimer = null, stCards = [];
+
+  function etapaCompaDe(total){
+    let etapa = COMPA_ETAPAS[0];
+    for(let i = COMPA_ETAPAS.length - 1; i >= 0; i--){
+      if(total >= COMPA_ETAPAS[i].min){ etapa = COMPA_ETAPAS[i]; break; }
+    }
+    return etapa;
+  }
+  function buildStories(){
+    const k = today();
+    const s = streak();
+    const won = esGanado(k), desc = esDescanso(k);
+    const caidosN = diasCaidosSeguidos();
+    const coreHoy = coreDelDia(k);
+    const rec = dias[k] || {};
+    const coreDone = coreHoy.filter(id => rec[id]).length;
+    const cards = [];
+    // 1 · saludo + racha
+    const h = new Date().getHours();
+    const saludo = h >= 5 && h < 12 ? 'Buenos días' : h >= 12 && h < 19 ? 'Buenas tardes' : 'Buenas noches';
+    cards.push({ emoji: won ? '✅' : (s > 0 ? '🔥' : '🌅'), title: saludo,
+      body: won ? 'Día ganado. Ya está.' :
+            s > 0 ? 'Racha de ' + s + ' día' + (s === 1 ? '' : 's') + '.\nSigue encendida.' :
+            'Hoy es un buen día\npara empezar.' });
+    // 2 · El Ahora (bloque en curso)
+    const b = bloqueActual();
+    if(b) cards.push({ emoji: '⏳', title: 'Ahora',
+      body: b.cur.hora + ' · ' + b.cur.nombre + '\n\nLuego: ' + b.next.nombre + ' ' + b.next.hora });
+    // 3 · Hoy pide
+    const rp = hoyPide(won, desc, s, caidosN, coreHoy, coreDone, b);
+    if(rp) cards.push({ emoji: '🎯', title: 'Hoy pide', body: rp.replace(/^\S+\s/, '') });
+    // 4 · compañero
+    const total = statsData().total;
+    const et = etapaCompaDe(total);
+    cards.push({ emoji: et.emoji, title: et.nombre, body: et.sub + '\n\n' + total + ' días ganados.' });
+    // 5 · empujón
+    const emp = empujeDelDia(won, desc, s, caidosN);
+    if(emp) cards.push({ emoji: '💬', title: 'Para hoy', body: emp });
+    return cards;
+  }
+  function pintarStory(){
+    const c = stCards[stIdx]; if(!c) return;
+    $('stEmoji').textContent = c.emoji;
+    $('stTitle').textContent = c.title;
+    $('stBody').textContent = c.body;
+    const card = $('stCard'); card.style.animation = 'none'; void card.offsetWidth; card.style.animation = '';
+    [...$('stBars').children].forEach((bar, i) => {
+      bar.classList.toggle('done', i < stIdx);
+      const fill = bar.querySelector('i');
+      fill.style.transition = 'none';
+      fill.style.width = i < stIdx ? '100%' : '0%';
+      if(i === stIdx){ void fill.offsetWidth; fill.style.transition = 'width ' + ST_MS + 'ms linear'; fill.style.width = '100%'; }
+    });
+    clearTimeout(stTimer);
+    stTimer = setTimeout(siguienteStory, ST_MS);
+  }
+  function siguienteStory(){ if(stIdx >= stCards.length - 1){ cerrarStories(); return; } stIdx++; pintarStory(); }
+  function anteriorStory(){ if(stIdx <= 0){ pintarStory(); return; } stIdx--; pintarStory(); }
+  function abrirStories(){
+    stCards = buildStories();
+    if(!stCards.length) return;
+    stIdx = 0;
+    $('stBars').innerHTML = '';
+    stCards.forEach(() => { const bar = document.createElement('div'); bar.className = 'st-bar'; bar.innerHTML = '<i></i>'; $('stBars').appendChild(bar); });
+    $('stories').hidden = false;
+    pintarStory();
+  }
+  function cerrarStories(){ clearTimeout(stTimer); $('stories').hidden = true; }
 
   // ===== Recompensas: tratos contigo mismo =====
   const RECOMP_KEY = 'reps-recompensas';
@@ -3106,6 +3187,17 @@
     const s = streak();
     $('introLine').textContent = saludo + ' · ' + (s > 0 ? 'racha de ' + s : 'a ganar el día');
     setTimeout(()=> el.remove(), 2200); // ya invisible desde 1.95s; esto solo limpia el DOM
+  })();
+
+  // Stories: se auto-abren UNA vez por día (tras la intro), como los "nuevos"
+  // de Instagram. El anillo de Hoy las relanza cuando quieras.
+  (function(){
+    if(instalacionNueva) return; // el usuario nuevo va al cuestionario, no a stories
+    let visto = null;
+    try{ visto = localStorage.getItem(STORIES_KEY); }catch(e){}
+    if(visto === today()) return;
+    try{ localStorage.setItem(STORIES_KEY, today()); }catch(e){}
+    setTimeout(()=>{ try{ abrirStories(); }catch(e){} }, 2400);
   })();
 
   // ===== Atajos del ícono (shortcuts del manifest): ?tab=... =====

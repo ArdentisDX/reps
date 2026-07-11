@@ -31,6 +31,7 @@
   </div>
 
   <div class="panel active" id="p-hoy">
+    <button class="story-ring" id="storyRing" type="button"><span class="sr-emoji" id="srEmoji">🔥</span><span class="sr-lbl">Tu día</span></button>
     <div class="plan-hoy" id="planHoy" hidden>📌 <b>Plan de hoy:</b> <span id="planHoyTxt"></span></div>
     <div class="ahora" id="ahora" hidden>
       <div class="ah-top"><span class="ah-lbl">AHORA</span><span class="ah-rest" id="ahRest"></span></div>
@@ -353,6 +354,18 @@
       <div class="t-head"><h2>Alarmas del día</h2><button id="alarmClose" aria-label="Cerrar">✕</button></div>
       <div class="t-note" style="margin-bottom:10px">Toca cada ⏰ para poner esa alarma en tu Reloj. Android pide un toque por alarma (no se pueden todas de golpe); ve bajando una por una.</div>
       <div id="alarmList"></div>
+    </div>
+  </div>
+
+  <div class="stories" id="stories" hidden>
+    <div class="st-bars" id="stBars"></div>
+    <button class="st-close" id="stClose" type="button" aria-label="Cerrar">✕</button>
+    <div class="st-zone st-prev" id="stPrev" aria-label="Anterior"></div>
+    <div class="st-zone st-next" id="stNext" aria-label="Siguiente"></div>
+    <div class="st-card" id="stCard">
+      <div class="st-emoji" id="stEmoji"></div>
+      <div class="st-title" id="stTitle"></div>
+      <div class="st-body" id="stBody"></div>
     </div>
   </div>
 

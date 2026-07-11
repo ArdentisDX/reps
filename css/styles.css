@@ -48,6 +48,25 @@ body.minimal .streak .ring{display:none}
 .compa .co-bar{height:4px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:7px}
 .compa .co-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--amber),var(--teal));border-radius:99px;transition:width .3s}
 body.minimal .compa{display:none}
+/* ===== Stories del día (carrusel estilo Instagram) ===== */
+.story-ring{display:inline-flex;align-items:center;gap:9px;background:none;border:none;cursor:pointer;padding:2px;margin-bottom:4px;font:inherit}
+.story-ring .sr-emoji{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-size:22px;background:var(--card);padding:3px;box-shadow:0 0 0 2px var(--bg),0 0 0 4px transparent;background-image:linear-gradient(var(--card),var(--card)),conic-gradient(from 210deg,var(--amber),var(--teal),var(--amber));background-origin:border-box;background-clip:content-box,border-box;border:2px solid transparent}
+.story-ring .sr-lbl{font-size:13px;font-weight:700;color:var(--text)}
+.stories{position:fixed;inset:0;z-index:70;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0}
+.stories[hidden]{display:none}
+.st-bars{position:absolute;top:12px;left:12px;right:12px;display:flex;gap:5px;z-index:3}
+.st-bar{flex:1;height:3px;background:rgba(255,255,255,.28);border-radius:99px;overflow:hidden}
+.st-bar i{display:block;height:100%;width:0;background:#fff;border-radius:99px}
+.st-bar.done i{width:100%}
+.st-close{position:absolute;top:24px;right:16px;z-index:4;background:none;border:none;color:#fff;font-size:26px;cursor:pointer;line-height:1;opacity:.85}
+.st-zone{position:absolute;top:0;bottom:0;width:35%;z-index:2;cursor:pointer}
+.st-zone.st-prev{left:0}
+.st-zone.st-next{right:0;width:65%}
+.st-card{position:relative;z-index:1;text-align:center;padding:32px;max-width:440px;animation:stIn .35s ease}
+@keyframes stIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+.st-emoji{font-size:76px;line-height:1;margin-bottom:20px}
+.st-title{font-size:14px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin-bottom:14px}
+.st-body{font-size:24px;font-weight:700;color:#fff;line-height:1.4;white-space:pre-line}
 /* ===== El Ahora (HUD del bloque actual) ===== */
 .ahora{margin-top:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--amber) 16%,var(--card)),var(--card));border:1px solid color-mix(in srgb,var(--amber) 35%,var(--line));border-radius:var(--radius);padding:14px 16px}
 .ahora .ah-top{display:flex;justify-content:space-between;align-items:center}
