@@ -1167,8 +1167,45 @@
     });
   }
 
+  // Puntaje del día (WHOOP): 0–100 de qué tan completo fue un día. Núcleo =
+  // los core (70, u 85 si no hay extras hoy); extras 15; ánimo del cierre 15.
+  // Devuelve null en día de descanso (no hay nada que puntuar).
+  function puntajeDia(fecha){
+    const core = coreDelDia(fecha);
+    if(!core.length) return null;
+    const rec = dias[fecha] || {};
+    const dow = dowDe(fecha);
+    const extras = HABITS.filter(h => !h.core && habAplica(h, dow));
+    const coreRatio = core.filter(id => rec[id]).length / core.length;
+    const extraRatio = extras.length ? extras.filter(h => rec[h.id]).length / extras.length : 0;
+    const animo = cierres[fecha] && cierres[fecha].animo;
+    const moodPts = animo === 'bien' ? 15 : animo === 'regular' ? 8 : animo === 'mal' ? 4 : 0;
+    const coreW = extras.length ? 70 : 85, extraW = extras.length ? 15 : 0;
+    return Math.round(coreRatio * coreW + extraRatio * extraW + moodPts);
+  }
+  function renderScore(){
+    const p = puntajeDia(today());
+    const descanso = p === null;
+    $('scNum').textContent = descanso ? '·' : p;
+    $('scRing').style.setProperty('--p', descanso ? 0 : p);
+    $('scMsg').textContent = descanso ? 'Hoy es descanso. Sin puntaje, y está bien.' :
+      p >= 85 ? '¡Día excelente! 🔥' : p >= 60 ? 'Buen día. Vas bien.' :
+      p >= 35 ? 'A medias — aún hay tiempo.' : p > 0 ? 'Apenas arranca.' : 'Aún en cero. Una cosa basta.';
+    // tendencia de los últimos 7 días
+    const sp = $('scSpark'); sp.innerHTML = '';
+    for(let i = 6; i >= 0; i--){
+      const key = localISO(new Date(Date.now() - i*86400000));
+      const pv = puntajeDia(key);
+      const bar = document.createElement('div'); bar.className = 'sp-bar';
+      if(pv === null){ bar.classList.add('rest'); bar.style.height = '22%'; }
+      else { bar.style.height = Math.max(6, pv) + '%'; if(pv >= 60) bar.classList.add('good'); }
+      sp.appendChild(bar);
+    }
+  }
+
   function renderStats(){
     renderPulso();
+    renderScore();
     const s = statsData();
     $('stTotal').textContent = s.total;
     $('stBest').textContent = s.best;

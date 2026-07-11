@@ -230,6 +230,18 @@ body.minimal .ahora .ah-bar,body.minimal .ahora .ah-next{display:none}
 .catpick .cp-cancel{margin-top:9px;background:none;border:none;color:var(--muted);font:inherit;font-size:12px;text-decoration:underline;cursor:pointer}
 
 /* ===== Stats ===== */
+/* Puntaje del día (WHOOP): un número de 0–100 + tendencia de 7 días */
+.score{display:flex;align-items:center;gap:16px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.sc-ring{width:84px;height:84px;min-width:84px;border-radius:50%;background:conic-gradient(var(--amber) calc(var(--p,0)*1%),var(--line) 0);display:grid;place-items:center}
+.sc-ring .sc-num{width:66px;height:66px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-size:26px;font-weight:800;color:var(--text)}
+.sc-body{flex:1;min-width:0}
+.sc-lbl{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.sc-msg{font-size:14px;font-weight:600;margin:3px 0 9px;line-height:1.35}
+.sc-spark{display:flex;align-items:flex-end;gap:4px;height:34px}
+.sc-spark .sp-bar{flex:1;background:var(--line);border-radius:3px 3px 0 0;min-height:3px;transition:height .3s}
+.sc-spark .sp-bar.good{background:var(--amber)}
+.sc-spark .sp-bar.rest{background:color-mix(in srgb,var(--teal) 40%,var(--line))}
+.sc-leg{font-size:11px;color:var(--muted);margin-top:5px}
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .stat-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}
 .stat-num{font-size:30px;font-weight:800;line-height:1.1;color:var(--amber)}
