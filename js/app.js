@@ -937,6 +937,26 @@
       const m = MOTIVOS.find(x => x.id === topId);
       if(m) out.push('Lo que más corta tus rachas: ' + m.emoji + ' ' + m.name.toLowerCase() + '. Ahí está tu punto débil.');
     }
+
+    // 5) tu hábito más flojo: el que menos cierras cuando SÍ toca (mín. 6 días
+    // aplicables registrados). El denominador honesto: días en que aplicaba.
+    const dReg = Object.keys(dias).filter(k => dias[k]);
+    let flojo = null;
+    HABITS.forEach(h => {
+      const aplica = dReg.filter(k => !esDescanso(k) && habAplica(h, new Date(k + 'T12:00:00').getDay()));
+      if(aplica.length < 6) return;
+      const pct = Math.round(aplica.filter(k => dias[k][h.id]).length / aplica.length * 100);
+      if(!flojo || pct < flojo.pct) flojo = { nombre: h.name, pct };
+    });
+    if(flojo && flojo.pct < 70) out.push('Tu hábito más flojo: «' + flojo.nombre + '» — lo cierras el ' + flojo.pct + '% de las veces. Empieza por ahí.');
+
+    // 6) tu puntaje promedio (WHOOP) en los días con actividad (mín. 7)
+    const dPunt = dReg.filter(k => !esDescanso(k));
+    if(dPunt.length >= 7){
+      const avg = Math.round(dPunt.reduce((a, k) => a + (puntajeDia(k) || 0), 0) / dPunt.length);
+      out.push('Tu puntaje promedio: ' + avg + '/100 en ' + dPunt.length + ' días con actividad.');
+    }
+
     return out;
   }
 
