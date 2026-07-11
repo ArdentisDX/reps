@@ -372,9 +372,18 @@
       <div class="foco-setup" id="focoSetup">
         <div class="foco-q">¿Cuánto foco?</div>
         <div class="foco-durs" id="focoDurs">
+          <button class="foco-dur" type="button" data-min="5">5 min</button>
+          <button class="foco-dur" type="button" data-min="10">10 min</button>
           <button class="foco-dur" type="button" data-min="15">15 min</button>
           <button class="foco-dur on" type="button" data-min="25">25 min</button>
+          <button class="foco-dur" type="button" data-min="45">45 min</button>
           <button class="foco-dur" type="button" data-min="50">50 min</button>
+          <button class="foco-dur" type="button" data-min="90">90 min</button>
+        </div>
+        <div class="foco-custom">
+          <span>O tú pones:</span>
+          <input id="focoCustom" type="number" min="1" max="240" inputmode="numeric" placeholder="min">
+          <span>min</span>
         </div>
         <button class="foco-start" id="focoStart" type="button">Empezar ▶</button>
         <button class="foco-sonido" id="focoSonidoBtn" type="button" aria-label="Sonido al terminar">🔊 Sonido al terminar</button>

@@ -2490,6 +2490,7 @@
     foco.habitId = habitId; foco.habitName = habitName; foco.min = 25;
     $('focoHab').textContent = '🎯 ' + habitName;
     document.querySelectorAll('.foco-dur').forEach(b => b.classList.toggle('on', b.dataset.min === '25'));
+    const ci = $('focoCustom'); ci.value = ''; ci.classList.remove('on'); // arranca en el preset 25
     pintarSonidoBtn();
     $('focoSetup').hidden = false; $('focoRun').hidden = true;
     $('foco').hidden = false;
@@ -2538,7 +2539,16 @@
   document.querySelectorAll('.foco-dur').forEach(b => b.addEventListener('click', ()=>{
     foco.min = parseInt(b.dataset.min, 10);
     document.querySelectorAll('.foco-dur').forEach(x => x.classList.toggle('on', x === b));
+    const ci = $('focoCustom'); ci.value = ''; ci.classList.remove('on'); // preset gana
   }));
+  // minutos a medida: el usuario pone su propia duración (1–240)
+  $('focoCustom').addEventListener('input', ()=>{
+    const n = parseInt($('focoCustom').value, 10);
+    if(!Number.isFinite(n) || n < 1){ $('focoCustom').classList.remove('on'); return; }
+    foco.min = Math.min(240, n);
+    document.querySelectorAll('.foco-dur').forEach(x => x.classList.remove('on')); // ningún preset activo
+    $('focoCustom').classList.add('on');
+  });
   $('focoSonidoBtn').addEventListener('click', ()=>{
     focoSonido = !focoSonido; saveSonido(); pintarSonidoBtn();
     if(focoSonido){ unlockAudio(); sonarFin(); } // preescucha al encender
