@@ -38,6 +38,8 @@ h1 span{color:var(--amber)}
 .streak .ring.rest .ring-in{color:var(--muted);font-size:20px}
 body.minimal .streak .ring{display:none}
 .empuje{margin-top:12px;font-size:13px;color:var(--muted);line-height:1.5;padding:0 2px}
+/* Hoy pide: la recomendación única del día (una sola acción, estilo WHOOP) */
+.pide{margin-top:12px;font-size:14px;font-weight:600;color:var(--text);line-height:1.45;padding:11px 14px;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:12px}
 .compa{margin-top:12px;display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 16px}
 .compa .co-emoji{font-size:34px;line-height:1}
 .compa .co-body{flex:1;min-width:0}

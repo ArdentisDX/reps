@@ -261,6 +261,22 @@
     ]);
   }
 
+  // Hoy pide: la recomendación única del día (estilo WHOOP: UNA acción, no
+  // ánimo). Mira el estado y el bloque en curso para decir qué toca AHORA.
+  function hoyPide(won, desc, s, caidosN, coreHoy, coreDone, bloque){
+    if(desc) return '😌 Hoy pide descanso. Recupera sin culpa — tu racha te espera intacta.';
+    if(won) return '🔥 Ya ganaste el día. Lo que hagas ahora es puro bonus.';
+    if(caidosN >= 2) return '🌱 Hoy pide solo UNA cosa. Rompe la inercia; lo perfecto viene después.';
+    const faltan = coreHoy.length - coreDone;
+    if(faltan <= 0) return ''; // sin core pendiente y sin "ganado": nada que recomendar
+    // si estás dentro de un bloque de estructura, ese ES el momento
+    if(bloque && bloque.cur && bloque.cur.tipo === 'core')
+      return '🎯 Estás en «' + bloque.cur.nombre + '». Este es el momento de tus innegociables.';
+    const cuantos = faltan === 1 ? '1 innegociable' : faltan + ' innegociables';
+    if(s >= 3) return '⚡ Racha de ' + s + '. Hoy pide cerrar tus ' + cuantos + ' sin falta.';
+    return '✅ Hoy pide ' + cuantos + ' para que el día cuente.';
+  }
+
   // ===== Levantarse: rescate, ritual de derrota, regresos =====
   const CAIDAS_KEY = 'reps-caidas';
   let caidas = {}; // { 'YYYY-MM-DD': motivo } — por qué murió una racha ese día
@@ -554,6 +570,11 @@
         'haz UNA sola cosa hoy y rompe la inercia. Volver ya es ganar.';
     }
     $('streakWarn').hidden = !(lostYesterday() && !won) || enPeligro;
+
+    // Hoy pide: la recomendación única (acción), leyendo el bloque en curso
+    const pide = hoyPide(won, desc, s, caidosN, coreHoy, coreDone, bloqueActual());
+    $('pide').hidden = !pide;
+    if(pide) $('pide').textContent = pide;
 
     // empujón del día: una frase que sí sabe cómo vienes
     const emp = empujeDelDia(won, desc, s, caidosN);
