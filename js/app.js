@@ -1600,15 +1600,29 @@
     });
     return btn;
   }
-  // arma de una las alarmas de todos los bloques del día (recordatorio real
-  // con la app cerrada: lo dispara el reloj de Android, no la PWA). Escalonadas
-  // para que el sistema no las atropelle; SKIP_UI evita abrir el Reloj cada vez.
+  // Alarmas del día: un recordatorio real con la app cerrada (lo dispara el
+  // reloj de Android, no la PWA). Android EXIGE un toque por alarma —un intent
+  // sin gesto de usuario se bloquea—, así que se listan y el usuario toca cada
+  // ⏰ en fila. La fila se marca "puesta" como acuse.
+  function renderAlarmList(){
+    const cont = $('alarmList'); cont.innerHTML = '';
+    rutinaOrdenada().forEach(s => {
+      const row = document.createElement('div'); row.className = 'alarm-row';
+      const t = document.createElement('div'); t.className = 'al-hora'; t.textContent = s.hora;
+      const n = document.createElement('div'); n.className = 'al-nom'; n.textContent = s.nombre;
+      const btn = document.createElement('button'); btn.className = 'al-btn'; btn.textContent = '⏰ Poner';
+      btn.addEventListener('click', ()=>{
+        if(!esAndroid){ toast('Las alarmas se ponen desde el celular. 📱'); return; }
+        dispararAlarma(s.hora, s.nombre, false); // un toque = un gesto: el intent sí abre
+        row.classList.add('puesta'); btn.textContent = '✓ Puesta';
+      });
+      row.append(t, n, btn);
+      cont.appendChild(row);
+    });
+  }
   function armarDia(){
-    if(!esAndroid){ toast('Las alarmas se ponen desde el celular. 📱'); return; }
-    const bloques = rutinaOrdenada();
-    if(!bloques.length){ toast('No hay bloques que armar.'); return; }
-    toast('Armando ' + bloques.length + ' alarmas… acepta si el Reloj lo pide.');
-    bloques.forEach((s, i) => setTimeout(() => dispararAlarma(s.hora, s.nombre, true), i * 900));
+    renderAlarmList();
+    $('alarmWrap').hidden = false;
   }
 
   // minutos crudos del día (0–1439), SIN el corrimiento de madrugada: para
@@ -1730,6 +1744,8 @@
   $('armarBtn').addEventListener('click', armarDia);
   $('rutClose').addEventListener('click', ()=>{ $('rutWrap').hidden = true; });
   $('rutWrap').addEventListener('click', (e)=>{ if(e.target === $('rutWrap')) $('rutWrap').hidden = true; });
+  $('alarmClose').addEventListener('click', ()=>{ $('alarmWrap').hidden = true; });
+  $('alarmWrap').addEventListener('click', (e)=>{ if(e.target === $('alarmWrap')) $('alarmWrap').hidden = true; });
   $('rutAdd').addEventListener('click', ()=>{
     if(rutina.length >= MAX_BLOQUES){ toast('Máximo ' + MAX_BLOQUES + ' bloques.'); return; }
     rutina.push({ id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2,5), hora:'12:00', nombre:'Nuevo bloque', desc:'', tipo:'free' });
