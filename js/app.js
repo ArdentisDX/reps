@@ -85,13 +85,18 @@
     const ds = [...new Set(d.map(x => parseInt(x, 10)).filter(x => x >= 0 && x <= 6))].sort();
     return (ds.length === 0 || ds.length === 7) ? 'all' : ds;
   }
+  // emoji opcional del hábito: cadena corta (un emoji puede ser varios code
+  // points, p.ej. 👨‍👩‍👧); se recorta defensivamente sin romper la secuencia
+  function sanearEmoji(v){
+    return typeof v === 'string' ? v.trim().slice(0, 8) : '';
+  }
   function sanearHabitos(v){
     if(!Array.isArray(v)) return null;
     const vistos = {};
     const limpio = v
       .filter(h => h && typeof h.id === 'string' && h.id && typeof h.name === 'string' && h.name.trim())
       .filter(h => vistos[h.id] ? false : (vistos[h.id] = true)) // ids únicos
-      .map(h => ({ id: h.id, name: h.name.trim(), hint: typeof h.hint === 'string' ? h.hint.trim() : '', core: !!h.core, days: sanearDays(h.days), planB: typeof h.planB === 'string' ? h.planB.trim() : '' }))
+      .map(h => ({ id: h.id, name: h.name.trim(), hint: typeof h.hint === 'string' ? h.hint.trim() : '', core: !!h.core, days: sanearDays(h.days), planB: typeof h.planB === 'string' ? h.planB.trim() : '', emoji: sanearEmoji(h.emoji) }))
       .slice(0, MAX_HABITS);
     return limpio.length ? limpio : null;
   }
@@ -457,7 +462,10 @@
     const check = document.createElement('span');
     check.className = 'check'; check.setAttribute('aria-hidden','true'); check.textContent = '✓';
     const body = document.createElement('span'); body.className = 'h-body';
-    const name = document.createElement('span'); name.className = 'h-name'; name.textContent = h.name;
+    const name = document.createElement('span'); name.className = 'h-name';
+    // emoji propio del hábito (opcional): antecede al nombre
+    if(h.emoji){ const em = document.createElement('span'); em.className = 'h-emoji'; em.textContent = h.emoji; name.appendChild(em); }
+    name.appendChild(document.createTextNode(h.name));
     body.appendChild(name);
     if(h.hint){
       const hint = document.createElement('div'); hint.className = 'h-hint'; hint.textContent = h.hint;
@@ -2198,6 +2206,12 @@
         toast('Ojo: cambiar los core re-evalúa tus días pasados.');
       });
 
+      // emoji propio (opcional): un ícono para la tarjeta
+      const emoji = document.createElement('input');
+      emoji.type = 'text'; emoji.className = 'hab-emoji'; emoji.value = h.emoji || ''; emoji.maxLength = 8;
+      emoji.placeholder = '🙂'; emoji.setAttribute('aria-label', 'Emoji del hábito');
+      emoji.addEventListener('input', ()=>{ h.emoji = sanearEmoji(emoji.value); saveHabitos(); render(); });
+
       // nombre (editable en vivo)
       const name = document.createElement('input');
       name.type = 'text'; name.className = 'hab-name'; name.value = h.name; name.maxLength = 40;
@@ -2236,7 +2250,7 @@
       });
 
       const top = document.createElement('div'); top.className = 'hab-top';
-      top.append(star, name, del);
+      top.append(star, emoji, name, del);
 
       // selector de días: 7 chips (L M M J V S D). Todos activos = 'all'.
       const daysRow = document.createElement('div'); daysRow.className = 'hab-days';
