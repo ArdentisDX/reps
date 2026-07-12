@@ -73,6 +73,7 @@
         <div class="co-bar"><i id="compaBar"></i></div>
       </div>
     </div>
+    <div id="despWrap"></div>
     <div class="sec" id="secCore">
       <div class="sec-head"><h2>Innegociables</h2><div class="tag" id="coreTag">3/3 = día ganado</div></div>
       <div id="coreList"></div>
@@ -269,6 +270,7 @@
         <div class="cd-lbl">¿Cómo estuvo?</div>
         <div class="cd-moods" id="cdMoods"></div>
       </div>
+      <div class="cd-block" id="cdDespWrap"></div>
       <div class="cd-block">
         <div class="cd-lbl">Notas</div>
         <textarea id="cdNotasInp" class="cd-notas" rows="3" placeholder="Algo que recuerdas de ese día: lo que pasó, lo que salió bien, por qué llegaste cansado…"></textarea>
@@ -341,6 +343,17 @@
       <div class="t-sub">Sonidos</div>
       <div class="t-row"><label for="sonidoToggle">Sonidos y vibración</label><input type="checkbox" id="sonidoToggle"></div>
       <div class="t-note">Campanita al terminar el foco y al completar hábitos, metas e ideas.</div>
+      <div class="t-sub">Despertar a tiempo</div>
+      <div class="t-row"><label for="despMeta">Hora meta</label><input type="time" id="despMeta" class="desp-meta"></div>
+      <div class="t-row"><label>Rigor</label>
+        <div class="desp-rigor" id="despRigor">
+          <button type="button" data-r="suave">Suave</button>
+          <button type="button" data-r="medio">Medio</button>
+          <button type="button" data-r="estricto">Estricto</button>
+        </div>
+      </div>
+      <div class="t-row"><label for="despFinde">Fines de semana cuentan</label><input type="checkbox" id="despFinde"></div>
+      <div class="t-note">Registras a qué hora despertaste: puntual o antes suma al puntaje, tarde resta. Los findes no cuentan salvo que marques «este día sí cuenta».</div>
       <div class="t-sub">Tu perfil</div>
       <button class="hab-add" id="rehacerBienvenida" style="margin-top:0">🙋 Rehacer la bienvenida</button>
       <div class="t-note">Vuelve a hacer el cuestionario para rearmar tus hábitos.</div>

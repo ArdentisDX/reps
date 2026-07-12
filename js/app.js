@@ -651,6 +651,7 @@
     }
 
     renderAhora(); // HUD del bloque en curso (El Ahora)
+    const dw = $('despWrap'); if(dw){ dw.innerHTML = ''; dw.appendChild(buildDespertarUI(hoyKey)); }
     renderStats(); // mantiene la pestaña Stats al día con cada cambio
     updateBadge(); // la insignia del ícono refleja los core pendientes
   }
@@ -1209,7 +1210,9 @@
     const animo = cierres[fecha] && cierres[fecha].animo;
     const moodPts = animo === 'bien' ? 15 : animo === 'regular' ? 8 : animo === 'mal' ? 4 : 0;
     const coreW = extras.length ? 70 : 85, extraW = extras.length ? 15 : 0;
-    return Math.round(coreRatio * coreW + extraRatio * extraW + moodPts);
+    const base = coreRatio * coreW + extraRatio * extraW + moodPts;
+    const desp = despertarEval(fecha).modifier; // + puntual / − tarde (0 si no cuenta)
+    return Math.max(0, Math.min(100, Math.round(base + desp)));
   }
   function renderScore(){
     const p = puntajeDia(today());
@@ -1905,6 +1908,88 @@
     catch(e){ toast('No se pudo guardar. Reintenta.'); }
   }
 
+  // ===== Despertar a tiempo =====
+  // Registras a qué hora despertaste; puntual o antes suma al puntaje, tarde
+  // resta (según el rigor). Los fines de semana no cuentan salvo que marques
+  // "hoy sí cuenta". NO toca isWon/racha: es solo un modificador del puntaje.
+  // Config global en reps-despertar; la hora del día vive en cierres[fecha]
+  // (.despierta = "H:MM", .despiertaCuenta = override opcional del finde).
+  const DESPERTAR_KEY = 'reps-despertar';
+  let despConf = { meta: '8:30', rigor: 'medio', finde: false };
+  const esHora = h => typeof h === 'string' && /^\d{1,2}:\d{2}$/.test(h);
+  function loadDespertar(){
+    try{
+      const v = JSON.parse(localStorage.getItem(DESPERTAR_KEY));
+      if(esMapa(v)) despConf = {
+        meta: esHora(v.meta) ? v.meta : '8:30',
+        rigor: ['suave','medio','estricto'].includes(v.rigor) ? v.rigor : 'medio',
+        finde: !!v.finde,
+      };
+    }catch(e){}
+  }
+  function saveDespertar(){
+    try{ localStorage.setItem(DESPERTAR_KEY, JSON.stringify(despConf)); }catch(e){}
+  }
+  const minsHora = h => { const [a,b] = h.split(':').map(x=>parseInt(x,10)); return a*60+b; };
+  const graceDesp = r => r === 'suave' ? 120 : r === 'medio' ? 30 : 0;   // margen sin castigo
+  const rateDesp  = r => r === 'suave' ? 3   : r === 'medio' ? 5  : 8;    // puntos perdidos por hora tarde
+  // evalúa el despertar de una fecha: hora registrada, si cuenta, y el
+  // modificador de puntaje que produce (+ si puntual, − si tarde)
+  function despertarEval(fecha){
+    const c = cierres[fecha] || {};
+    const logged = esHora(c.despierta) ? c.despierta : null;
+    const dow = new Date(fecha + 'T12:00:00').getDay();
+    const finde = dow === 0 || dow === 6;
+    const cuenta = typeof c.despiertaCuenta === 'boolean' ? c.despiertaCuenta : (finde ? despConf.finde : true);
+    let dt = null, estado = 'none', modifier = 0;
+    if(logged){
+      dt = minsHora(logged) - minsHora(despConf.meta); // + = tarde
+      if(!cuenta){ estado = 'nocuenta'; }
+      else if(dt <= graceDesp(despConf.rigor)){ estado = 'ontime'; modifier = 6; }
+      else { estado = 'late'; modifier = -Math.min(15, Math.round((dt - graceDesp(despConf.rigor)) / 60 * rateDesp(despConf.rigor))); }
+    }
+    return { logged, meta: despConf.meta, dt, finde, cuenta, estado, modifier };
+  }
+  function textoDespertar(e){
+    if(!e.logged) return 'Registra a qué hora despertaste.';
+    if(e.estado === 'nocuenta') return 'Fin de semana relajado · no afecta tu puntaje.';
+    if(e.estado === 'ontime') return e.dt < 0 ? '✓ ' + (-e.dt) + ' min antes de tu meta. +' + e.modifier + ' pts' :
+      '✓ Puntual (dentro del margen). +' + e.modifier + ' pts';
+    return '⚠ ' + e.dt + ' min tarde · ' + e.modifier + ' pts';
+  }
+  // construye el control de despertar para una fecha (se usa en Hoy y en el
+  // detalle de un día pasado). Al cambiar, guarda y repinta todo con render().
+  function buildDespertarUI(fecha){
+    const e = despertarEval(fecha);
+    const wrap = document.createElement('div'); wrap.className = 'desp';
+    const top = document.createElement('div'); top.className = 'desp-top';
+    top.textContent = '⏰ Despertar · meta ' + e.meta;
+    const row = document.createElement('div'); row.className = 'desp-row';
+    const inp = document.createElement('input'); inp.type = 'time'; inp.className = 'desp-hora';
+    if(e.logged) inp.value = e.logged.padStart(5, '0');
+    inp.addEventListener('change', ()=>{
+      const cc = cierres[fecha] || {};
+      if(inp.value) cc.despierta = inp.value; else delete cc.despierta;
+      cierres[fecha] = cc; saveCierres(); render();
+    });
+    row.appendChild(inp);
+    const est = document.createElement('div'); est.className = 'desp-estado ' + e.estado;
+    est.textContent = textoDespertar(e);
+    wrap.append(top, row, est);
+    if(e.finde){
+      const tog = document.createElement('button'); tog.type = 'button';
+      tog.className = 'desp-cuenta' + (e.cuenta ? ' on' : '');
+      tog.textContent = e.cuenta ? '✓ Este día sí cuenta' : 'Hacer que este día cuente';
+      tog.addEventListener('click', ()=>{
+        const cc = cierres[fecha] || {};
+        const cur = typeof cc.despiertaCuenta === 'boolean' ? cc.despiertaCuenta : despConf.finde;
+        cc.despiertaCuenta = !cur; cierres[fecha] = cc; saveCierres(); render();
+      });
+      wrap.appendChild(tog);
+    }
+    return wrap;
+  }
+
   // botones de ánimo: uno activo a la vez; tocar el activo lo des-selecciona
   document.querySelectorAll('.mood').forEach(b => {
     b.addEventListener('click', ()=>{
@@ -2023,6 +2108,10 @@
       });
       moodsC.appendChild(btn);
     });
+
+    // despertar de ese día (registrar/editar la hora también en retrospectiva)
+    const dw = $('cdDespWrap');
+    if(dw){ dw.innerHTML = ''; dw.appendChild(buildDespertarUI(key)); }
 
     // notas: se guardan al escribir (sin botón)
     const notas = $('cdNotasInp');
@@ -2180,11 +2269,27 @@
     $('pickBg').value = v.bg;
   }
 
-  $('themeBtn').addEventListener('click', ()=>{ renderThemeUI(); $('sonidoToggle').checked = focoSonido; $('themeWrap').hidden = false; });
+  $('themeBtn').addEventListener('click', ()=>{
+    renderThemeUI();
+    $('sonidoToggle').checked = focoSonido;
+    $('despMeta').value = despConf.meta.padStart(5, '0');
+    $('despFinde').checked = despConf.finde;
+    document.querySelectorAll('#despRigor button').forEach(b => b.classList.toggle('on', b.dataset.r === despConf.rigor));
+    $('themeWrap').hidden = false;
+  });
   $('sonidoToggle').addEventListener('change', ()=>{
     focoSonido = $('sonidoToggle').checked; saveSonido();
     if(focoSonido) sonarCheck(); // pequeña confirmación al encender
   });
+  $('despMeta').addEventListener('change', ()=>{
+    if(esHora($('despMeta').value)){ despConf.meta = $('despMeta').value; saveDespertar(); render(); }
+  });
+  $('despFinde').addEventListener('change', ()=>{ despConf.finde = $('despFinde').checked; saveDespertar(); render(); });
+  document.querySelectorAll('#despRigor button').forEach(b => b.addEventListener('click', ()=>{
+    despConf.rigor = b.dataset.r; saveDespertar();
+    document.querySelectorAll('#despRigor button').forEach(x => x.classList.toggle('on', x === b));
+    render();
+  }));
   $('themeClose').addEventListener('click', ()=>{ $('themeWrap').hidden = true; });
   $('themeWrap').addEventListener('click', (e)=>{ if(e.target === $('themeWrap')) $('themeWrap').hidden = true; });
 
@@ -3038,7 +3143,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -3169,7 +3274,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -3260,6 +3365,9 @@
         const rcs = b.data['reps-recompensas'];
         if(Array.isArray(rcs)) localStorage.setItem(RECOMP_KEY, JSON.stringify(rcs));
         else localStorage.removeItem(RECOMP_KEY);
+        const dsp = b.data['reps-despertar'];
+        if(esMapa(dsp)) localStorage.setItem(DESPERTAR_KEY, JSON.stringify(dsp));
+        else localStorage.removeItem(DESPERTAR_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -3282,6 +3390,7 @@
       rutina = []; loadRutina(); renderRutina();
       carta = null; loadCarta();
       recompensas = []; loadRecompensas();
+      despConf = { meta:'8:30', rigor:'medio', finde:false }; loadDespertar();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -3327,6 +3436,7 @@
   loadMetas();
   loadRecompensas();
   loadRutina();
+  loadDespertar(); // antes de render(): la tarjeta de despertar y el puntaje
   render();
   renderMetas();
   renderRutina();
