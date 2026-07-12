@@ -410,9 +410,21 @@ body.minimal .ahora .ah-bar,body.minimal .ahora .ah-next{display:none}
 .cierre textarea:focus{border-color:var(--amber)}
 .cierre .c-save{margin-top:14px;width:100%;background:var(--amber);border:none;border-radius:10px;color:var(--on-accent);font:inherit;font-weight:800;font-size:14px;padding:11px 0;cursor:pointer}
 .cal-detail{margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}
-.cal-detail .cd-head{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:14px;margin-bottom:4px;text-transform:capitalize}
-.cal-detail .cd-sec{font-size:13px;color:var(--muted);line-height:1.5;margin-top:6px;white-space:pre-wrap}
-.cal-detail .cd-sec b{color:var(--text)}
+.cal-detail .cd-head{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:14px;margin-bottom:4px;text-transform:capitalize;gap:8px}
+.cal-detail .cd-hint{font-size:12px;color:var(--muted);line-height:1.4;margin-bottom:10px}
+.cal-detail .cd-block{margin-top:12px}
+.cal-detail .cd-lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:7px}
+.cal-detail .cd-vacio{font-size:13px;color:var(--muted);line-height:1.5}
+.cal-detail .cd-hab{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:6px;color:var(--text);font:inherit;cursor:pointer}
+.cal-detail .cd-hab .cd-chk{width:22px;height:22px;min-width:22px;border-radius:7px;border:2px solid var(--line);display:grid;place-items:center;font-size:13px;font-weight:800;color:transparent}
+.cal-detail .cd-hab.on .cd-chk{background:var(--amber);border-color:var(--amber);color:var(--on-accent)}
+.cal-detail .cd-hab .cd-hab-nm{font-size:14px;font-weight:600}
+.cal-detail .cd-hab.on .cd-hab-nm{color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--amber) 50%,transparent)}
+.cal-detail .cd-moods{display:flex;gap:8px;flex-wrap:wrap}
+.cal-detail .cd-mood{flex:1;min-width:88px;background:var(--card-2);border:1px solid var(--line);border-radius:10px;color:var(--text);font:inherit;font-size:13px;font-weight:600;padding:9px 8px;cursor:pointer}
+.cal-detail .cd-mood.on{background:var(--amber);border-color:var(--amber);color:var(--on-accent)}
+.cal-detail .cd-notas{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:10px;color:var(--text);font:inherit;font-size:14px;line-height:1.5;padding:10px 12px;resize:vertical;outline:none}
+.cal-detail .cd-notas:focus{border-color:var(--amber)}
 
 /* ===== Intro (opening) ===== */
 .intro{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;pointer-events:none;animation:introOut .45s ease 1.5s forwards}

@@ -1949,40 +1949,89 @@
     if(partes.length) $('planHoyTxt').textContent = partes.join(' · ');
   }
 
-  // detalle de cualquier día pasado: hábitos hechos + estado + cierre si hay
+  // detalle EDITABLE de cualquier día (hoy o pasado): permite marcar hábitos,
+  // poner el ánimo y escribir notas que recuerdas después. La honestidad
+  // tardía vale: nunca serás perfecto, pero sí honesto.
   function showDayDetail(key){
     if(detailKey === key && !$('calDetail').hidden){ // tocar de nuevo lo cierra
       $('calDetail').hidden = true; detailKey = null; return;
     }
+    detailKey = key;
+    $('calDetail').hidden = false;
+    pintarDayDetail(key);
+  }
+  // repinta el contenido del detalle (se llama al abrir y tras cada edición)
+  function pintarDayDetail(key){
     const c = cierres[key] || {};
-    const r = dias[key];
-    const m = MOODS.find(x => x.id === c.animo);
+    const r = dias[key] || {};
 
     $('cdFecha').textContent =
       new Date(key + 'T12:00:00').toLocaleDateString('es-MX', {weekday:'long', day:'numeric', month:'long'});
-    $('cdMood').textContent = m ? (m.emoji + ' ' + m.name) : '';
 
-    // estado del día: ganado, descanso, congelado, parcial o sin registro
+    // estado del día (se recalcula tras cada cambio)
     const coreDia = coreDelDia(key);
-    const coreHechos = coreDia.filter(id => r && r[id]).length;
+    const coreHechos = coreDia.filter(id => r[id]).length;
     $('cdEstado').textContent =
-      esGanado(key) ? 'Día ganado 🔥' :
-      esDescanso(key) ? 'Descanso · no tocaba ningún core' :
-      racha.congelados[key] ? 'Congelado 🧊 · un congelador salvó la racha' :
-      (r && HABITS.some(h => r[h.id])) ? 'Parcial · ' + coreHechos + '/' + coreDia.length + ' core' :
+      esGanado(key) ? '🔥 Ganado' :
+      esDescanso(key) ? '· Descanso' :
+      racha.congelados[key] ? '🧊 Congelado' :
+      HABITS.some(h => r[h.id]) ? 'Parcial ' + coreHechos + '/' + coreDia.length :
       'Sin registro';
 
-    // qué reps cayeron ese día
-    const hechos = HABITS.filter(h => r && r[h.id]).map(h => h.name);
-    $('cdHabitosWrap').hidden = hechos.length === 0;
-    $('cdHabitos').textContent = hechos.join(' · ');
+    // hábitos que APLICABAN ese día, como toggles editables
+    const dow = dowDe(key);
+    const habs = HABITS.filter(h => habAplica(h, dow));
+    const cont = $('cdHabList'); cont.innerHTML = '';
+    if(!habs.length){
+      const vacio = document.createElement('div'); vacio.className = 'cd-vacio';
+      vacio.textContent = 'Ese día era de descanso: no tocaba ningún hábito.';
+      cont.appendChild(vacio);
+    }
+    habs.forEach(h => {
+      const done = !!r[h.id];
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cd-hab' + (done ? ' on' : '');
+      const chk = document.createElement('span'); chk.className = 'cd-chk'; chk.textContent = done ? '✓' : '';
+      const nm = document.createElement('span'); nm.className = 'cd-hab-nm';
+      nm.textContent = (h.emoji ? h.emoji + ' ' : '') + h.name + (h.core ? '' : ' · extra');
+      btn.append(chk, nm);
+      btn.addEventListener('click', ()=>{
+        const cur = dias[key] || {};
+        cur[h.id] = !cur[h.id];
+        if(!cur[h.id]) delete cur[h.id]; // no dejar false: registro vacío = válido
+        dias[key] = cur;
+        save();
+        pintarDayDetail(key); render(); renderCal(); // recalcula todo con el cambio
+      });
+      cont.appendChild(btn);
+    });
 
-    $('cdNotasWrap').hidden = !c.notas;
-    $('cdNotas').textContent = c.notas || '';
-    $('cdPlanWrap').hidden = !c.plan;
-    $('cdPlan').textContent = c.plan || '';
-    $('calDetail').hidden = false;
-    detailKey = key;
+    // ánimo: 3 botones que fijan/limpian cierres[key].animo
+    const moodsC = $('cdMoods'); moodsC.innerHTML = '';
+    MOODS.forEach(m => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cd-mood' + (c.animo === m.id ? ' on' : '');
+      btn.textContent = m.emoji + ' ' + m.name;
+      btn.addEventListener('click', ()=>{
+        const cc = cierres[key] || {};
+        cc.animo = cc.animo === m.id ? null : m.id; // volver a tocar lo quita
+        cc.guardado = true;
+        cierres[key] = cc; saveCierres();
+        pintarDayDetail(key); renderStats();
+      });
+      moodsC.appendChild(btn);
+    });
+
+    // notas: se guardan al escribir (sin botón)
+    const notas = $('cdNotasInp');
+    notas.value = c.notas || '';
+    notas.oninput = ()=>{
+      const cc = cierres[key] || {};
+      cc.notas = notas.value; cc.guardado = true;
+      cierres[key] = cc; saveCierres();
+    };
   }
 
   // ===== Temas =====

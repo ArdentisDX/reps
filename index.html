@@ -259,11 +259,20 @@
       <div class="cal-grid" id="calGrid"></div>
     </div>
     <div class="cal-detail" id="calDetail" hidden>
-      <div class="cd-head"><span id="cdFecha"></span><span id="cdMood"></span></div>
-      <div class="cd-estado" id="cdEstado"></div>
-      <div class="cd-sec" id="cdHabitosWrap"><b>Reps del día:</b> <span id="cdHabitos"></span></div>
-      <div class="cd-sec" id="cdNotasWrap"><b>Notas:</b> <span id="cdNotas"></span></div>
-      <div class="cd-sec" id="cdPlanWrap"><b>Plan que tenía:</b> <span id="cdPlan"></span></div>
+      <div class="cd-head"><span id="cdFecha"></span><span class="cd-estado" id="cdEstado"></span></div>
+      <div class="cd-hint">Puedes completarlo aunque sea después — sé honesto contigo, no perfecto.</div>
+      <div class="cd-block">
+        <div class="cd-lbl">Hábitos de ese día</div>
+        <div id="cdHabList"></div>
+      </div>
+      <div class="cd-block">
+        <div class="cd-lbl">¿Cómo estuvo?</div>
+        <div class="cd-moods" id="cdMoods"></div>
+      </div>
+      <div class="cd-block">
+        <div class="cd-lbl">Notas</div>
+        <textarea id="cdNotasInp" class="cd-notas" rows="3" placeholder="Algo que recuerdas de ese día: lo que pasó, lo que salió bien, por qué llegaste cansado…"></textarea>
+      </div>
     </div>
     <button class="share-btn" id="shareBtn">📤 Compartir mi mes</button>
     <div class="mesvs" id="mesVs" hidden></div>
