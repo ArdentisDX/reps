@@ -104,6 +104,37 @@ export default {
       return new Response(JSON.stringify({ ok: true, status }), { headers: { ...CORS, 'Content-Type': 'application/json' } });
     }
 
+    // ===== /ia — el "cerebro de visita" (Capa 3.2) =====
+    // La app manda contexto mínimo + pregunta; el Worker consulta a Claude y
+    // devuelve el consejo. NO guarda nada: piensa y olvida. La clave de la API
+    // vive como secreto ANTHROPIC_KEY, nunca en la app.
+    if (url.pathname === '/ia' && req.method === 'POST') {
+      const sistema = typeof body.sistema === 'string' ? body.sistema.slice(0, 8000) : '';
+      const pregunta = typeof body.pregunta === 'string' ? body.pregunta.trim().slice(0, 4000) : '';
+      if (!pregunta) return new Response('bad request', { status: 400, headers: CORS });
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': env.ANTHROPIC_KEY,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-opus-4-8',
+          max_tokens: 1000,
+          system: sistema,
+          messages: [{ role: 'user', content: pregunta }],
+        }),
+      });
+      if (!r.ok) return new Response('ia error ' + r.status, { status: 502, headers: CORS });
+      const data = await r.json();
+      const texto = (data.content || [])
+        .filter(b => b.type === 'text')
+        .map(b => b.text)
+        .join('\n');
+      return new Response(JSON.stringify({ ok: true, texto }), { headers: { ...CORS, 'Content-Type': 'application/json' } });
+    }
+
     return new Response('not found', { status: 404, headers: CORS });
   },
 
