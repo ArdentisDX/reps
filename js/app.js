@@ -1946,6 +1946,11 @@
   $('stClose').addEventListener('click', cerrarStories);
   $('stNext').addEventListener('click', siguienteStory);
   $('stPrev').addEventListener('click', anteriorStory);
+  $('stShare').addEventListener('click', ()=>{
+    clearTimeout(stTimer); // pausa el auto-avance mientras compartes
+    const canvas = drawStoryImage();
+    if(canvas) compartirCanvas(canvas, 'reps-story.png', 'Mi día en REPS');
+  });
   $('rutAdd').addEventListener('click', ()=>{
     if(rutina.length >= MAX_BLOQUES){ toast('Máximo ' + MAX_BLOQUES + ' bloques.'); return; }
     rutina.push({ id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2,5), hora:'12:00', nombre:'Nuevo bloque', desc:'', tipo:'free' });
@@ -2489,8 +2494,40 @@
         toast('Hábito borrado.');
       });
 
+      // asa de arrastre: reordena la lista con el dedo (pointer events)
+      const grip = document.createElement('span');
+      grip.className = 'hab-grip'; grip.textContent = '⠿';
+      grip.setAttribute('aria-label', 'Arrastrar para reordenar');
+      grip.addEventListener('pointerdown', (e)=>{
+        e.preventDefault();
+        grip.setPointerCapture(e.pointerId);
+        const startY = e.clientY;
+        row.classList.add('dragging');
+        const move = (ev)=>{ row.style.transform = 'translateY(' + (ev.clientY - startY) + 'px)'; };
+        const up = (ev)=>{
+          grip.removeEventListener('pointermove', move);
+          grip.removeEventListener('pointerup', up);
+          row.classList.remove('dragging'); row.style.transform = '';
+          // índice destino: la fila cuyo centro quedó más cerca del dedo
+          const rows = [...$('habList').children];
+          const from = rows.indexOf(row);
+          let to = from;
+          rows.forEach((r2, i) => {
+            const rc = r2.getBoundingClientRect();
+            if(ev.clientY > rc.top && ev.clientY < rc.bottom) to = i;
+          });
+          if(to !== from){
+            const [mv] = HABITS.splice(from, 1);
+            HABITS.splice(to, 0, mv);
+            saveHabitos(); render(); renderHabEditor();
+          }
+        };
+        grip.addEventListener('pointermove', move);
+        grip.addEventListener('pointerup', up);
+      });
+
       const top = document.createElement('div'); top.className = 'hab-top';
-      top.append(star, emoji, name, del);
+      top.append(grip, star, emoji, name, del);
 
       // selector de días: 7 chips (L M M J V S D). Todos activos = 'all'.
       const daysRow = document.createElement('div'); daysRow.className = 'hab-days';
@@ -2636,6 +2673,38 @@
     pintarStory();
   }
   function cerrarStories(){ clearTimeout(stTimer); $('stories').hidden = true; }
+  // dibuja la tarjeta actual como postal 1080x1350 con el tema vigente
+  function drawStoryImage(){
+    const c = stCards[stIdx]; if(!c) return null;
+    const W = 1080, H = 1350;
+    const css = getComputedStyle(document.documentElement);
+    const col = v => css.getPropertyValue(v).trim();
+    const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = col('--bg'); ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'center';
+    ctx.font = '200px serif';
+    ctx.fillText(c.emoji, W/2, 420);
+    ctx.fillStyle = col('--amber');
+    ctx.font = '800 44px system-ui, sans-serif';
+    ctx.fillText(c.title.toUpperCase(), W/2, 580);
+    ctx.fillStyle = col('--text');
+    ctx.font = '700 58px system-ui, sans-serif';
+    const lineas = [];
+    c.body.split('\n').forEach(parr => { // envuelve cada párrafo a ~28 chars
+      let cur = '';
+      parr.split(' ').forEach(w => {
+        if((cur + ' ' + w).trim().length > 28){ lineas.push(cur.trim()); cur = w; }
+        else cur += ' ' + w;
+      });
+      lineas.push(cur.trim());
+    });
+    lineas.forEach((l, i) => ctx.fillText(l, W/2, 720 + i*80));
+    ctx.fillStyle = col('--muted');
+    ctx.font = '600 34px system-ui, sans-serif';
+    ctx.fillText('REPS · ' + new Date().toLocaleDateString('es-MX', {day:'numeric', month:'long'}), W/2, H - 90);
+    return canvas;
+  }
 
   // ===== Recompensas: tratos contigo mismo =====
   const RECOMP_KEY = 'reps-recompensas';

@@ -67,6 +67,7 @@ body.minimal .compa{display:none}
 .st-emoji{font-size:76px;line-height:1;margin-bottom:20px}
 .st-title{font-size:14px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin-bottom:14px}
 .st-body{font-size:24px;font-weight:700;color:#fff;line-height:1.4;white-space:pre-line}
+.st-share{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);z-index:4;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);border-radius:99px;color:#fff;font:inherit;font-size:14px;font-weight:700;padding:10px 20px;cursor:pointer}
 /* ===== El Ahora (HUD del bloque actual) ===== */
 .ahora{margin-top:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--amber) 16%,var(--card)),var(--card));border:1px solid color-mix(in srgb,var(--amber) 35%,var(--line));border-radius:var(--radius);padding:14px 16px}
 .ahora .ah-top{display:flex;justify-content:space-between;align-items:center}
@@ -506,6 +507,9 @@ body.minimal .ahora .ah-bar,body.minimal .ahora .ah-next{display:none}
 .alarm-row.puesta .al-btn{background:var(--teal)}
 .hab-row{background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px}
 .hab-top{display:flex;align-items:center;gap:8px}
+.hab-grip{color:var(--muted);font-size:16px;cursor:grab;padding:4px 2px;touch-action:none;user-select:none}
+.hab-row.dragging{position:relative;z-index:5;opacity:.85}
+.hab-row.dragging .hab-grip{cursor:grabbing}
 .hab-star{background:none;border:none;font-size:20px;cursor:pointer;padding:2px;line-height:1;filter:grayscale(1);opacity:.5}
 .hab-star.on{filter:none;opacity:1}
 .hab-star:focus-visible{outline:2px solid var(--amber);outline-offset:2px;border-radius:6px}
