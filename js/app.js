@@ -1672,6 +1672,71 @@
   }
 
   // ===== Cierre de semana (ritual dominical) =====
+  // ===== Plan de la semana (pop dominical) =====
+  // El domingo salta un pop que pregunta qué viene: pendientes, eventos/citas
+  // y el enfoque. Se guarda por el lunes de la semana PLANEADA y se muestra en
+  // Mi día toda la semana. Será el contexto clave del asistente IA (Capa 3.2).
+  const PLANSEM_KEY = 'reps-plan-semana';
+  const PLANSEM_VISTO = 'reps-plansem-visto'; // transitoria: no va en el respaldo
+  let planSemana = {}; // { lunesKey: {foco, pendientes, eventos, guardado} }
+  function loadPlanSemana(){
+    try{
+      const v = JSON.parse(localStorage.getItem(PLANSEM_KEY));
+      if(esMapa(v)) planSemana = v;
+    }catch(e){ planSemana = {}; }
+  }
+  function savePlanSemana(){
+    try{ localStorage.setItem(PLANSEM_KEY, JSON.stringify(planSemana)); }
+    catch(e){ toast('No se pudo guardar. Reintenta.'); }
+  }
+  // la semana que toca planear: si es domingo, la ENTRANTE; si no, la actual
+  function planSemTarget(){
+    const m = mondayOf(new Date());
+    if(new Date().getDay() === 0) m.setDate(m.getDate() + 7);
+    return localISO(m);
+  }
+  function abrirPlanSem(){
+    const key = planSemTarget();
+    const p = planSemana[key] || {};
+    $('psFoco').value = p.foco || '';
+    $('psPend').value = p.pendientes || '';
+    $('psEven').value = p.eventos || '';
+    const ini = new Date(key + 'T12:00:00');
+    const fin = new Date(ini); fin.setDate(fin.getDate() + 6);
+    $('psRango').textContent = 'Semana del ' + ini.toLocaleDateString('es-MX', {day:'numeric', month:'long'}) +
+      ' al ' + fin.toLocaleDateString('es-MX', {day:'numeric', month:'long'});
+    $('planSemWrap').hidden = false;
+  }
+  function guardarPlanSem(){
+    const key = planSemTarget();
+    planSemana[key] = {
+      foco: $('psFoco').value.trim(),
+      pendientes: $('psPend').value.trim(),
+      eventos: $('psEven').value.trim(),
+      guardado: true,
+    };
+    savePlanSemana(); renderPlanSemCard();
+    $('planSemWrap').hidden = true;
+    toast('Semana planeada. 🗓️');
+  }
+  // tarjeta en Mi día con el plan de la semana ACTUAL
+  function renderPlanSemCard(){
+    const key = localISO(mondayOf(new Date()));
+    const p = planSemana[key];
+    const card = $('semPlanCard');
+    const hay = p && (p.foco || p.pendientes || p.eventos);
+    card.hidden = !hay;
+    if(!hay) return;
+    const set = (id, val, pre) => {
+      const el = $(id);
+      el.hidden = !val;
+      if(val) el.textContent = pre + val;
+    };
+    set('spFoco', p.foco, '🎯 Enfoque: ');
+    set('spPend', p.pendientes, '📋 Pendientes: ');
+    set('spEven', p.eventos, '📅 Eventos: ');
+  }
+
   const CIERRE_SEM_KEY = 'reps-cierre-semana';
   let cierreSemana = {}; // { lunesKey: {animo, mejor, intencion, guardado} }
   let wcMoodSel = null;
@@ -1951,6 +2016,10 @@
   $('rutWrap').addEventListener('click', (e)=>{ if(e.target === $('rutWrap')) $('rutWrap').hidden = true; });
   $('alarmClose').addEventListener('click', ()=>{ $('alarmWrap').hidden = true; });
   $('alarmWrap').addEventListener('click', (e)=>{ if(e.target === $('alarmWrap')) $('alarmWrap').hidden = true; });
+  $('planSemBtn').addEventListener('click', abrirPlanSem);
+  $('psSave').addEventListener('click', guardarPlanSem);
+  $('psClose').addEventListener('click', ()=>{ $('planSemWrap').hidden = true; });
+  $('planSemWrap').addEventListener('click', (e)=>{ if(e.target === $('planSemWrap')) $('planSemWrap').hidden = true; });
   $('storyRing').addEventListener('click', abrirStories);
   $('stClose').addEventListener('click', cerrarStories);
   $('stNext').addEventListener('click', siguienteStory);
@@ -3375,7 +3444,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -3506,7 +3575,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -3600,6 +3669,9 @@
         const dsp = b.data['reps-despertar'];
         if(esMapa(dsp)) localStorage.setItem(DESPERTAR_KEY, JSON.stringify(dsp));
         else localStorage.removeItem(DESPERTAR_KEY);
+        const psm = b.data['reps-plan-semana'];
+        if(esMapa(psm)) localStorage.setItem(PLANSEM_KEY, JSON.stringify(psm));
+        else localStorage.removeItem(PLANSEM_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -3623,6 +3695,7 @@
       carta = null; loadCarta();
       recompensas = []; loadRecompensas();
       despConf = { meta:'8:30', rigor:'medio', finde:false }; loadDespertar();
+      planSemana = {}; loadPlanSemana(); renderPlanSemCard();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -3669,6 +3742,7 @@
   loadRecompensas();
   loadRutina();
   loadDespertar(); // antes de render(): la tarjeta de despertar y el puntaje
+  loadPlanSemana(); renderPlanSemCard(); // el plan de la semana en Mi día
   espejoParaSW();  // el SW siempre tiene la rutina fresca para las notificaciones
   render();
   renderMetas();
@@ -3701,6 +3775,20 @@
     if(visto === today()) return;
     try{ localStorage.setItem(STORIES_KEY, today()); }catch(e){}
     setTimeout(()=>{ try{ abrirStories(); }catch(e){} }, 2400);
+  })();
+
+  // Pop dominical: si es domingo y la semana entrante aún no está planeada,
+  // salta el plan de la semana (una vez por domingo, sin insistir)
+  (function(){
+    if(instalacionNueva) return;
+    if(new Date().getDay() !== 0) return;
+    const target = planSemTarget();
+    if(planSemana[target] && planSemana[target].guardado) return; // ya planeada
+    let visto = null;
+    try{ visto = localStorage.getItem(PLANSEM_VISTO); }catch(e){}
+    if(visto === today()) return; // hoy ya saltó (aunque lo hayas cerrado)
+    try{ localStorage.setItem(PLANSEM_VISTO, today()); }catch(e){}
+    setTimeout(()=>{ try{ abrirPlanSem(); }catch(e){} }, 3000);
   })();
 
   // ===== Atajos del ícono (shortcuts del manifest): ?tab=... =====

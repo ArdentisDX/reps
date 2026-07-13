@@ -116,6 +116,13 @@
   </div>
 
   <div class="panel" id="p-dia">
+    <div class="psem-card" id="semPlanCard" hidden>
+      <div class="ps-title">🗓️ Esta semana</div>
+      <div class="ps-line" id="spFoco" hidden></div>
+      <div class="ps-line" id="spPend" hidden></div>
+      <div class="ps-line" id="spEven" hidden></div>
+    </div>
+    <div class="edit-hab" style="margin:10px 0 0"><button id="planSemBtn">🗓️ Planear la semana</button></div>
     <div class="week-plan">
       <div class="wp-head">
         <button class="cal-nav" id="wpPrev" aria-label="Semana anterior">‹</button>
@@ -386,6 +393,21 @@
       <div id="rutList"></div>
       <button class="hab-add" id="rutAdd">＋ Agregar bloque</button>
       <div class="t-note">La ⏰ marca los bloques de <b>estructura</b>; el resto es tiempo libre. Se ordenan solos por hora (la madrugada va al final).</div>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="planSemWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Planear tu semana</h2><button id="psClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-note" id="psRango" style="margin-bottom:10px"></div>
+      <label class="c-lbl" for="psFoco">🎯 Tu enfoque de la semana</label>
+      <input type="text" id="psFoco" class="ps-inp" maxlength="80" placeholder="Una sola cosa que la definiría">
+      <label class="c-lbl" for="psPend">📋 Pendientes y tareas (con fechas si las hay)</label>
+      <textarea id="psPend" class="ps-txt" rows="3" placeholder="Ej: entregar reporte el martes · pagar el recibo · avanzar el proyecto"></textarea>
+      <label class="c-lbl" for="psEven">📅 Eventos, citas, planes</label>
+      <textarea id="psEven" class="ps-txt" rows="3" placeholder="Ej: cita el viernes 7pm · comida familiar el sábado"></textarea>
+      <button class="cel-btn" id="psSave" style="width:100%;margin-top:12px">Guardar mi semana</button>
+      <div class="t-note" style="margin-top:10px">Esto será el contexto de tu asistente: mientras más claro, mejor te aconsejará.</div>
     </div>
   </div>
 
