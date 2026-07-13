@@ -1,7 +1,7 @@
 // Service Worker de REPS — estrategia offline-first.
 // Versión del cache: súbela (v2, v3...) cada vez que cambies HTML/CSS/JS,
 // para que los dispositivos descarguen la copia nueva.
-const CACHE = 'reps-v49';
+const CACHE = 'reps-v50';
 
 // El "app shell": todos los archivos que la app necesita para funcionar.
 const ASSETS = [
@@ -26,11 +26,58 @@ self.addEventListener('install', (e) => {
 
 // ACTIVATE: se dispara cuando esta versión toma el control.
 // Borra los caches de versiones anteriores (reps-v1 cuando llegue reps-v2, etc.).
+// OJO: 'reps-datos' NO es una versión — es el espejo de datos para push; se conserva.
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((k) => k !== CACHE && k !== 'reps-datos').map((k) => caches.delete(k)))
     ).then(() => self.clients.claim())
+  );
+});
+
+// PUSH: llega un "tick" VACÍO del Worker (el servidor no sabe nada de ti).
+// El texto se arma AQUÍ, leyendo el espejo local de tu rutina (reps-datos):
+// privacidad total — el contenido nunca viaja por internet.
+self.addEventListener('push', (e) => {
+  e.waitUntil((async () => {
+    let titulo = 'REPS', cuerpo = 'Tu día te espera. 🔥';
+    try {
+      const c = await caches.open('reps-datos');
+      const r = await c.match('./rutina-espejo.json');
+      if (r) {
+        const rutina = await r.json();
+        const now = new Date();
+        const nowMin = now.getHours() * 60 + now.getMinutes();
+        // el bloque cuya hora quedó a ≤7 min del tick es el que anuncia
+        let mejor = null;
+        rutina.forEach((s) => {
+          const [h, m] = String(s.hora).split(':').map(Number);
+          const diff = (nowMin - (h * 60 + m) + 1440) % 1440;
+          if (diff <= 7 && (!mejor || diff < mejor.diff)) mejor = { s, diff };
+        });
+        if (mejor) {
+          titulo = '⏰ ' + mejor.s.hora + ' · ' + mejor.s.nombre;
+          cuerpo = mejor.s.desc || 'Es la hora de este bloque.';
+        }
+      }
+    } catch (err) {}
+    await self.registration.showNotification(titulo, {
+      body: cuerpo,
+      icon: './icons/icon-192.png',
+      badge: './icons/icon-192.png',
+      tag: 'reps-bloque', // reemplaza la anterior en vez de apilar
+    });
+  })());
+});
+
+// tocar la notificación abre (o enfoca) la app
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((ws) => {
+      for (const w of ws) { if ('focus' in w) return w.focus(); }
+      return clients.openWindow('./');
+    })
   );
 });
 

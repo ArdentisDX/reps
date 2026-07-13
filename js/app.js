@@ -1767,6 +1767,8 @@
   function saveRutina(){
     try{ localStorage.setItem(RUTINA_KEY, JSON.stringify(rutina)); }
     catch(e){ toast('No se pudo guardar. Reintenta.'); }
+    // si el push está activo, el Worker y el espejo del SW deben enterarse
+    try{ if(typeof pushSync === 'function') setTimeout(pushSync, 0); }catch(e){}
   }
   // orden del día real: la madrugada (antes de las 4) va al FINAL
   function minutosDe(hora){
@@ -2353,6 +2355,7 @@
     $('despMeta').value = despConf.meta.padStart(5, '0');
     $('despFinde').checked = despConf.finde;
     document.querySelectorAll('#despRigor button').forEach(b => b.classList.toggle('on', b.dataset.r === despConf.rigor));
+    $('pushToggle').checked = pushActivo();
     $('themeWrap').hidden = false;
   });
   $('sonidoToggle').addEventListener('change', ()=>{
@@ -3090,6 +3093,86 @@
   $('focoCancel').addEventListener('click', cerrarFoco);
   $('focoDone').addEventListener('click', ()=> completarFoco(false));
 
+  // ===== Notificaciones push (Capa 3) =====
+  // El Worker (reps-push) solo conoce: la suscripción del navegador y las
+  // horas de tus bloques. A cada hora manda un "tick" vacío; el service
+  // worker arma el texto con el espejo LOCAL de tu rutina (cache reps-datos).
+  const PUSH_WORKER = 'https://reps-push.iivf-2806.workers.dev';
+  const PUSH_PUB = 'BEK7vM7D_6DKh22xgYxr3eAjySz_X_5jbc4_HBDWIz0jZ-bnWjyIei6Sjz_vkasIZKxSs4ivlSD6q9bD_-ka7Zc';
+  const PUSH_KEY = 'reps-push';
+
+  function b64uToU8(s){
+    s = s.replace(/-/g, '+').replace(/_/g, '/');
+    while(s.length % 4) s += '=';
+    const bin = atob(s);
+    return new Uint8Array([...bin].map(c => c.charCodeAt(0)));
+  }
+  // espejo de la rutina para el SW: el push event no puede leer localStorage,
+  // pero sí el Cache API. Se refresca en cada guardado de rutina.
+  async function espejoParaSW(){
+    try{
+      const c = await caches.open('reps-datos');
+      await c.put('./rutina-espejo.json', new Response(JSON.stringify(rutina), {headers:{'Content-Type':'application/json'}}));
+    }catch(e){}
+  }
+  const pushActivo = () => { try{ return localStorage.getItem(PUSH_KEY) === '1'; }catch(e){ return false; } };
+  async function pushSubscribe(){
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if(!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey: b64uToU8(PUSH_PUB) });
+    const res = await fetch(PUSH_WORKER + '/subscribe', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ subscription: sub.toJSON(), times: rutinaOrdenada().map(s => s.hora), tz: new Date().getTimezoneOffset() }),
+    });
+    if(!res.ok) throw new Error('worker ' + res.status);
+    return sub;
+  }
+  async function pushOn(){
+    if(!('serviceWorker' in navigator) || !('PushManager' in window)){ toast('Este navegador no soporta notificaciones push.'); return false; }
+    const perm = await Notification.requestPermission();
+    if(perm !== 'granted'){ toast('Sin permiso de notificaciones. Revisa los ajustes del navegador.'); return false; }
+    try{
+      await espejoParaSW();
+      await pushSubscribe();
+      try{ localStorage.setItem(PUSH_KEY, '1'); }catch(e){}
+      toast('🔔 Notificaciones activadas: te avisará cada bloque.');
+      return true;
+    }catch(e){ toast('No se pudo conectar con el servidor de avisos.'); return false; }
+  }
+  async function pushOff(){
+    try{
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if(sub){
+        fetch(PUSH_WORKER + '/unsubscribe', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ endpoint: sub.endpoint }) }).catch(()=>{});
+        await sub.unsubscribe();
+      }
+    }catch(e){}
+    try{ localStorage.removeItem(PUSH_KEY); }catch(e){}
+    toast('Notificaciones apagadas.');
+  }
+  // si cambias la rutina y el push está activo, re-manda las horas al Worker
+  function pushSync(){
+    if(!pushActivo()) return;
+    espejoParaSW();
+    pushSubscribe().catch(()=>{});
+  }
+  async function pushTest(){
+    try{
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if(!sub){ toast('Primero activa las notificaciones.'); return; }
+      const res = await fetch(PUSH_WORKER + '/test', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ endpoint: sub.endpoint }) });
+      toast(res.ok ? 'Enviada. Debe llegar en segundos. 🔔' : 'El servidor no pudo enviarla.');
+    }catch(e){ toast('No se pudo probar.'); }
+  }
+  $('pushToggle').addEventListener('change', async ()=>{
+    const el = $('pushToggle');
+    if(el.checked){ const ok = await pushOn(); el.checked = ok; }
+    else await pushOff();
+  });
+  $('pushTest').addEventListener('click', pushTest);
+
   // ===== Bienvenida: cuestionario que moldea los hábitos al usuario =====
   // 100% local: construye un perfil y una lista de hábitos a la medida.
   // (El perfil será, en la fase 2, el contexto que la IA use para conocerte.)
@@ -3586,6 +3669,7 @@
   loadRecompensas();
   loadRutina();
   loadDespertar(); // antes de render(): la tarjeta de despertar y el puntaje
+  espejoParaSW();  // el SW siempre tiene la rutina fresca para las notificaciones
   render();
   renderMetas();
   renderRutina();
