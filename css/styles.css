@@ -85,6 +85,9 @@ body.minimal .ahora .ah-bar,body.minimal .ahora .ah-next{display:none}
 .ps-inp,.ps-txt{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:10px;color:var(--text);font:inherit;font-size:14px;line-height:1.5;padding:10px 12px;outline:none;resize:vertical}
 .ps-inp:focus,.ps-txt:focus{border-color:var(--amber)}
 
+/* ===== Asistente (IA) ===== */
+.ia-out{background:var(--card-2);border:1px solid color-mix(in srgb,var(--teal) 30%,var(--line));border-radius:12px;padding:12px 14px;margin:10px 0;font-size:14px;line-height:1.55;white-space:pre-wrap;max-height:50vh;overflow-y:auto}
+
 /* ===== Despertar a tiempo ===== */
 .desp{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-top:14px}
 .cal-detail .desp{margin-top:0}

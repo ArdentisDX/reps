@@ -3242,6 +3242,59 @@
   });
   $('pushTest').addEventListener('click', pushTest);
 
+  // ===== Asistente (IA de visita, Capa 3.2) =====
+  // La app arma un contexto MÍNIMO al momento (perfil, semana, metas, rutina),
+  // lo manda al Worker /ia junto con la pregunta, y muestra el consejo. El
+  // servidor piensa y olvida: nada de esto se guarda fuera del dispositivo.
+  function contextoIA(){
+    const partes = [];
+    partes.push('Eres el asistente personal dentro de REPS, la app de hábitos de ' +
+      (perfil && perfil.nombre ? perfil.nombre : 'el usuario') + '.');
+    partes.push('Responde SIEMPRE en español, breve, concreto y accionable: di el cuándo y el cómo. Si te falta información, dilo y pregunta.');
+    partes.push('Hoy es ' + new Date().toLocaleDateString('es-MX', {weekday:'long', day:'numeric', month:'long', year:'numeric'}) +
+      ' y son las ' + new Date().toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'}) + '.');
+    const s = statsData();
+    partes.push('Racha actual: ' + s.now + ' días. Total de días ganados: ' + s.total + '.');
+    partes.push('Sus hábitos: ' + HABITS.map(h => h.name + (h.core ? ' (core)' : '')).join(' · '));
+    partes.push('Su rutina: ' + rutinaOrdenada().map(x => x.hora + ' ' + x.nombre).join(' · '));
+    const ps = planSemana[localISO(mondayOf(new Date()))];
+    if(ps){
+      if(ps.foco) partes.push('Enfoque de la semana: ' + ps.foco);
+      if(ps.pendientes) partes.push('Pendientes de la semana: ' + ps.pendientes);
+      if(ps.eventos) partes.push('Eventos y citas de la semana: ' + ps.eventos);
+    }
+    const mp = metas.filter(m => !m.hecha).map(m => m.texto).slice(0, 6);
+    if(mp.length) partes.push('Sus metas pendientes: ' + mp.join(' · '));
+    return partes.join('\n');
+  }
+  async function preguntarIA(pregunta){
+    const res = await fetch(PUSH_WORKER + '/ia', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ sistema: contextoIA(), pregunta }),
+    });
+    if(!res.ok) throw new Error('worker ' + res.status);
+    const d = await res.json();
+    return d.texto || '';
+  }
+  let iaOcupado = false;
+  async function iaEnviar(texto){
+    const q = (texto || '').trim();
+    if(!q || iaOcupado) return;
+    iaOcupado = true;
+    const out = $('iaOut');
+    out.hidden = false; out.textContent = 'Pensando… 🤖';
+    try{ out.textContent = await preguntarIA(q); }
+    catch(e){ out.textContent = 'No se pudo conectar con el asistente. Revisa tu internet e intenta de nuevo.'; }
+    iaOcupado = false;
+  }
+  $('iaBtn').addEventListener('click', ()=>{ $('iaWrap').hidden = false; });
+  $('iaClose').addEventListener('click', ()=>{ $('iaWrap').hidden = true; });
+  $('iaWrap').addEventListener('click', (e)=>{ if(e.target === $('iaWrap')) $('iaWrap').hidden = true; });
+  $('iaAsk').addEventListener('click', ()=>{ iaEnviar($('iaTxt').value); });
+  $('iaSemana').addEventListener('click', ()=>{
+    iaEnviar('Dame un consejo concreto para organizar mi semana: qué hacer cada día con mis pendientes y eventos, usando mis bloques de rutina.');
+  });
+
   // ===== Bienvenida: cuestionario que moldea los hábitos al usuario =====
   // 100% local: construye un perfil y una lista de hábitos a la medida.
   // (El perfil será, en la fase 2, el contexto que la IA use para conocerte.)
