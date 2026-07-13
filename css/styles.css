@@ -261,6 +261,14 @@ body.minimal .ahora .ah-bar,body.minimal .ahora .ah-next{display:none}
 .sc-spark .sp-bar.rest{background:color-mix(in srgb,var(--teal) 40%,var(--line))}
 .sc-leg{font-size:11px;color:var(--muted);margin-top:5px}
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+/* Recap semanal (tipo Wrapped) */
+.recap{margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}
+.recap .rp-title{font-size:13px;font-weight:800;margin-bottom:10px}
+.recap .rp-grid{display:flex;gap:8px}
+.recap .rp-cell{flex:1;background:var(--card-2);border-radius:10px;padding:10px 8px;text-align:center}
+.recap .rp-num{font-size:20px;font-weight:800;color:var(--amber)}
+.recap .rp-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+.recap .rp-extra{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5}
 .stat-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}
 .stat-num{font-size:30px;font-weight:800;line-height:1.1;color:var(--amber)}
 .stat-lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:4px}

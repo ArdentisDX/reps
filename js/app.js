@@ -958,6 +958,19 @@
       out.push('Tu puntaje promedio: ' + avg + '/100 en ' + dPunt.length + ' días con actividad.');
     }
 
+    // 7) despertar temprano ↔ días ganados: compara el % de ganados cuando
+    // despiertas a tiempo vs tarde (mín. 4 muestras por lado)
+    const conDesp = Object.keys(cierres).filter(k => esHora((cierres[k]||{}).despierta) && !esDescanso(k));
+    const temprano = conDesp.filter(k => minsHora(cierres[k].despierta) <= minsHora(despConf.meta) + graceDesp(despConf.rigor));
+    const tarde = conDesp.filter(k => !temprano.includes(k));
+    if(temprano.length >= 4 && tarde.length >= 4){
+      const pT = Math.round(temprano.filter(esGanado).length / temprano.length * 100);
+      const pL = Math.round(tarde.filter(esGanado).length / tarde.length * 100);
+      if(pT !== pL) out.push(pT > pL
+        ? 'Cuando despiertas a tiempo ganas el ' + pT + '% de los días; tarde, solo el ' + pL + '%. La mañana decide.'
+        : 'Curioso: ganas más aun despertando tarde (' + pL + '% vs ' + pT + '%). Tu mañana no es el problema.');
+    }
+
     return out;
   }
 
@@ -1154,6 +1167,58 @@
     el.textContent = 'Este mes vas al ' + actual.pct + '% · el pasado cerraste al ' + pasado.pct + '% · ' + signo + (diff !== 0 ? ' puntos' : ' que el pasado');
   }
 
+  // ===== Recap semanal: tu semana pasada, tipo Wrapped =====
+  // Deriva de la última semana COMPLETA (lunes–domingo anterior a la actual);
+  // aparece si esa semana tuvo al menos un día con requisito.
+  function recapData(){
+    const monActual = mondayOf(new Date());
+    const mon = new Date(monActual); mon.setDate(mon.getDate() - 7);
+    let ganados = 0, req = 0, sumP = 0, nP = 0, mejor = null;
+    let sumDesp = 0, nDesp = 0;
+    const animos = { bien:0, regular:0, mal:0 };
+    for(let i = 0; i < 7; i++){
+      const d = new Date(mon); d.setDate(d.getDate() + i);
+      const k = localISO(d);
+      if(!esDescanso(k)){
+        req++;
+        if(esGanado(k)) ganados++;
+        const p = puntajeDia(k);
+        if(p !== null){ sumP += p; nP++; if(!mejor || p > mejor.p) mejor = { p, k }; }
+      }
+      const c = cierres[k] || {};
+      if(c.animo && animos[c.animo] !== undefined) animos[c.animo]++;
+      if(esHora(c.despierta)){ sumDesp += minsHora(c.despierta); nDesp++; }
+    }
+    return { mon, ganados, req, prom: nP ? Math.round(sumP / nP) : null, mejor,
+             desp: nDesp ? Math.round(sumDesp / nDesp) : null, animos };
+  }
+  function renderRecap(){
+    const r = recapData();
+    const el = $('recapSem');
+    if(!r.req){ el.hidden = true; return; }
+    el.hidden = false;
+    const g = $('rpGrid'); g.innerHTML = '';
+    const celda = (num, lbl) => {
+      const c = document.createElement('div'); c.className = 'rp-cell';
+      const n = document.createElement('div'); n.className = 'rp-num'; n.textContent = num;
+      const l = document.createElement('div'); l.className = 'rp-lbl'; l.textContent = lbl;
+      c.append(n, l); g.appendChild(c);
+    };
+    celda(r.ganados + '/' + r.req, 'días ganados');
+    if(r.prom !== null) celda(r.prom, 'puntaje prom.');
+    if(r.desp !== null){
+      const h = Math.floor(r.desp / 60), m = r.desp % 60;
+      celda(h + ':' + String(m).padStart(2, '0'), 'despertar prom.');
+    }
+    const extra = [];
+    if(r.mejor) extra.push('Tu mejor día: ' +
+      new Date(r.mejor.k + 'T12:00:00').toLocaleDateString('es-MX', {weekday:'long'}) + ' (' + r.mejor.p + ' pts)');
+    const totalAnimo = r.animos.bien + r.animos.regular + r.animos.mal;
+    if(totalAnimo) extra.push('Ánimo: 🔥×' + r.animos.bien + ' 😐×' + r.animos.regular + ' 💀×' + r.animos.mal);
+    $('rpExtra').textContent = extra.join(' · ');
+    $('rpExtra').hidden = !extra.length;
+  }
+
   // ===== Museo: tus logros reales, con fecha =====
   function museoItems(){
     const out = [];
@@ -1293,6 +1358,7 @@
     renderCompa(s.total);
     renderRecompensas(s.total);
     renderMesVs();
+    renderRecap();
     renderMuseo();
     renderHeatmap();
     renderCal();
