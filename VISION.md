@@ -187,7 +187,7 @@ Hacerlo antes del primer modo nuevo; el modo minimalista es el piloto.
 | 7 | XP y niveles (Habitica) | medio | mediano | Después del retro/pixel gana más |
 | 8 | Museo + Carta al yo perdido + Cápsula | medio | chico | Rachas de features chicas, moral alta |
 | ✅ | Push de bloques (Capa 3, paso 1) | alto | grande | HECHO jul 2026 (v50). Worker `reps-push` en Cloudflare (`workers/push-worker.js`): KV con suscripción+horas, cron cada 5 min, pushes VACÍOS; el SW arma el texto con el espejo local (`reps-datos`). Toggle en Ajustes. Primera feature online; el resto sigue offline. |
-| 9 | IA de la Bandeja (Capa 3, paso 2: ruta /ia en el MISMO Worker) | alto | grande | La base ya existe; falta la clave de API como secreto y el modelo "cerebro de visita" |
+| ✅ | El Asistente (Capa 3.2: ruta /ia + botón 🤖) | alto | grande | HECHO jul 2026 (v52). Worker `/ia` → Anthropic (claude-opus-4-8, secreto ANTHROPIC_KEY, stateless). App: `contextoIA()` manda perfil+semana+metas+rutina al momento; consejo de la semana + pregunta libre en Mi día. ~2-3¢ por consejo. Pendiente natural: IA clasifica la Bandeja vía addIdea(). |
 | 10 | Social espejo (Strava, Capa 5) | medio | grande | Al final, con cuentas |
 
 > **Hábitos por día de la semana — por qué es sesión propia:** cambia
