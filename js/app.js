@@ -96,7 +96,7 @@
     const limpio = v
       .filter(h => h && typeof h.id === 'string' && h.id && typeof h.name === 'string' && h.name.trim())
       .filter(h => vistos[h.id] ? false : (vistos[h.id] = true)) // ids únicos
-      .map(h => ({ id: h.id, name: h.name.trim(), hint: typeof h.hint === 'string' ? h.hint.trim() : '', core: !!h.core, days: sanearDays(h.days), planB: typeof h.planB === 'string' ? h.planB.trim() : '', emoji: sanearEmoji(h.emoji) }))
+      .map(h => ({ id: h.id, name: h.name.trim(), hint: typeof h.hint === 'string' ? h.hint.trim() : '', core: !!h.core, days: sanearDays(h.days), planB: typeof h.planB === 'string' ? h.planB.trim() : '', emoji: sanearEmoji(h.emoji), porQue: typeof h.porQue === 'string' ? h.porQue.trim() : '' }))
       .slice(0, MAX_HABITS);
     return limpio.length ? limpio : null;
   }
@@ -477,6 +477,13 @@
       const pb = document.createElement('div'); pb.className = 'h-planb';
       pb.textContent = '🅱️ mínimo: ' + h.planB;
       body.appendChild(pb);
+    }
+    // el "por qué": tu motivo, visible cuando el hábito aún no cae (el
+    // empujón para el día flojo)
+    if(h.porQue && !done){
+      const pq = document.createElement('div'); pq.className = 'h-porque';
+      pq.textContent = '💭 ' + h.porQue;
+      body.appendChild(pq);
     }
     b.append(check, body);
     // ▶ enfocar: abre el temporizador para este hábito. role=button (no se
@@ -2480,6 +2487,13 @@
       planb.setAttribute('aria-label', 'Plan B del hábito');
       planb.addEventListener('input', ()=>{ h.planB = planb.value; saveHabitos(); render(); });
 
+      // el "por qué" (opcional): tu motivo, se muestra en la tarjeta
+      const porque = document.createElement('input');
+      porque.type = 'text'; porque.className = 'hab-hint'; porque.value = h.porQue || ''; porque.maxLength = 70;
+      porque.placeholder = '💭 Por qué: tu motivo para este hábito';
+      porque.setAttribute('aria-label', 'Por qué de este hábito');
+      porque.addEventListener('input', ()=>{ h.porQue = porque.value; saveHabitos(); render(); });
+
       // borrar (confirma; el historial de ese id se conserva en reps-dias)
       const del = document.createElement('button');
       del.className = 'hab-del'; del.textContent = '✕'; del.setAttribute('aria-label', 'Borrar hábito');
@@ -2552,7 +2566,7 @@
         daysRow.appendChild(chip);
       });
 
-      row.append(top, hint, planb, daysRow);
+      row.append(top, hint, planb, porque, daysRow);
       list.appendChild(row);
     });
   }

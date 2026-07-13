@@ -141,6 +141,8 @@ body.minimal .ahora .ah-bar,body.minimal .ahora .ah-next{display:none}
 .habit.done .h-name{color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in srgb, var(--amber) 50%, transparent)}
 .habit .h-hint{font-size:12px;color:var(--muted);margin-top:2px}
 .habit .h-planb{font-size:12px;color:var(--teal);margin-top:3px;font-weight:600}
+.habit .h-porque{font-size:12px;color:var(--muted);margin-top:3px;font-style:italic}
+body.compact .habit .h-porque{display:none}
 .habit .core-mark{font-size:10px;font-weight:800;letter-spacing:.12em;color:var(--amber);border:1px solid color-mix(in srgb, var(--amber) 40%, transparent);border-radius:6px;padding:3px 6px;white-space:nowrap}
 .habit .h-foco{display:flex;align-items:center;justify-content:center;width:30px;height:30px;min-width:30px;border-radius:9px;border:1px solid var(--line);color:var(--muted);font-size:11px;cursor:pointer}
 .habit .h-foco:hover{color:var(--amber);border-color:color-mix(in srgb, var(--amber) 45%, transparent)}
