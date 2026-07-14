@@ -3295,6 +3295,102 @@
     iaEnviar('Dame un consejo concreto para organizar mi semana: qué hacer cada día con mis pendientes y eventos, usando mis bloques de rutina.');
   });
 
+  // ===== Diseñador de hábitos con IA =====
+  // Cuestionario → la IA propone hábitos con horarios → el usuario SIEMPRE
+  // confirma antes de aplicar. Reemplaza HABITS (el historial se conserva:
+  // los ids viejos siguen en reps-dias) y opcionalmente suma bloques a la rutina.
+  let ihPropuesta = null;
+  function ihSanear(v){
+    if(!v || !Array.isArray(v.habitos)) return null;
+    const habs = v.habitos
+      .filter(h => h && typeof h.name === 'string' && h.name.trim())
+      .map(h => ({
+        name: h.name.trim().slice(0, 40),
+        hint: typeof h.hint === 'string' ? h.hint.trim().slice(0, 60) : '',
+        core: !!h.core,
+        planB: typeof h.planB === 'string' ? h.planB.trim().slice(0, 60) : '',
+        emoji: sanearEmoji(h.emoji),
+        hora: (typeof h.hora === 'string' && /^\d{1,2}:\d{2}$/.test(h.hora.trim())) ? h.hora.trim() : '',
+      }))
+      .slice(0, MAX_HABITS);
+    if(habs.length < 2) return null;
+    // respeta las reglas de la app: entre MIN_CORE y MAX_CORE núcleos
+    let cores = habs.filter(h => h.core).length;
+    for(let i = 0; i < habs.length && cores < MIN_CORE; i++){ if(!habs[i].core){ habs[i].core = true; cores++; } }
+    for(let i = habs.length - 1; i >= 0 && cores > MAX_CORE; i--){ if(habs[i].core){ habs[i].core = false; cores--; } }
+    return habs;
+  }
+  async function ihProponer(){
+    const meta = $('ihMeta').value.trim();
+    if(!meta){ toast('Cuéntale qué quieres lograr.'); return; }
+    if(iaOcupado) return;
+    iaOcupado = true;
+    ihPropuesta = null; $('ihApply').hidden = true;
+    const out = $('ihOut'); out.hidden = false; out.textContent = 'Diseñando tus hábitos… 🤖';
+    const sistema = 'Eres un diseñador de hábitos experto (estilo Hábitos Atómicos): pocos hábitos, chicos y sostenibles. ' +
+      'Responde ÚNICAMENTE con un JSON válido, sin markdown ni texto extra, con esta forma exacta: ' +
+      '{"habitos":[{"name":"...","hint":"...","emoji":"🏃","core":true,"planB":"...","hora":"7:30"}]}. ' +
+      'Entre 4 y 6 hábitos; de ellos exactamente 2 a 4 con core:true (los innegociables que definen un día ganado). ' +
+      'name máx 40 caracteres, en español. hint = consejo práctico corto (máx 60). planB = la versión mínima para un día malo (máx 60). ' +
+      'hora = hora sugerida en formato 24h H:MM, realista para el horario de la persona.';
+    const pregunta = 'Diseña mis hábitos. Lo que quiero lograr: ' + meta + '. Mi horario: ' +
+      ($('ihHorario').value.trim() || 'no especificado') + '. Tiempo libre: ' +
+      ($('ihTiempo').value.trim() || 'no especificado') + '. Quiero dejar/evitar: ' +
+      ($('ihDejar').value.trim() || 'nada en particular') + '.';
+    try{
+      const res = await fetch(PUSH_WORKER + '/ia', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ sistema, pregunta }),
+      });
+      if(!res.ok) throw new Error('worker ' + res.status);
+      const d = await res.json();
+      const m = (d.texto || '').match(/\{[\s\S]*\}/); // tolera texto alrededor del JSON
+      const habs = ihSanear(m ? JSON.parse(m[0]) : null);
+      if(!habs) throw new Error('formato');
+      ihPropuesta = habs;
+      out.textContent = 'Te propongo:\n\n' + habs.map(h =>
+        (h.emoji ? h.emoji + ' ' : '') + h.name + (h.core ? ' ⭐' : '') +
+        (h.hora ? ' · ' + h.hora : '') +
+        (h.hint ? '\n   ' + h.hint : '') +
+        (h.planB ? '\n   🅱️ mínimo: ' + h.planB : '')
+      ).join('\n\n') + '\n\n⭐ = innegociable (define tu día ganado)';
+      $('ihApply').hidden = false;
+    }catch(e){
+      out.textContent = 'No se pudo generar la propuesta. Revisa tu internet e intenta de nuevo.';
+    }
+    iaOcupado = false;
+  }
+  function ihAplicar(){
+    if(!ihPropuesta) return;
+    // SIEMPRE preguntar antes: nada cambia sin un sí explícito
+    if(!confirm('Esto REEMPLAZA tus ' + HABITS.length + ' hábitos actuales por los ' + ihPropuesta.length +
+      ' propuestos. Tu historial de días se conserva. ¿Aplicar?')) return;
+    HABITS = ihPropuesta.map(h => ({
+      id: nuevoHabId(), name: h.name, hint: h.hint, core: h.core,
+      days: 'all', planB: h.planB, emoji: h.emoji, porQue: '',
+    }));
+    rebuildCore(); saveHabitos(); render();
+    // segunda decisión, también tuya: sumar las horas a la rutina
+    const conHora = ihPropuesta.filter(h => h.hora);
+    if(conHora.length && confirm('¿Agregar también sus horarios como bloques en tu rutina de Mi día? (' +
+      conHora.map(h => h.hora + ' ' + h.name).join(' · ') + ')')){
+      conHora.forEach(h => {
+        if(rutina.length >= MAX_BLOQUES) return;
+        rutina.push({ id: 'r' + Math.random().toString(36).slice(2, 8), hora: h.hora,
+          nombre: (h.emoji ? h.emoji + ' ' : '') + h.name, desc: h.hint || '', tipo: h.core ? 'core' : 'free' });
+      });
+      saveRutina(); renderRutina();
+    }
+    $('iaHabWrap').hidden = true; $('habWrap').hidden = true;
+    ihPropuesta = null;
+    toast('Hábitos aplicados. A construir. 🤖🔥');
+  }
+  $('iaHabBtn').addEventListener('click', ()=>{ $('iaHabWrap').hidden = false; });
+  $('ihClose').addEventListener('click', ()=>{ $('iaHabWrap').hidden = true; });
+  $('iaHabWrap').addEventListener('click', (e)=>{ if(e.target === $('iaHabWrap')) $('iaHabWrap').hidden = true; });
+  $('ihGo').addEventListener('click', ihProponer);
+  $('ihApply').addEventListener('click', ihAplicar);
+
   // ===== Bienvenida: cuestionario que moldea los hábitos al usuario =====
   // 100% local: construye un perfil y una lista de hábitos a la medida.
   // (El perfil será, en la fase 2, el contexto que la IA use para conocerte.)

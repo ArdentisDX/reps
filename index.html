@@ -386,6 +386,7 @@
       <div class="t-head"><h2>Editar hábitos</h2><button id="habClose" aria-label="Cerrar">✕</button></div>
       <div id="habList"></div>
       <button class="hab-add" id="habAdd">＋ Agregar hábito</button>
+      <button class="hab-add" id="iaHabBtn" style="margin-top:8px">🤖 Diseñar mis hábitos con IA</button>
       <div class="t-note">La ⭐ marca los <b>core</b>: los que definen tu «día ganado» (entre 2 y 4). Máx. 8 hábitos. Renombrar nunca borra tu historial.</div>
     </div>
   </div>
@@ -396,6 +397,24 @@
       <div id="rutList"></div>
       <button class="hab-add" id="rutAdd">＋ Agregar bloque</button>
       <div class="t-note">La ⏰ marca los bloques de <b>estructura</b>; el resto es tiempo libre. Se ordenan solos por hora (la madrugada va al final).</div>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="iaHabWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>🤖 Diseñar mis hábitos</h2><button id="ihClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-note" style="margin-bottom:10px">Cuéntale al asistente y te propondrá hábitos con horarios. <b>Nada cambia sin tu confirmación.</b></div>
+      <label class="c-lbl" for="ihMeta">¿Qué quieres lograr o en quién te quieres convertir?</label>
+      <textarea id="ihMeta" class="ps-txt" rows="2" placeholder="Ej: estar en forma, terminar la escuela bien, dormir mejor…"></textarea>
+      <label class="c-lbl" for="ihHorario">¿A qué hora despiertas y a qué hora duermes?</label>
+      <input type="text" id="ihHorario" class="ps-inp" maxlength="60" placeholder="Ej: despierto 8:30, duermo 1:00">
+      <label class="c-lbl" for="ihTiempo">¿Cuánto tiempo libre tienes al día?</label>
+      <input type="text" id="ihTiempo" class="ps-inp" maxlength="60" placeholder="Ej: 3 horas entre semana, más los findes">
+      <label class="c-lbl" for="ihDejar">¿Algo que quieras dejar o evitar?</label>
+      <input type="text" id="ihDejar" class="ps-inp" maxlength="80" placeholder="Ej: el celular en la noche, desvelarme">
+      <button class="cel-btn" id="ihGo" style="width:100%;margin-top:12px">Proponme hábitos 🤖</button>
+      <div class="ia-out" id="ihOut" hidden></div>
+      <button class="cel-btn" id="ihApply" style="width:100%;margin-top:10px" hidden>✅ Aplicar estos hábitos</button>
     </div>
   </div>
 
