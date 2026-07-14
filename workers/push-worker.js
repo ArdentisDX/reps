@@ -75,6 +75,20 @@ export default {
     if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
     const url = new URL(req.url);
 
+    // /debug — diagnóstico: ¿corre el cron? ¿qué horas/tz hay guardadas?
+    if (url.pathname === '/debug' && req.method === 'GET') {
+      const lastCron = await env.REPS_KV.get('debug:lastCron');
+      const lastSend = await env.REPS_KV.get('debug:lastSend');
+      const list = await env.REPS_KV.list({ prefix: 'sub:' });
+      const subs = [];
+      for (const k of list.keys) {
+        const rec = await env.REPS_KV.get(k.name, 'json');
+        if (rec) subs.push({ times: rec.times, tz: rec.tz, endpointTail: (rec.sub && rec.sub.endpoint || '').slice(-12) });
+      }
+      return new Response(JSON.stringify({ lastCron, lastSend, subs, nowUtc: new Date().toISOString() }, null, 2),
+        { headers: { ...CORS, 'Content-Type': 'application/json' } });
+    }
+
     if (req.method === 'GET') return new Response('ok', { headers: CORS });
 
     let body = {};
@@ -141,6 +155,7 @@ export default {
   // corre cada 5 min (cron): manda tick a quien tenga una hora de aviso
   // dentro de la ventana [ahora, ahora+5min) EN SU hora local
   async scheduled(event, env, ctx) {
+    await env.REPS_KV.put('debug:lastCron', new Date().toISOString()); // latido: prueba que el cron corre
     const list = await env.REPS_KV.list({ prefix: 'sub:' });
     const nowUtc = Date.now();
     for (const k of list.keys) {
@@ -156,6 +171,7 @@ export default {
       });
       if (!hit) continue;
       const status = await sendTick(env, rec.sub);
+      await env.REPS_KV.put('debug:lastSend', new Date().toISOString() + ' status=' + status); // último envío del cron
       if (status === 404 || status === 410) await env.REPS_KV.delete(k.name); // suscripción muerta: limpiar
     }
   },
