@@ -3368,6 +3368,27 @@
     for(let i = habs.length - 1; i >= 0 && cores > MAX_CORE; i--){ if(habs[i].core){ habs[i].core = false; cores--; } }
     return habs;
   }
+  // núcleo reusable: recibe una descripción libre y devuelve hábitos saneados
+  // (lo usan el diseñador de hábitos Y el onboarding con IA)
+  const IH_SISTEMA = 'Eres un diseñador de hábitos experto (estilo Hábitos Atómicos): pocos hábitos, chicos y sostenibles, ' +
+    'realistas para el horario y los traslados de la persona (si sale tarde y tarda en llegar, no le pongas cosas en ese hueco). ' +
+    'Responde ÚNICAMENTE con un JSON válido, sin markdown ni texto extra, con esta forma exacta: ' +
+    '{"habitos":[{"name":"...","hint":"...","emoji":"🏃","core":true,"planB":"...","hora":"7:30"}]}. ' +
+    'Entre 4 y 6 hábitos; de ellos exactamente 2 a 4 con core:true (los innegociables que definen un día ganado). ' +
+    'name máx 40 caracteres, en español. hint = consejo práctico corto (máx 60). planB = la versión mínima para un día malo (máx 60). ' +
+    'hora = hora sugerida en formato 24h H:MM, realista para su día.';
+  async function ihGenerar(descripcion){
+    const res = await fetch(PUSH_WORKER + '/ia', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ sistema: IH_SISTEMA, pregunta: descripcion }),
+    });
+    if(!res.ok) throw new Error('worker ' + res.status);
+    const d = await res.json();
+    const m = (d.texto || '').match(/\{[\s\S]*\}/); // tolera texto alrededor del JSON
+    const habs = ihSanear(m ? JSON.parse(m[0]) : null);
+    if(!habs) throw new Error('formato');
+    return habs;
+  }
   async function ihProponer(){
     const meta = $('ihMeta').value.trim();
     if(!meta){ toast('Cuéntale qué quieres lograr.'); return; }
@@ -3375,26 +3396,12 @@
     iaOcupado = true;
     ihPropuesta = null; $('ihApply').hidden = true;
     const out = $('ihOut'); out.hidden = false; out.textContent = 'Diseñando tus hábitos… 🤖';
-    const sistema = 'Eres un diseñador de hábitos experto (estilo Hábitos Atómicos): pocos hábitos, chicos y sostenibles. ' +
-      'Responde ÚNICAMENTE con un JSON válido, sin markdown ni texto extra, con esta forma exacta: ' +
-      '{"habitos":[{"name":"...","hint":"...","emoji":"🏃","core":true,"planB":"...","hora":"7:30"}]}. ' +
-      'Entre 4 y 6 hábitos; de ellos exactamente 2 a 4 con core:true (los innegociables que definen un día ganado). ' +
-      'name máx 40 caracteres, en español. hint = consejo práctico corto (máx 60). planB = la versión mínima para un día malo (máx 60). ' +
-      'hora = hora sugerida en formato 24h H:MM, realista para el horario de la persona.';
     const pregunta = 'Diseña mis hábitos. Lo que quiero lograr: ' + meta + '. Mi horario: ' +
       ($('ihHorario').value.trim() || 'no especificado') + '. Tiempo libre: ' +
       ($('ihTiempo').value.trim() || 'no especificado') + '. Quiero dejar/evitar: ' +
       ($('ihDejar').value.trim() || 'nada en particular') + '.';
     try{
-      const res = await fetch(PUSH_WORKER + '/ia', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ sistema, pregunta }),
-      });
-      if(!res.ok) throw new Error('worker ' + res.status);
-      const d = await res.json();
-      const m = (d.texto || '').match(/\{[\s\S]*\}/); // tolera texto alrededor del JSON
-      const habs = ihSanear(m ? JSON.parse(m[0]) : null);
-      if(!habs) throw new Error('formato');
+      const habs = await ihGenerar(pregunta);
       ihPropuesta = habs;
       out.textContent = 'Te propongo:\n\n' + habs.map(h =>
         (h.emoji ? h.emoji + ' ' : '') + h.name + (h.core ? ' ⭐' : '') +
@@ -3460,12 +3467,17 @@
 
   // catálogo: cada área elegida aporta uno o dos hábitos sugeridos
   const ONB_AREAS = [
-    {id:'cuerpo',   emoji:'💪', name:'Mi cuerpo',      hab:{name:'Moverte 20 min', hint:'Caminar, correr, lo que sea', core:true}, extra:{name:'Calistenia 5 min', hint:'Lagartijas, sentadillas', core:false}},
-    {id:'aprender', emoji:'🧠', name:'Aprender algo',  hab:{name:'Aprender 30 min', hint:'Idioma, curso, leer', core:true}},
-    {id:'proyecto', emoji:'🎯', name:'Un proyecto',    hab:{name:'Bloque de proyecto', hint:'Mínimo 1 hr, sin distracciones', core:true}},
-    {id:'calma',    emoji:'🧘', name:'Calma mental',   hab:{name:'Respirar 5 min', hint:'Meditar o solo respirar', core:false}},
-    {id:'pantalla', emoji:'📵', name:'Menos pantalla', hab:{name:'Comida sin celular', hint:'Presencia, no scroll', core:false}},
-    {id:'dormir',   emoji:'😴', name:'Dormir mejor',   hab:{name:'Leer 15 min + dormir', hint:'Celular lejos de la cama', core:true}},
+    {id:'cuerpo',    emoji:'💪', name:'Mi cuerpo',      hab:{name:'Moverte 20 min', hint:'Caminar, correr, lo que sea', core:true}, extra:{name:'Calistenia 5 min', hint:'Lagartijas, sentadillas', core:false}},
+    {id:'aprender',  emoji:'🧠', name:'Aprender algo',  hab:{name:'Aprender 30 min', hint:'Idioma, curso, leer', core:true}},
+    {id:'proyecto',  emoji:'🎯', name:'Un proyecto',    hab:{name:'Bloque de proyecto', hint:'Mínimo 1 hr, sin distracciones', core:true}},
+    {id:'estudiar',  emoji:'📚', name:'Estudiar',       hab:{name:'Estudiar en bloques', hint:'45 min y descansa', core:true}},
+    {id:'calma',     emoji:'🧘', name:'Calma mental',   hab:{name:'Respirar 5 min', hint:'Meditar o solo respirar', core:false}},
+    {id:'comer',     emoji:'🥗', name:'Comer mejor',    hab:{name:'Una comida sana', hint:'Verdura o fruta al día', core:false}},
+    {id:'dinero',    emoji:'💰', name:'Mis finanzas',   hab:{name:'Anotar mis gastos', hint:'2 min al final del día', core:false}},
+    {id:'relacion',  emoji:'❤️', name:'Mis relaciones', hab:{name:'Tiempo con alguien', hint:'Llamar, ver, escribir', core:false}},
+    {id:'pantalla',  emoji:'📵', name:'Menos pantalla', hab:{name:'Comida sin celular', hint:'Presencia, no scroll', core:false}},
+    {id:'vicio',     emoji:'🚫', name:'Dejar un vicio', hab:{name:'Un día sin ___', hint:'Escribe cuál al editar', core:false}},
+    {id:'dormir',    emoji:'😴', name:'Dormir mejor',   hab:{name:'Leer 15 min + dormir', hint:'Celular lejos de la cama', core:true}},
   ];
   const ONB_DESPERTAR = [
     {id:'temprano', emoji:'🌅', name:'Temprano', sub:'antes de las 7', hora:'6:30'},
@@ -3504,11 +3516,26 @@
 
   // --- el asistente paso a paso ---
   let onb = null;
-  const ONB_PASOS = 6; // 0 intro · 1 nombre · 2 despertar · 3 construir · 4 tiempo · 5 preview
+  const ONB_PASOS = 7; // 0 intro · 1 nombre · 2 despertar · 3 construir · 4 tiempo · 5 detalle · 6 preview
   function abrirBienvenida(){
-    onb = { step:0, nombre:'', despertar:null, construir:[], tiempo:null };
+    onb = { step:0, nombre:'', despertar:null, construir:[], tiempo:null, horario:'', libre:'', iaHabs:null, iaRut:null };
     $('welcome').hidden = false;
     renderOnb();
+  }
+  // arma una descripción rica de las respuestas para que la IA diseñe
+  function descripcionOnb(){
+    const areas = onb.construir.map(id => (ONB_AREAS.find(a => a.id === id) || {}).name).filter(Boolean);
+    const desp = ONB_DESPERTAR.find(x => x.id === onb.despertar);
+    const t = ONB_TIEMPO.find(x => x.id === onb.tiempo);
+    const p = [];
+    p.push('Diseña mis hábitos diarios.');
+    if(areas.length) p.push('Quiero enfocarme en: ' + areas.join(', ') + '.');
+    if(desp) p.push('Despierto ' + desp.name.toLowerCase() + (desp.hora ? ' (~' + desp.hora + ')' : '') + '.');
+    if(t) p.push('Tiempo disponible: ' + t.name.toLowerCase() + ' (' + t.core + ' innegociables al día como máximo).');
+    if(onb.horario) p.push('Mi horario y traslados: ' + onb.horario + '.');
+    if(onb.libre) p.push('Además, en mis palabras: ' + onb.libre + '.');
+    p.push('Ajusta las horas a mi día real; no pongas hábitos en huecos de traslado o clase/trabajo.');
+    return p.join(' ');
   }
   function opBtn(label, sub, activo, onClick){
     const b = document.createElement('button');
@@ -3583,17 +3610,60 @@
       next.hidden = true;
     }
     else if(onb.step === 5){
-      const habs = generarHabitos(onb);
+      title('Cuéntame de tu día', 'Con esto la IA puede armarte algo que de verdad te quede. Opcional — puedes saltarlo.');
+      const l1 = document.createElement('div'); l1.className = 'wel-sub'; l1.style.marginTop = '10px'; l1.textContent = 'Tu horario y traslados';
+      body.appendChild(l1);
+      const ta1 = document.createElement('textarea'); ta1.className = 'ps-txt'; ta1.rows = 2;
+      ta1.placeholder = 'Ej: entro a la escuela 7:30, salgo 3pm, hago 1.5 h de regreso';
+      ta1.value = onb.horario; ta1.addEventListener('input', ()=> onb.horario = ta1.value);
+      body.appendChild(ta1);
+      const l2 = document.createElement('div'); l2.className = 'wel-sub'; l2.style.marginTop = '10px'; l2.textContent = 'Algo específico que quieras (en tus palabras)';
+      body.appendChild(l2);
+      const ta2 = document.createElement('textarea'); ta2.className = 'ps-txt'; ta2.rows = 2;
+      ta2.placeholder = 'Ej: estudiar veterinaria y no descuidar el gym';
+      ta2.value = onb.libre; ta2.addEventListener('input', ()=> onb.libre = ta2.value);
+      body.appendChild(ta2);
+    }
+    else if(onb.step === 6){
       title('Tu sistema', 'Así queda. Podrás editarlo cuando quieras.');
+      const usadosIA = !!onb.iaHabs;
+      const habs = usadosIA ? onb.iaHabs : generarHabitos(onb);
       const lista = document.createElement('div'); lista.className = 'wel-preview';
       habs.forEach(h => {
         const row = document.createElement('div'); row.className = 'wp-prev-row';
-        const nm = document.createElement('span'); nm.textContent = h.name;
+        const nm = document.createElement('span');
+        nm.textContent = (h.emoji ? h.emoji + ' ' : '') + h.name + (h.hora ? '  ·  ' + h.hora : '');
         row.appendChild(nm);
         if(h.core){ const c = document.createElement('span'); c.className = 'wp-core'; c.textContent = 'CORE'; row.appendChild(c); }
         lista.appendChild(row);
       });
       body.appendChild(lista);
+      // botón de IA: rediseña con todo el contexto (siempre puedes no usarlo)
+      const iaBtn = document.createElement('button');
+      iaBtn.className = 'wel-skip'; iaBtn.type = 'button';
+      iaBtn.textContent = usadosIA ? '🤖 Rediseñar con IA' : '🤖 Que la IA lo diseñe por mí';
+      iaBtn.addEventListener('click', async ()=>{
+        if(iaOcupado) return; iaOcupado = true;
+        iaBtn.textContent = 'Diseñando… 🤖'; iaBtn.disabled = true;
+        try{
+          const habs2 = await ihGenerar(descripcionOnb());
+          onb.iaHabs = habs2;
+          // rutina reflejando sus horarios (solo los hábitos con hora)
+          const conHora = habs2.filter(h => h.hora);
+          onb.iaRut = conHora.length ? conHora.map(h => ({
+            id: 'r' + Math.random().toString(36).slice(2, 8), hora: h.hora,
+            nombre: (h.emoji ? h.emoji + ' ' : '') + h.name, desc: h.hint || '', tipo: h.core ? 'core' : 'free',
+          })) : null;
+          renderOnb();
+        }catch(e){ toast('No se pudo con la IA. Revisa tu internet.'); iaBtn.textContent = '🤖 Reintentar con IA'; iaBtn.disabled = false; }
+        iaOcupado = false;
+      });
+      body.appendChild(iaBtn);
+      if(usadosIA){
+        const nota = document.createElement('div'); nota.className = 'wel-sub'; nota.style.marginTop = '8px';
+        nota.textContent = '✨ Diseñado por la IA con tus respuestas.';
+        body.appendChild(nota);
+      }
       next.textContent = 'Empezar mi sistema 🔥';
     }
   }
@@ -3609,16 +3679,27 @@
     if(tieneHistorial){
       if(!confirm('Esto reemplazará tus hábitos actuales por los nuevos. Tu historial de días se conserva. ¿Continuar?')) return;
     }
-    perfil = { nombre: onb.nombre.trim(), despertar: onb.despertar, construir: onb.construir, tiempo: onb.tiempo, creado: new Date().toISOString() };
+    perfil = { nombre: onb.nombre.trim(), despertar: onb.despertar, construir: onb.construir, tiempo: onb.tiempo,
+      horario: onb.horario, libre: onb.libre, creado: new Date().toISOString() };
     savePerfil();
-    HABITS = generarHabitos(onb); rebuildCore(); saveHabitos();
+    if(onb.iaHabs){
+      // hábitos diseñados por la IA (con historial nuevo; ids frescos)
+      HABITS = onb.iaHabs.map(h => ({
+        id: nuevoHabId(), name: h.name, hint: h.hint, core: h.core,
+        days: 'all', planB: h.planB, emoji: h.emoji, porQue: '',
+      }));
+      if(onb.iaRut && onb.iaRut.length){ rutina = onb.iaRut.slice(0, MAX_BLOQUES); saveRutina(); renderRutina(); }
+    } else {
+      HABITS = generarHabitos(onb);
+    }
+    rebuildCore(); saveHabitos();
     aplicarNombre();
     $('welcome').hidden = true;
     render();
     toast('¡Tu sistema está listo! A ganar el día. 🔥');
   }
   $('welNext').addEventListener('click', ()=>{
-    if(onb.step === 5){ finalizarBienvenida(); return; }
+    if(onb.step === 6){ finalizarBienvenida(); return; }
     onb.step++; renderOnb();
   });
   $('welBack').addEventListener('click', ()=>{ if(onb.step > 0){ onb.step--; renderOnb(); } });
