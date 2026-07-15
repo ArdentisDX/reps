@@ -2513,6 +2513,28 @@
     });
   });
 
+  // ===== Posición de la barra de navegación (arriba / abajo) =====
+  const NAV_KEY = 'reps-nav';
+  let navPos = 'arriba';
+  function loadNav(){
+    try{ navPos = localStorage.getItem(NAV_KEY) === 'abajo' ? 'abajo' : 'arriba'; }catch(e){ navPos = 'arriba'; }
+  }
+  function applyNav(){
+    document.body.classList.toggle('nav-bottom', navPos === 'abajo');
+    document.querySelectorAll('.dist-opt[data-nav]').forEach(b =>
+      b.classList.toggle('active', b.dataset.nav === navPos));
+  }
+  document.querySelectorAll('.dist-opt[data-nav]').forEach(b => {
+    b.addEventListener('click', ()=>{
+      navPos = b.dataset.nav;
+      try{
+        if(navPos === 'abajo') localStorage.setItem(NAV_KEY, 'abajo');
+        else localStorage.removeItem(NAV_KEY); // arriba = sin clave (por defecto)
+      }catch(e){}
+      applyNav();
+    });
+  });
+
   // ===== Editor de hábitos =====
   function renderHabEditor(){
     const list = $('habList'); list.innerHTML = '';
@@ -3597,7 +3619,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-nav', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -3728,7 +3750,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-nav': navPos === 'abajo' ? 'abajo' : '' },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -3775,6 +3797,8 @@
         const dv = b.data['reps-distribucion'];
         if(DISTS.includes(dv) && dv !== 'normal') localStorage.setItem(DIST_KEY, dv);
         else localStorage.removeItem(DIST_KEY);
+        if(b.data['reps-nav'] === 'abajo') localStorage.setItem(NAV_KEY, 'abajo');
+        else localStorage.removeItem(NAV_KEY);
         if(b.data['reps-compacto'] === true || b.data['reps-compacto'] === '1'){
           localStorage.setItem('reps-compacto', '1');
         }
@@ -3835,6 +3859,7 @@
       load(); loadTray(); loadCierres(); loadSemana();
       loadTheme(); applyThemeSel();
       loadDist(); applyDist();
+      loadNav(); applyNav();
       loadFx(); applyFx();
       racha = { congeladores: 0, fabRun: 0, procesadoHasta: null, congelados: {} };
       loadRacha(); procesarRacha();
@@ -3877,6 +3902,8 @@
   applyThemeSel(); // primero el tema: la app ya nace pintada del color elegido
   loadDist();
   applyDist();
+  loadNav();
+  applyNav();
   loadFx();
   applyFx();
   load();
