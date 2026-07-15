@@ -22,6 +22,17 @@ h1 span{color:var(--amber)}
 .tab:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
 .tab.active{background:var(--amber);color:var(--on-accent)}
 .tab-ic{display:none}
+/* ===== Tipografía elegante (serif en los títulos; opcional en Ajustes) ===== */
+body.font-serif h1,
+body.font-serif .st-title,
+body.font-serif .sec-head h2,
+body.font-serif .streak .num,
+body.font-serif .stat-num,
+body.font-serif .sc-num,
+body.font-serif .ahora .ah-name,
+body.font-serif .st-body,
+body.font-serif .t-head h2,
+body.font-serif .co-nombre{font-family:Georgia,"Times New Roman",serif;letter-spacing:normal}
 /* ===== Barra de navegación abajo (elegible en Ajustes) ===== */
 body.nav-bottom{padding-bottom:82px}
 body.nav-bottom .tabs{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:460px;margin:0;z-index:50;border-radius:18px 18px 0 0;border-bottom:none;gap:2px;padding:7px 8px calc(7px + env(safe-area-inset-bottom));box-shadow:0 -6px 22px rgba(0,0,0,.28)}

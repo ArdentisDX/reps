@@ -2515,9 +2515,9 @@
 
   // ===== Posición de la barra de navegación (arriba / abajo) =====
   const NAV_KEY = 'reps-nav';
-  let navPos = 'arriba';
+  let navPos = 'abajo'; // predeterminado: barra abajo (estilo app moderna)
   function loadNav(){
-    try{ navPos = localStorage.getItem(NAV_KEY) === 'abajo' ? 'abajo' : 'arriba'; }catch(e){ navPos = 'arriba'; }
+    try{ navPos = localStorage.getItem(NAV_KEY) === 'arriba' ? 'arriba' : 'abajo'; }catch(e){ navPos = 'abajo'; }
   }
   function applyNav(){
     document.body.classList.toggle('nav-bottom', navPos === 'abajo');
@@ -2528,10 +2528,32 @@
     b.addEventListener('click', ()=>{
       navPos = b.dataset.nav;
       try{
-        if(navPos === 'abajo') localStorage.setItem(NAV_KEY, 'abajo');
-        else localStorage.removeItem(NAV_KEY); // arriba = sin clave (por defecto)
+        if(navPos === 'arriba') localStorage.setItem(NAV_KEY, 'arriba'); // abajo = por defecto (sin clave)
+        else localStorage.removeItem(NAV_KEY);
       }catch(e){}
       applyNav();
+    });
+  });
+
+  // ===== Tipografía (elegante serif / sistema) =====
+  const FONT_KEY = 'reps-fuente';
+  let fuente = 'serif'; // predeterminado: títulos elegantes
+  function loadFont(){
+    try{ fuente = localStorage.getItem(FONT_KEY) === 'sistema' ? 'sistema' : 'serif'; }catch(e){ fuente = 'serif'; }
+  }
+  function applyFont(){
+    document.body.classList.toggle('font-serif', fuente === 'serif');
+    document.querySelectorAll('.dist-opt[data-font]').forEach(b =>
+      b.classList.toggle('active', b.dataset.font === fuente));
+  }
+  document.querySelectorAll('.dist-opt[data-font]').forEach(b => {
+    b.addEventListener('click', ()=>{
+      fuente = b.dataset.font;
+      try{
+        if(fuente === 'sistema') localStorage.setItem(FONT_KEY, 'sistema'); // serif = por defecto (sin clave)
+        else localStorage.removeItem(FONT_KEY);
+      }catch(e){}
+      applyFont();
     });
   });
 
@@ -3619,7 +3641,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-nav', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-nav', 'reps-fuente', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -3750,7 +3772,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-nav': navPos === 'abajo' ? 'abajo' : '' },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '' },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -3797,8 +3819,10 @@
         const dv = b.data['reps-distribucion'];
         if(DISTS.includes(dv) && dv !== 'normal') localStorage.setItem(DIST_KEY, dv);
         else localStorage.removeItem(DIST_KEY);
-        if(b.data['reps-nav'] === 'abajo') localStorage.setItem(NAV_KEY, 'abajo');
+        if(b.data['reps-nav'] === 'arriba') localStorage.setItem(NAV_KEY, 'arriba');
         else localStorage.removeItem(NAV_KEY);
+        if(b.data['reps-fuente'] === 'sistema') localStorage.setItem(FONT_KEY, 'sistema');
+        else localStorage.removeItem(FONT_KEY);
         if(b.data['reps-compacto'] === true || b.data['reps-compacto'] === '1'){
           localStorage.setItem('reps-compacto', '1');
         }
@@ -3860,6 +3884,7 @@
       loadTheme(); applyThemeSel();
       loadDist(); applyDist();
       loadNav(); applyNav();
+      loadFont(); applyFont();
       loadFx(); applyFx();
       racha = { congeladores: 0, fabRun: 0, procesadoHasta: null, congelados: {} };
       loadRacha(); procesarRacha();
@@ -3904,6 +3929,8 @@
   applyDist();
   loadNav();
   applyNav();
+  loadFont();
+  applyFont();
   loadFx();
   applyFx();
   load();
