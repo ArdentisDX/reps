@@ -203,45 +203,10 @@
       <div class="t-note" style="margin-top:8px">Paloméalos cuando los cumplas: suman a tu puntaje del día. Con hora, también te avisan (si tienes notificaciones activas).</div>
     </div>
     <div class="sec-head" style="margin-top:24px"><h2>La ruta</h2><div class="tag">tu mapa de capas</div></div>
-    <div class="capa activa">
-      <div class="c-head"><span class="c-num">Capa 1 · Ahora</span><span class="c-status on">Activa</span></div>
-      <div class="c-title">La base</div>
-      <ul class="c-items">
-        <li>Cumple tus innegociables casi todos los días</li>
-        <li>Que la rutina deje de costarte fuerza de voluntad</li>
-        <li>Todavía nada nuevo: primero cimientos firmes</li>
-      </ul>
-      <div class="c-cond">Desbloquea Capa 2: ~2 semanas de rachas estables</div>
-    </div>
-    <div class="capa">
-      <div class="c-head"><span class="c-num">Capa 2 · ~Semana 3</span><span class="c-status wait">En fila</span></div>
-      <div class="c-title">Suma UNA cosa</div>
-      <ul class="c-items">
-        <li>Elige un solo hábito o meta nuevos para crecer</li>
-        <li>Uno a la vez: no diez frentes abiertos</li>
-        <li>Encájalo en un bloque libre de tu día</li>
-      </ul>
-      <div class="c-cond">Desbloquea Capa 3: cuando la Capa 2 ya sea automática</div>
-    </div>
-    <div class="capa">
-      <div class="c-head"><span class="c-num">Capa 3 · ~Mes 2</span><span class="c-status wait">En fila</span></div>
-      <div class="c-title">Profundiza</div>
-      <ul class="c-items">
-        <li>Sube el nivel de lo que ya dominas</li>
-        <li>Agrega un segundo frente, ahora que hay base</li>
-        <li>Empieza a medir y ajustar con tus datos</li>
-      </ul>
-      <div class="c-cond">Desbloquea Capa 4: constancia de 2 meses</div>
-    </div>
-    <div class="capa">
-      <div class="c-head"><span class="c-num">Capa 4 · Mes 3+</span><span class="c-status wait">En fila</span></div>
-      <div class="c-title">Expándete</div>
-      <ul class="c-items">
-        <li>Metas más grandes o de largo plazo</li>
-        <li>Un hobby o proyecto que te llene</li>
-        <li>Convierte tus hábitos en resultados reales</li>
-      </ul>
-      <div class="c-cond">Lo grande llega cuando lo pequeño ya es automático.</div>
+    <div id="capasList"></div>
+    <div class="rut-acts" style="margin-top:10px">
+      <button id="capasEdit">✏️ Editar mi ruta</button>
+      <button id="capasIA">🤖 Diseñar con IA</button>
     </div>
     <div class="nota-ruta">
       <b>Por qué en fila:</b> la motivación es un pico, no una meseta. Cada capa entra cuando la anterior ya no pide fuerza de voluntad.
@@ -420,6 +385,27 @@
       <div id="rutList"></div>
       <button class="hab-add" id="rutAdd">＋ Agregar bloque</button>
       <div class="t-note">La ⏰ marca los bloques de <b>estructura</b>; el resto es tiempo libre. Se ordenan solos por hora (la madrugada va al final).</div>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="capasWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Editar mi ruta</h2><button id="capasClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-note" style="margin-bottom:10px">Tus capas: el plan de largo plazo, a tu medida. Cada punto en una línea.</div>
+      <div id="capasEditList"></div>
+      <button class="hab-add" id="capaAdd">＋ Agregar capa</button>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="capasIAWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>🤖 Diseñar mi ruta</h2><button id="ciClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-note" style="margin-bottom:10px">Cuéntale a dónde quieres llegar y te arma un plan por capas. <b>Nada cambia sin tu confirmación.</b></div>
+      <label class="c-lbl" for="ciMeta">¿A dónde quieres llegar en unos meses?</label>
+      <textarea id="ciMeta" class="ps-txt" rows="3" placeholder="Ej: terminar la carrera, ponerme en forma y empezar a ahorrar; o construir un proyecto propio…"></textarea>
+      <button class="cel-btn" id="ciGo" style="width:100%;margin-top:12px">Proponme una ruta 🤖</button>
+      <div class="ia-out" id="ciOut" hidden></div>
+      <button class="cel-btn" id="ciApply" style="width:100%;margin-top:10px" hidden>✅ Usar esta ruta</button>
     </div>
   </div>
 

@@ -95,6 +95,11 @@ body.minimal .compa{display:none}
 .ahora .ah-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--amber),var(--teal));border-radius:99px;transition:width .4s}
 .ahora .ah-next{font-size:12px;color:var(--muted);margin-top:8px}
 body.minimal .ahora .ah-bar,body.minimal .ahora .ah-next{display:none}
+/* ===== Editor de la ruta (capas) ===== */
+.capa-edit{background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:10px;display:flex;flex-direction:column;gap:7px}
+.capa-edit .ce-cab{display:flex;align-items:center;justify-content:space-between}
+.capa-edit .ce-num{font-size:12px;font-weight:800;color:var(--amber);letter-spacing:.06em}
+
 /* ===== Recordatorios ===== */
 .rec-row{display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:7px}
 .rec-row .rec-chk{width:24px;height:24px;min-width:24px;border-radius:8px;border:2px solid var(--line);background:none;color:transparent;font-size:14px;font-weight:800;cursor:pointer;display:grid;place-items:center}

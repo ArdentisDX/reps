@@ -2989,6 +2989,134 @@
     toast('Recordatorio agregado.');
   });
 
+  // ===== Mi ruta: capas editables (plan de largo plazo, a tu medida) =====
+  // Antes eran fijas en el HTML (la historia personal del autor). Ahora viven
+  // en reps-capas: cada usuario tiene la suya, editable a mano o con IA.
+  const CAPAS_KEY = 'reps-capas';
+  const MAX_CAPAS = 8;
+  const CAPAS_DEFAULT = [
+    {titulo:'La base',        cuando:'Ahora',       items:['Cumple tus innegociables casi todos los días','Que la rutina deje de costarte fuerza de voluntad','Todavía nada nuevo: primero cimientos firmes'], cond:'Desbloquea la siguiente: ~2 semanas de rachas estables'},
+    {titulo:'Suma UNA cosa',  cuando:'~Semana 3',   items:['Elige un solo hábito o meta nuevos','Uno a la vez: no diez frentes abiertos','Encájalo en un bloque libre de tu día'], cond:'Desbloquea la siguiente: cuando esta ya sea automática'},
+    {titulo:'Profundiza',     cuando:'~Mes 2',      items:['Sube el nivel de lo que ya dominas','Agrega un segundo frente, ahora que hay base','Empieza a medir y ajustar con tus datos'], cond:'Desbloquea la siguiente: constancia de 2 meses'},
+    {titulo:'Expándete',      cuando:'Mes 3+',      items:['Metas más grandes o de largo plazo','Un hobby o proyecto que te llene','Convierte tus hábitos en resultados reales'], cond:'Lo grande llega cuando lo pequeño ya es automático.'},
+  ];
+  let capas = [];
+  function sanearCapas(v){
+    if(!Array.isArray(v)) return null;
+    const c = v.filter(x => x && typeof x.titulo === 'string' && x.titulo.trim())
+      .map(x => ({
+        titulo: x.titulo.trim().slice(0, 50),
+        cuando: typeof x.cuando === 'string' ? x.cuando.trim().slice(0, 30) : '',
+        items: Array.isArray(x.items) ? x.items.filter(i => typeof i === 'string' && i.trim()).map(i => i.trim().slice(0, 90)).slice(0, 6) : [],
+        cond: typeof x.cond === 'string' ? x.cond.trim().slice(0, 120) : '',
+      }))
+      .slice(0, MAX_CAPAS);
+    return c.length ? c : null;
+  }
+  function loadCapas(){
+    let v = null;
+    try{ v = sanearCapas(JSON.parse(localStorage.getItem(CAPAS_KEY))); }catch(e){}
+    capas = v || CAPAS_DEFAULT.map(c => ({...c, items:[...c.items]}));
+  }
+  function saveCapas(){ try{ localStorage.setItem(CAPAS_KEY, JSON.stringify(capas)); }catch(e){} }
+  function renderCapas(){
+    const cont = $('capasList'); if(!cont) return;
+    cont.innerHTML = '';
+    capas.forEach((c, i) => {
+      const box = document.createElement('div'); box.className = 'capa' + (i === 0 ? ' activa' : '');
+      const head = document.createElement('div'); head.className = 'c-head';
+      const num = document.createElement('span'); num.className = 'c-num';
+      num.textContent = 'Capa ' + (i + 1) + (c.cuando ? ' · ' + c.cuando : '');
+      const st = document.createElement('span'); st.className = 'c-status ' + (i === 0 ? 'on' : 'wait');
+      st.textContent = i === 0 ? 'Activa' : 'En fila';
+      head.append(num, st);
+      const t = document.createElement('div'); t.className = 'c-title'; t.textContent = c.titulo;
+      box.append(head, t);
+      if(c.items.length){
+        const ul = document.createElement('ul'); ul.className = 'c-items';
+        c.items.forEach(it => { const li = document.createElement('li'); li.textContent = it; ul.appendChild(li); });
+        box.appendChild(ul);
+      }
+      if(c.cond){ const cd = document.createElement('div'); cd.className = 'c-cond'; cd.textContent = c.cond; box.appendChild(cd); }
+      cont.appendChild(box);
+    });
+  }
+  function renderCapasEditor(){
+    const cont = $('capasEditList'); cont.innerHTML = '';
+    capas.forEach((c, i) => {
+      const row = document.createElement('div'); row.className = 'capa-edit';
+      const cab = document.createElement('div'); cab.className = 'ce-cab';
+      const lbl = document.createElement('span'); lbl.className = 'ce-num'; lbl.textContent = 'Capa ' + (i + 1);
+      const del = document.createElement('button'); del.className = 'hab-del'; del.textContent = '✕'; del.setAttribute('aria-label', 'Borrar capa');
+      del.addEventListener('click', ()=>{
+        if(capas.length <= 1){ toast('Deja al menos una capa.'); return; }
+        capas.splice(i, 1); saveCapas(); renderCapas(); renderCapasEditor();
+      });
+      cab.append(lbl, del);
+      const tit = document.createElement('input'); tit.type = 'text'; tit.className = 'hab-name'; tit.maxLength = 50;
+      tit.value = c.titulo; tit.placeholder = 'Título de la capa';
+      tit.addEventListener('input', ()=>{ c.titulo = tit.value; saveCapas(); renderCapas(); });
+      const cua = document.createElement('input'); cua.type = 'text'; cua.className = 'hab-hint'; cua.maxLength = 30;
+      cua.value = c.cuando; cua.placeholder = 'Cuándo (ej: ~Mes 2)';
+      cua.addEventListener('input', ()=>{ c.cuando = cua.value; saveCapas(); renderCapas(); });
+      const its = document.createElement('textarea'); its.className = 'cd-notas'; its.rows = 3;
+      its.value = c.items.join('\n'); its.placeholder = 'Un punto por línea';
+      its.addEventListener('input', ()=>{ c.items = its.value.split('\n').map(s => s.trim()).filter(Boolean).slice(0,6); saveCapas(); renderCapas(); });
+      const cnd = document.createElement('input'); cnd.type = 'text'; cnd.className = 'hab-hint'; cnd.maxLength = 120;
+      cnd.value = c.cond; cnd.placeholder = 'Condición para desbloquear la siguiente';
+      cnd.addEventListener('input', ()=>{ c.cond = cnd.value; saveCapas(); renderCapas(); });
+      row.append(cab, tit, cua, its, cnd);
+      cont.appendChild(row);
+    });
+  }
+  $('capasEdit').addEventListener('click', ()=>{ renderCapasEditor(); $('capasWrap').hidden = false; });
+  $('capasClose').addEventListener('click', ()=>{ $('capasWrap').hidden = true; });
+  $('capasWrap').addEventListener('click', (e)=>{ if(e.target === $('capasWrap')) $('capasWrap').hidden = true; });
+  $('capaAdd').addEventListener('click', ()=>{
+    if(capas.length >= MAX_CAPAS){ toast('Máximo ' + MAX_CAPAS + ' capas.'); return; }
+    capas.push({ titulo:'Nueva capa', cuando:'', items:[], cond:'' });
+    saveCapas(); renderCapas(); renderCapasEditor();
+  });
+  // diseñar la ruta con IA
+  let ciPropuesta = null;
+  $('capasIA').addEventListener('click', ()=>{ ciPropuesta = null; $('ciApply').hidden = true; $('ciOut').hidden = true; $('capasIAWrap').hidden = false; });
+  $('ciClose').addEventListener('click', ()=>{ $('capasIAWrap').hidden = true; });
+  $('capasIAWrap').addEventListener('click', (e)=>{ if(e.target === $('capasIAWrap')) $('capasIAWrap').hidden = true; });
+  $('ciGo').addEventListener('click', async ()=>{
+    const meta = $('ciMeta').value.trim();
+    if(!meta){ toast('Cuéntale a dónde quieres llegar.'); return; }
+    if(iaOcupado) return; iaOcupado = true;
+    ciPropuesta = null; $('ciApply').hidden = true;
+    const out = $('ciOut'); out.hidden = false; out.textContent = 'Diseñando tu ruta… 🤖';
+    const sistema = 'Eres un coach de desarrollo personal. Diseña un plan de largo plazo en CAPAS progresivas ' +
+      '(primero la base, luego una cosa a la vez). Responde ÚNICAMENTE con JSON válido, sin markdown, con la forma: ' +
+      '{"capas":[{"titulo":"...","cuando":"Ahora","items":["...","..."],"cond":"..."}]}. ' +
+      'Entre 3 y 5 capas, en español. titulo corto (máx 50). cuando = horizonte (ej "Ahora", "~Mes 2"). ' +
+      'items = 2 a 4 acciones concretas por capa (máx 90 c/u). cond = qué hay que lograr para pasar a la siguiente.';
+    try{
+      const res = await fetch(PUSH_WORKER + '/ia', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ sistema, pregunta: 'Diseña mi ruta por capas. A dónde quiero llegar: ' + meta + '. ' + contextoIA() }) });
+      if(!res.ok) throw new Error('worker ' + res.status);
+      const d = await res.json();
+      const m = (d.texto || '').match(/\{[\s\S]*\}/);
+      const cp = sanearCapas(m ? (JSON.parse(m[0]).capas) : null);
+      if(!cp) throw new Error('formato');
+      ciPropuesta = cp;
+      out.textContent = cp.map((c, i) => 'Capa ' + (i+1) + (c.cuando ? ' · ' + c.cuando : '') + ': ' + c.titulo +
+        (c.items.length ? '\n   → ' + c.items.join('\n   → ') : '')).join('\n\n');
+      $('ciApply').hidden = false;
+    }catch(e){ out.textContent = 'No se pudo generar la ruta. Revisa tu internet e intenta de nuevo.'; }
+    iaOcupado = false;
+  });
+  $('ciApply').addEventListener('click', ()=>{
+    if(!ciPropuesta) return;
+    if(!confirm('Esto reemplaza tu ruta actual (' + capas.length + ' capas) por las ' + ciPropuesta.length + ' propuestas. ¿Aplicar?')) return;
+    capas = ciPropuesta.map(c => ({...c, items:[...c.items]}));
+    saveCapas(); renderCapas();
+    $('capasIAWrap').hidden = true; ciPropuesta = null;
+    toast('Tu ruta está lista. 🗺️');
+  });
+
   // ===== Metas (corto / mediano / largo plazo) =====
   const METAS_KEY = 'reps-metas';
   const PLAZOS = [
@@ -3804,7 +3932,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-nav', 'reps-fuente', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -3935,7 +4063,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '' },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '' },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -4042,6 +4170,9 @@
         const rch = b.data['reps-record-hechos'];
         if(esMapa(rch)) localStorage.setItem(REC_HECHOS_KEY, JSON.stringify(rch));
         else localStorage.removeItem(REC_HECHOS_KEY);
+        const cps = b.data['reps-capas'];
+        if(Array.isArray(cps)) localStorage.setItem(CAPAS_KEY, JSON.stringify(cps));
+        else localStorage.removeItem(CAPAS_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -4069,6 +4200,7 @@
       despConf = { meta:'8:30', rigor:'medio', finde:false }; loadDespertar();
       planSemana = {}; loadPlanSemana(); renderPlanSemCard();
       recordatorios = []; recordHechos = {}; loadRecordatorios();
+      capas = []; loadCapas(); renderCapas();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -4118,6 +4250,7 @@
   loadMetas();
   loadRecompensas();
   loadRecordatorios(); // antes de render(): suman al puntaje del día
+  loadCapas(); renderCapas(); // mi ruta editable
   loadRutina();
   loadDespertar(); // antes de render(): la tarjeta de despertar y el puntaje
   loadPlanSemana(); renderPlanSemCard(); // el plan de la semana en Mi día
