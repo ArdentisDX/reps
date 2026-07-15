@@ -2,13 +2,15 @@
   // Lista de fábrica: la migración v4→v5 siembra reps-habitos con esto.
   // Sus IDs son sagrados: el historial de reps-dias se guarda por ID.
   // days: 'all' = todos los días, o un array de días de semana (0=domingo..6=sábado)
+  // Hábitos de fábrica GENÉRICOS: sirven para cualquier usuario nuevo. Cada quien
+  // los edita (o los rediseña con la IA). No son datos personales de nadie.
   const HABITS_DEFAULT = [
-    {id:'despertar', name:'Despertar 8:30', hint:'Pies al piso, sin snooze', core:true, days:'all', planB:'levantarte, aunque sea 10 min tarde'},
-    {id:'correr',    name:'Correr / perrita + 10 min calistenia', hint:'20–30 min, antes de la PC', core:true, days:'all', planB:'caminar 5 min con la perrita'},
-    {id:'bloque1',   name:'Bloque de construcción', hint:'Mínimo 1 hr, celular en otro cuarto', core:true, days:'all', planB:'15 min, aunque sea abrir el proyecto'},
-    {id:'cama',      name:'Cama tendida', hint:'Ya lo tienes automático', core:false, days:'all'},
-    {id:'bloque2',   name:'Bloque corto (1 hr)', hint:'App, leer, practicar', core:false, days:'all'},
-    {id:'dormir',    name:'Leer 20 min + dormir 1:00 am', hint:'Celular a cargar lejos de la cama', core:false, days:'all'},
+    {id:'despertar', name:'Despertar temprano', hint:'Pies al piso, sin snooze', core:true, days:'all', planB:'levantarte, aunque sea 10 min tarde'},
+    {id:'mover',     name:'Moverte 20 min', hint:'Camina, corre o estírate', core:true, days:'all', planB:'5 min de estiramiento'},
+    {id:'bloque1',   name:'Bloque de enfoque', hint:'Mínimo 1 hr, celular lejos', core:true, days:'all', planB:'15 min, aunque sea empezar'},
+    {id:'agua',      name:'Tomar agua', hint:'Un vaso al despertar', core:false, days:'all'},
+    {id:'aprender',  name:'Aprender algo (30 min)', hint:'Leer, practicar, un curso', core:false, days:'all'},
+    {id:'dormir',    name:'Dormir a buena hora', hint:'Celular a cargar lejos de la cama', core:false, days:'all', planB:'apagar pantallas 15 min antes'},
   ];
   const HABITS_KEY = 'reps-habitos';
   const MAX_HABITS = 8, MIN_CORE = 2, MAX_CORE = 4;
@@ -1791,18 +1793,20 @@
   // en reps-rutina. Ausente = la rutina de fábrica (comportamiento previo).
   const RUTINA_KEY = 'reps-rutina';
   const MAX_BLOQUES = 16;
+  // Rutina de fábrica GENÉRICA: una plantilla neutral para cualquier usuario
+  // nuevo. Cada quien la edita en Mi día (o la arma la IA). Sin datos personales.
   const RUTINA_DEFAULT = [
-    {id:'r1',  hora:'8:30',  nombre:'Despertar', desc:'Cama · dientes · sol 5 min. La PC NO se enciende todavía.', tipo:'core'},
-    {id:'r2',  hora:'9:00',  nombre:'Correr + perrita 🐕', desc:'20–30 min. Al volver: 10 min de calistenia.', tipo:'core'},
-    {id:'r3',  hora:'9:45',  nombre:'Baño + desayuno', desc:'Tranquilo, sin prisa.', tipo:'free'},
-    {id:'r4',  hora:'10:30', nombre:'Bloque de construcción (2 hrs)', desc:'Celular en otro cuarto. Mínimo 1 hr para que el día cuente.', tipo:'core'},
-    {id:'r5',  hora:'12:30', nombre:'Libre', desc:'Juega, videos, cero culpa. Te lo ganaste.', tipo:'free'},
-    {id:'r6',  hora:'14:30', nombre:'Comida', desc:'Sin celular = tiempo de familia gratis.', tipo:'free'},
-    {id:'r7',  hora:'15:00', nombre:'Bloque corto (1 hr)', desc:'Aprender, leer, practicar.', tipo:'core'},
-    {id:'r8',  hora:'16:00', nombre:'Libre total', desc:'Juegos, amigos, salir. Horas tuyas.', tipo:'free'},
-    {id:'r9',  hora:'22:00', nombre:'Bajando revoluciones', desc:'Última sesión libre, ya sin empezar nada intenso.', tipo:'free'},
-    {id:'r10', hora:'0:40',  nombre:'Leer 20 min 📖', desc:'En cama, celular cargando LEJOS.', tipo:'core'},
-    {id:'r11', hora:'1:00',  nombre:'A dormir', desc:'La meta es constante, no perfecta.', tipo:'core'},
+    {id:'r1',  hora:'7:30',  nombre:'Despertar', desc:'Cama · dientes · un poco de sol. Sin pantallas todavía.', tipo:'core'},
+    {id:'r2',  hora:'8:00',  nombre:'Moverte', desc:'20–30 min: caminar, correr o estirar.', tipo:'core'},
+    {id:'r3',  hora:'8:45',  nombre:'Baño + desayuno', desc:'Tranquilo, sin prisa.', tipo:'free'},
+    {id:'r4',  hora:'9:30',  nombre:'Bloque de enfoque', desc:'Celular lejos. Tu trabajo o estudio más importante.', tipo:'core'},
+    {id:'r5',  hora:'12:00', nombre:'Libre', desc:'Descansa sin culpa. Te lo ganaste.', tipo:'free'},
+    {id:'r6',  hora:'14:00', nombre:'Comida', desc:'Sin celular = tiempo para ti o los tuyos.', tipo:'free'},
+    {id:'r7',  hora:'15:00', nombre:'Aprender / practicar', desc:'Leer, un curso, practicar algo.', tipo:'core'},
+    {id:'r8',  hora:'16:00', nombre:'Tiempo libre', desc:'Amigos, salir, tus cosas.', tipo:'free'},
+    {id:'r9',  hora:'21:30', nombre:'Bajando revoluciones', desc:'Nada intenso ya; empieza a relajarte.', tipo:'free'},
+    {id:'r10', hora:'22:30', nombre:'Leer un poco 📖', desc:'Celular cargando LEJOS de la cama.', tipo:'core'},
+    {id:'r11', hora:'23:00', nombre:'A dormir', desc:'La meta es constante, no perfecta.', tipo:'core'},
   ];
   let rutina = [];
 
