@@ -1286,7 +1286,8 @@
     const coreW = extras.length ? 70 : 85, extraW = extras.length ? 15 : 0;
     const base = coreRatio * coreW + extraRatio * extraW + moodPts;
     const desp = despertarEval(fecha).modifier; // + puntual / − tarde (0 si no cuenta)
-    return Math.max(0, Math.min(100, Math.round(base + desp)));
+    const recB = bonoRecordatorios(fecha);      // + por recordatorios cumplidos
+    return Math.max(0, Math.min(100, Math.round(base + desp + recB)));
   }
   function renderScore(){
     const p = puntajeDia(today());
@@ -1366,6 +1367,7 @@
 
     renderCompa(s.total);
     renderRecompensas(s.total);
+    renderRecordatorios();
     renderMesVs();
     renderRecap();
     renderMuseo();
@@ -2917,6 +2919,76 @@
     toast('Trato hecho. A ganarlo.');
   });
 
+  // ===== Recordatorios (medicinas, etc.) que suman al puntaje =====
+  // Lista de recordatorios diarios con hora opcional. Palomearlos hoy suma un
+  // bono al puntaje del día; los que tienen hora también se notifican (usan
+  // el mismo espejo/push que la rutina). El estado "hecho" es por fecha.
+  const REC_KEY = 'reps-recordatorios';       // [{id, texto, hora, creado}]
+  const REC_HECHOS_KEY = 'reps-record-hechos'; // {fecha: {id:true}}
+  let recordatorios = [];
+  let recordHechos = {};
+  function loadRecordatorios(){
+    try{
+      const v = JSON.parse(localStorage.getItem(REC_KEY));
+      recordatorios = Array.isArray(v) ? v.filter(r => r && typeof r.texto === 'string' && r.texto.trim())
+        .map(r => ({ id: typeof r.id === 'string' ? r.id : 'rr' + Math.random().toString(36).slice(2,8),
+          texto: r.texto.trim().slice(0,60),
+          hora: (typeof r.hora === 'string' && /^\d{1,2}:\d{2}$/.test(r.hora)) ? r.hora : '',
+          creado: r.creado || new Date().toISOString() })) : [];
+    }catch(e){ recordatorios = []; }
+    try{ const h = JSON.parse(localStorage.getItem(REC_HECHOS_KEY)); recordHechos = esMapa(h) ? h : {}; }catch(e){ recordHechos = {}; }
+  }
+  function saveRecordatorios(){ try{ localStorage.setItem(REC_KEY, JSON.stringify(recordatorios)); }catch(e){} }
+  function saveRecordHechos(){ try{ localStorage.setItem(REC_HECHOS_KEY, JSON.stringify(recordHechos)); }catch(e){} }
+  const recHechoHoy = id => !!(recordHechos[today()] && recordHechos[today()][id]);
+  // bono al puntaje: +2 por recordatorio cumplido hoy, tope +10
+  function bonoRecordatorios(fecha){
+    const m = recordHechos[fecha]; if(!m) return 0;
+    const ids = new Set(recordatorios.map(r => r.id));
+    let n = 0; Object.keys(m).forEach(id => { if(m[id] && ids.has(id)) n++; });
+    return Math.min(10, n * 2);
+  }
+  function renderRecordatorios(){
+    const cont = $('recList'); if(!cont) return;
+    cont.innerHTML = '';
+    const hechos = recordatorios.filter(r => recHechoHoy(r.id)).length;
+    $('recTag').textContent = recordatorios.length ? hechos + '/' + recordatorios.length + ' hoy' : 'del día';
+    recordatorios.forEach(r => {
+      const done = recHechoHoy(r.id);
+      const row = document.createElement('div'); row.className = 'rec-row' + (done ? ' done' : '');
+      const chk = document.createElement('button'); chk.className = 'rec-chk'; chk.type = 'button';
+      chk.textContent = done ? '✓' : ''; chk.setAttribute('aria-label', 'Cumplir: ' + r.texto);
+      chk.addEventListener('click', ()=>{
+        const k = today(); const m = recordHechos[k] || {};
+        if(m[r.id]) delete m[r.id]; else m[r.id] = true;
+        recordHechos[k] = m; saveRecordHechos();
+        if(m[r.id]) sonarCheck();
+        renderRecordatorios(); renderStats(); // el puntaje del día se recalcula
+      });
+      const txt = document.createElement('div'); txt.className = 'rec-txt';
+      txt.textContent = (r.hora ? r.hora + ' · ' : '') + r.texto;
+      const del = document.createElement('button'); del.className = 'rec-del'; del.type = 'button';
+      del.textContent = '✕'; del.setAttribute('aria-label', 'Borrar recordatorio');
+      del.addEventListener('click', ()=>{
+        recordatorios = recordatorios.filter(x => x.id !== r.id);
+        saveRecordatorios(); renderRecordatorios(); pushSync(); espejoParaSW();
+      });
+      row.append(chk, txt, del);
+      cont.appendChild(row);
+    });
+  }
+  $('recAdd').addEventListener('click', ()=>{
+    const texto = $('recInput').value.trim();
+    if(!texto){ toast('Escribe el recordatorio.'); return; }
+    const hora = $('recHora').value && /^\d{1,2}:\d{2}$/.test($('recHora').value) ? $('recHora').value : '';
+    recordatorios.push({ id: 'rr' + Date.now().toString(36), texto: texto.slice(0,60), hora, creado: new Date().toISOString() });
+    saveRecordatorios();
+    $('recInput').value = ''; $('recHora').value = '';
+    renderRecordatorios();
+    pushSync(); espejoParaSW(); // si tiene hora, entra a las notificaciones
+    toast('Recordatorio agregado.');
+  });
+
   // ===== Metas (corto / mediano / largo plazo) =====
   const METAS_KEY = 'reps-metas';
   const PLAZOS = [
@@ -3228,9 +3300,19 @@
   // pero sí el Cache API. Se refresca en cada guardado de rutina.
   async function espejoParaSW(){
     try{
+      // rutina + recordatorios con hora, en el formato que el SW ya entiende
+      const bloques = rutina.concat(
+        (recordatorios || []).filter(r => r.hora).map(r => ({ hora: r.hora, nombre: '💊 ' + r.texto, desc: '', tipo: 'free' }))
+      );
       const c = await caches.open('reps-datos');
-      await c.put('./rutina-espejo.json', new Response(JSON.stringify(rutina), {headers:{'Content-Type':'application/json'}}));
+      await c.put('./rutina-espejo.json', new Response(JSON.stringify(bloques), {headers:{'Content-Type':'application/json'}}));
     }catch(e){}
+  }
+  // todas las horas que deben avisar: bloques de rutina + recordatorios
+  function horasAviso(){
+    const h = rutinaOrdenada().map(s => s.hora);
+    (recordatorios || []).forEach(r => { if(r.hora) h.push(r.hora); });
+    return [...new Set(h)];
   }
   const pushActivo = () => { try{ return localStorage.getItem(PUSH_KEY) === '1'; }catch(e){ return false; } };
   async function pushSubscribe(){
@@ -3239,7 +3321,7 @@
     if(!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey: b64uToU8(PUSH_PUB) });
     const res = await fetch(PUSH_WORKER + '/subscribe', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ subscription: sub.toJSON(), times: rutinaOrdenada().map(s => s.hora), tz: new Date().getTimezoneOffset() }),
+      body: JSON.stringify({ subscription: sub.toJSON(), times: horasAviso(), tz: new Date().getTimezoneOffset() }),
     });
     if(!res.ok) throw new Error('worker ' + res.status);
     return sub;
@@ -3722,7 +3804,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-nav', 'reps-fuente', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-nav', 'reps-fuente', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -3853,7 +3935,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '' },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '' },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -3954,6 +4036,12 @@
         const psm = b.data['reps-plan-semana'];
         if(esMapa(psm)) localStorage.setItem(PLANSEM_KEY, JSON.stringify(psm));
         else localStorage.removeItem(PLANSEM_KEY);
+        const rcd = b.data['reps-recordatorios'];
+        if(Array.isArray(rcd)) localStorage.setItem(REC_KEY, JSON.stringify(rcd));
+        else localStorage.removeItem(REC_KEY);
+        const rch = b.data['reps-record-hechos'];
+        if(esMapa(rch)) localStorage.setItem(REC_HECHOS_KEY, JSON.stringify(rch));
+        else localStorage.removeItem(REC_HECHOS_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -3980,6 +4068,7 @@
       recompensas = []; loadRecompensas();
       despConf = { meta:'8:30', rigor:'medio', finde:false }; loadDespertar();
       planSemana = {}; loadPlanSemana(); renderPlanSemCard();
+      recordatorios = []; recordHechos = {}; loadRecordatorios();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -4028,6 +4117,7 @@
   loadSonido();
   loadMetas();
   loadRecompensas();
+  loadRecordatorios(); // antes de render(): suman al puntaje del día
   loadRutina();
   loadDespertar(); // antes de render(): la tarjeta de despertar y el puntaje
   loadPlanSemana(); renderPlanSemCard(); // el plan de la semana en Mi día
