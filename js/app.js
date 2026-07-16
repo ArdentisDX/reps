@@ -2426,7 +2426,9 @@
     {id:'lavanda',    name:'Lavanda',    vars:{bg:'#f3f0f9', card:'#ffffff', card2:'#eae5f4', line:'#d8d0e8', text:'#241f33', muted:'#6f6885', accent:'#7c5cd6', onAccent:'#ffffff', teal:'#c2508f'}},
   ];
   const TEMA_KEY = 'reps-tema';
+  const AUTO_KEY = 'reps-tema-auto'; // "1" = cambia claro/oscuro por hora
   let themeSel = {modo:'preset', id:'carbon'};
+  let temaAuto = false;
 
   // --- matemáticas de color (para el modo personalizado) ---
   function hexToRgb(h){
@@ -2480,12 +2482,32 @@
     document.querySelector('meta[name="theme-color"]').setAttribute('content', v.bg);
   }
 
+  // ¿es de día? (para el modo automático). 7:00–18:59 = día
+  function esHoraDia(){ const h = new Date().getHours(); return h >= 7 && h < 19; }
+  // ¿el tema elegido por el usuario es claro?
+  function selEsClaro(sel){
+    if(sel.modo === 'custom') return isLight(sel.bg);
+    return isLight((THEMES.find(x => x.id === sel.id) || THEMES[0]).vars.bg);
+  }
+  // tema efectivo: si auto está activo, alterna claro (día) / el elegido (noche).
+  // Si el usuario ya eligió un tema claro, ese se usa de día y Carbón de noche.
+  function selEfectivo(){
+    if(!temaAuto) return themeSel;
+    const baseClaro = selEsClaro(themeSel);
+    if(esHoraDia()) return baseClaro ? themeSel : {modo:'preset', id:'claro'};
+    return baseClaro ? {modo:'preset', id:'carbon'} : themeSel;
+  }
   function currentVars(){
-    if(themeSel.modo === 'custom') return customVars(themeSel.accent, themeSel.bg);
-    const t = THEMES.find(x => x.id === themeSel.id) || THEMES[0];
+    const sel = selEfectivo();
+    if(sel.modo === 'custom') return customVars(sel.accent, sel.bg);
+    const t = THEMES.find(x => x.id === sel.id) || THEMES[0];
     return t.vars;
   }
   function applyThemeSel(){ applyVars(currentVars()); }
+  function loadTemaAuto(){ temaAuto = localStorage.getItem(AUTO_KEY) === '1'; }
+  function saveTemaAuto(){
+    try{ if(temaAuto) localStorage.setItem(AUTO_KEY, '1'); else localStorage.removeItem(AUTO_KEY); }catch(e){}
+  }
 
   // un tema solo es confiable si es un preset que existe o un custom
   // con dos colores hex válidos — cualquier otra cosa rompería la pintura
@@ -2547,6 +2569,7 @@
 
   $('themeBtn').addEventListener('click', ()=>{
     renderThemeUI();
+    marcarAuto();
     $('sonidoToggle').checked = focoSonido;
     $('despMeta').value = despConf.meta.padStart(5, '0');
     $('despFinde').checked = despConf.finde;
@@ -2677,6 +2700,20 @@
         else localStorage.removeItem(FONT_KEY);
       }catch(e){}
       applyFont();
+    });
+  });
+
+  // ===== Tema automático por hora (claro de día / oscuro de noche) =====
+  function marcarAuto(){
+    document.querySelectorAll('.dist-opt[data-auto]').forEach(b =>
+      b.classList.toggle('active', (b.dataset.auto === 'on') === temaAuto));
+  }
+  document.querySelectorAll('.dist-opt[data-auto]').forEach(b => {
+    b.addEventListener('click', ()=>{
+      temaAuto = b.dataset.auto === 'on';
+      saveTemaAuto();
+      marcarAuto();
+      applyThemeSel(); // repinta ya con el tema efectivo (según la hora)
     });
   });
 
@@ -4229,7 +4266,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -4360,7 +4397,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '' },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -4411,6 +4448,8 @@
         else localStorage.removeItem(NAV_KEY);
         if(b.data['reps-fuente'] === 'sistema') localStorage.setItem(FONT_KEY, 'sistema');
         else localStorage.removeItem(FONT_KEY);
+        if(b.data['reps-tema-auto'] === '1') localStorage.setItem(AUTO_KEY, '1');
+        else localStorage.removeItem(AUTO_KEY);
         if(b.data['reps-compacto'] === true || b.data['reps-compacto'] === '1'){
           localStorage.setItem('reps-compacto', '1');
         }
@@ -4484,7 +4523,7 @@
       migrate();
       loadHabitos(); // antes de load/render: todo lo demás depende de HABITS
       load(); loadTray(); loadCierres(); loadSemana(); loadSemFlex();
-      loadTheme(); applyThemeSel();
+      loadTheme(); loadTemaAuto(); applyThemeSel();
       loadDist(); applyDist();
       loadNav(); applyNav();
       loadFont(); applyFont();
@@ -4530,6 +4569,7 @@
   loadPerfil();    // perfil del usuario (nombre para el saludo)
   aplicarNombre();
   loadTheme();
+  loadTemaAuto(); // antes de applyThemeSel: puede alternar claro/oscuro por hora
   applyThemeSel(); // primero el tema: la app ya nace pintada del color elegido
   loadDist();
   applyDist();
@@ -4639,6 +4679,8 @@
       fillCierreForm(); renderPlanHoy();
       renderBrief(); // día nuevo: arma el resumen de la mañana otra vez
     }
+    // el modo automático re-evalúa la hora cada vez que la app vuelve al frente
+    if(document.visibilityState === 'visible' && temaAuto) applyThemeSel();
   });
   // ↻ del resumen: fuerza regenerarlo (ideas frescas, plan actualizado)
   $('briefRef').addEventListener('click', ()=>{ if(navigator.onLine === false){ toast('Sin internet: no puedo actualizar el resumen ahora.'); return; } generarBrief(true); });
