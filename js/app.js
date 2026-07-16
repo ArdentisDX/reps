@@ -736,6 +736,32 @@
     renderTray();
   }
 
+  // Bandeja inteligente: la IA sugiere en qué categoría cae una idea.
+  // Devuelve un id de CATS o null (si no hay internet o no está claro).
+  // No guarda nada en el Worker: es una consulta suelta ("cerebro de visita").
+  async function sugerirCategoria(texto){
+    const ids = CATS.map(c => c.id).join(', ');
+    const sistema = 'Clasificas una idea suelta en UNA sola categoría de una bandeja de tareas. ' +
+      'Categorías (id: para qué): ya: hacer cuanto antes; social: gente, salidas, mensajes, citas; ' +
+      'compras: comprar algo; aprender: estudiar, leer, cursos, temas; algundia: algún día / tal vez. ' +
+      'Responde SOLO con el id exacto, en minúsculas, sin nada más. Ids válidos: ' + ids + '.';
+    try{
+      const res = await fetch(PUSH_WORKER + '/ia', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ sistema, pregunta: 'Idea: ' + texto }) });
+      if(!res.ok) return null;
+      const d = await res.json();
+      const raw = (d.texto || '').toLowerCase();
+      return CATS.find(c => raw.includes(c.id)) ? CATS.find(c => raw.includes(c.id)).id : null;
+    }catch(e){ return null; }
+  }
+  // pinta la sugerencia: resalta el botón de la categoría propuesta
+  function marcarSugerencia(catId){
+    $('cpOpts').querySelectorAll('.cp-opt').forEach(b => b.classList.toggle('sug', b.dataset.cat === catId));
+    const c = catOf(catId);
+    $('cpSug').hidden = !c;
+    if(c) $('cpSug').textContent = '🤖 sugiere: ' + c.emoji + ' ' + c.name;
+  }
+
   // "hoy", "ayer", "hace N días" o la fecha, según qué tan vieja sea la idea
   function timeAgo(iso){
     if(!iso) return '';
@@ -810,7 +836,16 @@
     $('trayInput').value = '';
     $('trayInput').style.height = 'auto'; // vuelve a una línea tras capturar
     $('cpText').textContent = '«' + t + '»';
+    // limpia cualquier sugerencia anterior y pide una nueva a la IA
+    $('cpOpts').querySelectorAll('.cp-opt').forEach(b => b.classList.remove('sug'));
+    $('cpSug').hidden = false; $('cpSug').textContent = '🤖 pensando…';
     $('catPick').classList.add('show');
+    sugerirCategoria(t).then(catId => {
+      // solo aplica si el usuario sigue eligiendo para ESTA idea
+      if(pendingText !== t){ return; }
+      if(catId) marcarSugerencia(catId);
+      else $('cpSug').hidden = true; // sin internet / sin certeza: manual, sin ruido
+    });
   });
 
   // el textarea crece con el contenido (hasta el tope del CSS)
@@ -833,12 +868,15 @@
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'cp-opt';
+    b.dataset.cat = c.id;
     b.textContent = c.emoji + ' ' + c.name;
     b.addEventListener('click', ()=>{
       if(pendingText == null) return;
       addIdea(pendingText, c.id);
       pendingText = null;
       $('catPick').classList.remove('show');
+      $('cpSug').hidden = true;
+      b.classList.remove('sug');
       toast('Guardada en ' + c.name + '.');
     });
     $('cpOpts').appendChild(b);
@@ -849,6 +887,7 @@
     $('trayInput').value = pendingText || '';
     pendingText = null;
     $('catPick').classList.remove('show');
+    $('cpSug').hidden = true;
     $('trayInput').focus();
   });
 
