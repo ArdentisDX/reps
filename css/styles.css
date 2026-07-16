@@ -477,6 +477,16 @@ body.compact .habit .h-porque{display:none}
 .plan-hoy{margin-top:16px;background:var(--teal-dim);border:1px solid color-mix(in srgb, var(--teal) 40%, transparent);border-radius:var(--radius);padding:12px 14px;font-size:13px;line-height:1.5;white-space:pre-wrap}
 .plan-hoy b{color:var(--teal)}
 .plan-hoy .ph-flex{display:block;margin-top:4px;font-style:italic;color:var(--muted);font-size:12px}
+/* Resumen de la mañana: tarjeta que la IA arma 1×/día */
+.brief{margin-top:14px;background:var(--card);border:1px solid var(--hair,var(--line));border-left:3px solid var(--amber);border-radius:var(--radius);padding:13px 15px}
+.brief-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.brief-t{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);font-weight:700}
+.brief-ref{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;line-height:1;padding:2px 4px}
+.brief-ref:active{transform:rotate(180deg)}
+.brief-ref:focus-visible{outline:2px solid var(--amber);outline-offset:2px;border-radius:6px}
+.brief-body{font-size:14px;line-height:1.55;color:var(--text);white-space:pre-wrap}
+.brief-body.loading{color:var(--muted)}
+body.minimal .brief{display:none}
 .cierre{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:15px 16px}
 .cierre .c-q{font-size:13px;font-weight:600;margin-bottom:8px}
 .moods{display:flex;gap:6px;margin-bottom:4px}

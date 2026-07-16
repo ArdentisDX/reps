@@ -2246,6 +2246,70 @@
     $('planHoyFlex').textContent = flex ? '\n🤖 ' + flex : '';
   }
 
+  // ===== Resumen de la mañana (IA, 1×/día) =====
+  // Al abrir la app en un día nuevo, la IA arma un saludo breve con lo que
+  // toca hoy (evento, bloque en curso, un consejo). Se cachea por fecha en
+  // reps-brief para no re-generar (ni gastar) el mismo día y servir offline.
+  const BRIEF_KEY = 'reps-brief';
+  let brief = { fecha:'', texto:'' };
+  function loadBrief(){
+    brief = { fecha:'', texto:'' };
+    try{
+      const v = JSON.parse(localStorage.getItem(BRIEF_KEY));
+      if(esMapa(v) && typeof v.texto === 'string'){ brief.fecha = String(v.fecha||''); brief.texto = v.texto; }
+    }catch(e){}
+  }
+  function saveBrief(){
+    try{ localStorage.setItem(BRIEF_KEY, JSON.stringify(brief)); }catch(e){}
+  }
+  // arma el resumen con la IA (a menos que forzar sea false y ya haya de hoy)
+  async function generarBrief(forzar){
+    const k = today();
+    if(!forzar && brief.fecha === k && brief.texto){ pintarBrief(); return; }
+    if(iaOcupado){ return; }
+    // saludo local mientras piensa (o si no hay internet, se queda este)
+    $('brief').hidden = false;
+    $('briefBody').classList.add('loading');
+    $('briefBody').textContent = 'Preparando tu resumen…';
+    iaOcupado = true;
+    const deSemana = (semana[k] || '').trim();
+    const flex = (semFlex[k] || '').trim();
+    const b = bloqueActual();
+    const extra = [];
+    if(deSemana) extra.push('Lo que tengo hoy: ' + deSemana);
+    if(flex) extra.push('Ajuste sugerido del día: ' + flex);
+    if(b) extra.push('Bloque en curso: ' + b.cur.hora + ' ' + b.cur.nombre + '; luego ' + b.next.nombre + ' ' + b.next.hora);
+    const sistema = contextoIA() + '\nEscribe un RESUMEN DE LA MAÑANA cálido y motivante, máximo 3 frases cortas. ' +
+      'Saluda por su nombre si lo sabes, di qué es lo más importante de hoy y UNA acción concreta para arrancar. ' +
+      'Nada de listas ni markdown: texto corrido, cercano.';
+    try{
+      const res = await fetch(PUSH_WORKER + '/ia', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ sistema, pregunta: 'Arma mi resumen de hoy. ' + extra.join('. ') }) });
+      if(!res.ok) throw new Error('worker ' + res.status);
+      const d = await res.json();
+      const txt = (d.texto || '').trim();
+      if(!txt) throw new Error('vacío');
+      brief = { fecha:k, texto:txt }; saveBrief();
+      pintarBrief();
+    }catch(e){
+      // sin internet: si hay uno viejo, se muestra; si no, se oculta la tarjeta
+      if(brief.texto) pintarBrief();
+      else $('brief').hidden = true;
+    }
+    iaOcupado = false;
+  }
+  function pintarBrief(){
+    if(!brief.texto){ $('brief').hidden = true; return; }
+    $('brief').hidden = false;
+    $('briefBody').classList.remove('loading');
+    $('briefBody').textContent = brief.texto;
+  }
+  // en init / al despertar en día nuevo: muestra el de hoy o genera si falta
+  function renderBrief(){
+    if(brief.fecha === today() && brief.texto){ pintarBrief(); }
+    else { generarBrief(false); } // día nuevo (o primera vez): la IA lo arma
+  }
+
   // detalle EDITABLE de cualquier día (hoy o pasado): permite marcar hábitos,
   // poner el ánimo y escribir notas que recuerdas después. La honestidad
   // tardía vale: nunca serás perfecto, pero sí honesto.
@@ -4504,6 +4568,7 @@
   renderSemana();
   fillCierreForm();
   renderPlanHoy();
+  loadBrief(); renderBrief(); // resumen de la mañana (IA, 1×/día)
 
   // usuario nuevo: tras la intro, abre el cuestionario de bienvenida
   if(instalacionNueva) setTimeout(abrirBienvenida, 2100);
@@ -4572,8 +4637,11 @@
       procesarRacha(); // días nuevos: fabrica o gasta congeladores
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
+      renderBrief(); // día nuevo: arma el resumen de la mañana otra vez
     }
   });
+  // ↻ del resumen: fuerza regenerarlo (ideas frescas, plan actualizado)
+  $('briefRef').addEventListener('click', ()=>{ if(navigator.onLine === false){ toast('Sin internet: no puedo actualizar el resumen ahora.'); return; } generarBrief(true); });
 
   // Registra el service worker (cache offline). Solo existe en http/https,
   // por eso el "if": abriendo el archivo con doble clic (file://) no corre.
