@@ -22,6 +22,7 @@ h1 span{color:var(--amber)}
 .tab:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
 .tab.active{background:var(--amber);color:var(--on-accent)}
 .tab-ic{display:none}
+.tab-ic svg{width:22px;height:22px;display:block}
 /* ===== Tipografía elegante (serif en los títulos; opcional en Ajustes) ===== */
 body.font-serif h1,
 body.font-serif .st-title,
@@ -37,7 +38,10 @@ body.font-serif .co-nombre{font-family:Georgia,"Times New Roman",serif;letter-sp
 body.nav-bottom{padding-bottom:82px}
 body.nav-bottom .tabs{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:460px;margin:0;z-index:50;border-radius:18px 18px 0 0;border-bottom:none;gap:2px;padding:7px 8px calc(7px + env(safe-area-inset-bottom));box-shadow:0 -6px 22px rgba(0,0,0,.28)}
 body.nav-bottom .tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;letter-spacing:.02em;padding:6px 0;border-radius:12px}
-body.nav-bottom .tab-ic{display:block;font-size:19px;line-height:1}
+body.nav-bottom .tab-ic{display:block;font-size:19px;line-height:1;opacity:.8}
+/* en la barra de abajo, la pestaña activa se tiñe de acento (sin bloque relleno) */
+body.nav-bottom .tab.active{background:none;color:var(--amber)}
+body.nav-bottom .tab.active .tab-ic{opacity:1}
 .panel{display:none;margin-top:16px}
 .panel.active{display:block}
 .streak{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
@@ -684,3 +688,22 @@ body.minimal #p-hoy .regla{display:none}
 .slot{padding-right:46px} /* aire para el botón de alarma */
 .slot-alarm{position:absolute;top:10px;right:10px;background:var(--card-2);border:1px solid var(--line);border-radius:8px;color:var(--muted);font-size:13px;padding:4px 7px;cursor:pointer}
 .slot-alarm:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+/* ===== Pase de limpieza (v62): menos caja, más aire, más jerarquía =====
+   Objetivo: que no se sienta "plantilla de IA". Bordes hairline en vez de
+   cajas duras, más respiro entre secciones, títulos con más presencia. */
+:root{ --hair:color-mix(in srgb,var(--line) 60%,transparent); }
+/* bordes de las tarjetas principales: más sutiles (hairline) */
+.streak,.compa,.pide,.ahora,.psem-card,.week,.week-plan,.cierre,.plan-hoy,
+.stat-card,.pulso,.museo-card,.recap,.sc-card{
+  border-color:var(--hair);
+}
+/* más aire vertical entre bloques (respira, guía el ojo) */
+.sec{margin-top:28px}
+.panel{margin-top:20px}
+.empuje,.pide,.compa{margin-top:14px}
+/* jerarquía: los títulos de sección un pelín más marcados y con más aire */
+.sec-head{margin-bottom:12px}
+.sec-head h2{color:color-mix(in srgb,var(--muted) 72%,var(--text));letter-spacing:.16em}
+/* la regla y notas: más tenues, menos peso visual */
+.regla{border-color:var(--hair)}

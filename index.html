@@ -23,16 +23,16 @@
   <div class="fecha" id="fecha"></div>
 
   <div class="tabs" role="tablist">
-    <button class="tab active" data-panel="p-hoy" role="tab"><span class="tab-ic">🏠</span>Hoy</button>
-    <button class="tab" data-panel="p-dia" role="tab"><span class="tab-ic">📅</span>Mi día</button>
-    <button class="tab" data-panel="p-ruta" role="tab"><span class="tab-ic">🧭</span>Ruta</button>
-    <button class="tab" data-panel="p-bandeja" role="tab"><span class="tab-ic">📥</span>Bandeja</button>
-    <button class="tab" data-panel="p-stats" role="tab"><span class="tab-ic">📊</span>Stats</button>
+    <button class="tab active" data-panel="p-hoy" role="tab"><span class="tab-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9.5 21v-6h5v6"/></svg></span>Hoy</button>
+    <button class="tab" data-panel="p-dia" role="tab"><span class="tab-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg></span>Mi día</button>
+    <button class="tab" data-panel="p-ruta" role="tab"><span class="tab-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg></span>Ruta</button>
+    <button class="tab" data-panel="p-bandeja" role="tab"><span class="tab-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 13.5 6 5.5a2 2 0 0 1 1.9-1.4h8.2A2 2 0 0 1 18 5.5l2.5 8"/><path d="M3.5 13.5H8l1.5 2.5h5L16 13.5h4.5v4a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg></span>Bandeja</button>
+    <button class="tab" data-panel="p-stats" role="tab"><span class="tab-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11M12 20V4M19 20v-6"/></svg></span>Stats</button>
   </div>
 
   <div class="panel active" id="p-hoy">
     <button class="story-ring" id="storyRing" type="button"><span class="sr-emoji" id="srEmoji">🔥</span><span class="sr-lbl">Tu día</span></button>
-    <div class="plan-hoy" id="planHoy" hidden>📌 <b>Plan de hoy:</b> <span id="planHoyTxt"></span><span class="ph-flex" id="planHoyFlex" hidden></span></div>
+    <div class="plan-hoy" id="planHoy" hidden><b>Plan de hoy</b> <span id="planHoyTxt"></span><span class="ph-flex" id="planHoyFlex" hidden></span></div>
     <div class="ahora" id="ahora" hidden>
       <div class="ah-top"><span class="ah-lbl">AHORA</span><span class="ah-rest" id="ahRest"></span></div>
       <div class="ah-name" id="ahName"></div>
@@ -66,7 +66,7 @@
     </div>
     <div class="week" id="week"></div>
     <div class="compa" id="compa" hidden>
-      <span class="co-edit">✏️ personalizar</span>
+      <span class="co-edit">Personalizar</span>
       <div class="co-emoji" id="compaEmoji">🌱</div>
       <div class="co-body">
         <div class="co-nombre" id="compaNombre"></div>
@@ -83,7 +83,7 @@
       <div class="sec-head"><h2>Suman puntos</h2><div class="tag" style="color:var(--teal)">extra</div></div>
       <div id="extraList"></div>
     </div>
-    <div class="edit-hab"><button id="editHabBtn">✏️ Editar hábitos</button></div>
+    <div class="edit-hab"><button id="editHabBtn">Editar hábitos</button></div>
     <div class="stamp-wrap"><div class="stamp" id="stamp">Día ganado</div></div>
     <div class="prog" id="prog">
       <div class="p-row"><span>DÍA COMPLETO</span><span id="progPct">0%</span></div>
@@ -118,13 +118,13 @@
 
   <div class="panel" id="p-dia">
     <div class="psem-card" id="semPlanCard" hidden>
-      <div class="ps-title">🗓️ Esta semana</div>
+      <div class="ps-title">Esta semana</div>
       <div class="ps-line" id="spFoco" hidden></div>
       <div class="ps-line" id="spPend" hidden></div>
       <div class="ps-line" id="spEven" hidden></div>
     </div>
     <div class="rut-acts" style="margin:10px 0 0">
-      <button id="planSemBtn">🗓️ Planear la semana</button>
+      <button id="planSemBtn">Planear la semana</button>
       <button id="iaBtn" class="ai-btn">🤖 Asistente</button>
     </div>
     <div class="week-plan">
@@ -207,7 +207,7 @@
     <div class="sec-head" style="margin-top:24px"><h2>La ruta</h2><div class="tag">tu mapa de capas</div></div>
     <div id="capasList"></div>
     <div class="rut-acts" style="margin-top:10px">
-      <button id="capasEdit">✏️ Editar mi ruta</button>
+      <button id="capasEdit">Editar mi ruta</button>
       <button id="capasIA" class="ai-btn">🤖 Diseñar con IA</button>
     </div>
     <div class="nota-ruta">
