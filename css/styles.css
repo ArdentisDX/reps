@@ -193,6 +193,14 @@ body.compact .habit .h-porque{display:none}
 .habit .h-foco{display:flex;align-items:center;justify-content:center;width:30px;height:30px;min-width:30px;border-radius:9px;border:1px solid var(--line);color:var(--muted);font-size:11px;cursor:pointer}
 .habit .h-foco:hover{color:var(--amber);border-color:color-mix(in srgb, var(--amber) 45%, transparent)}
 .habit .h-foco:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+/* hábitos con contador: el check muestra el número; barra "3 / 8 vasos" */
+.habit.has-count .check{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 45%,transparent);font-size:13px}
+.habit.has-count.done .check{color:var(--on-accent);background:var(--amber);border-color:var(--amber)}
+.habit .h-count{font-size:12px;color:var(--amber);font-weight:700;margin-top:3px}
+.habit.done .h-count{color:var(--muted)}
+.habit .h-minus{display:flex;align-items:center;justify-content:center;width:30px;height:30px;min-width:30px;border-radius:9px;border:1px solid var(--line);color:var(--muted);font-size:18px;cursor:pointer}
+.habit .h-minus:hover{color:var(--red);border-color:color-mix(in srgb,var(--red) 45%,transparent)}
+.habit .h-minus:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .stamp-wrap{display:flex;justify-content:center;margin:22px 0 4px;min-height:56px}
 .stamp{display:none;transform:rotate(-6deg);border:3px solid var(--amber);color:var(--amber);border-radius:10px;padding:10px 22px;font-size:22px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;background:var(--amber-dim)}
 .stamp.show{display:block;animation:stampIn .35s cubic-bezier(.2,1.4,.4,1)}
@@ -612,6 +620,10 @@ body.minimal .brief{display:none}
 .hab-emoji{width:42px;min-width:42px;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--text);font:inherit;font-size:17px;text-align:center;padding:7px 4px;outline:none}
 .hab-emoji:focus{border-color:var(--amber)}
 .hab-hint{width:100%;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--muted);font:inherit;font-size:12px;padding:7px 10px;outline:none;margin-top:6px}
+.hab-count-edit{display:flex;align-items:center;gap:6px;margin-top:6px}
+.hab-count-lbl{font-size:14px}
+.hab-meta{width:58px;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--text);font:inherit;font-size:12px;padding:7px 8px;outline:none}
+.hab-unidad{flex:1;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--muted);font:inherit;font-size:12px;padding:7px 10px;outline:none}
 .hab-hint:focus{border-color:var(--amber)}
 .rut-hora{flex:0 0 92px;min-width:92px;font-variant-numeric:tabular-nums}
 .hab-days{display:flex;gap:4px;margin-top:8px}

@@ -42,17 +42,32 @@
   }
   // día de DESCANSO = ese día no tiene ningún core programado (neutral)
   function esDescanso(dateKey){ return coreDelDia(dateKey).length === 0; }
+  // busca un hábito por id (para leer su meta/unidad)
+  function habById(id){ return HABITS.find(h => h.id === id); }
+  // ¿el hábito `id` está HECHO en el registro `rec`?
+  // - hábito normal: valor truthy (true)
+  // - hábito con contador (meta > 0): el valor guardado (número) alcanza la meta
+  // Unifica todas las comprobaciones de "hecho" para que el contador no rompa
+  // isWon ni el puntaje. Progreso parcial (0 < n < meta) NO cuenta como hecho.
+  function hecho(rec, id){
+    if(!rec) return false;
+    const v = rec[id];
+    if(v == null || v === false) return false;
+    const h = habById(id);
+    if(h && h.meta > 0) return (Number(v) || 0) >= h.meta;
+    return !!v;
+  }
   // día GANADO = tiene core programado y TODOS están hechos
   function esGanado(dateKey){
     const c = coreDelDia(dateKey), rec = dias[dateKey];
-    return c.length > 0 && !!rec && c.every(id => rec[id]);
+    return c.length > 0 && !!rec && c.every(id => hecho(rec, id));
   }
   // isWon date-aware: con fecha usa el core de ESE día; sin fecha, todos los
   // core (compatibilidad). Un día de descanso nunca es "ganado" (es neutral).
   function isWon(rec, dateKey){
     if(!rec) return false;
     const c = dateKey ? coreDelDia(dateKey) : CORE;
-    return c.length > 0 && c.every(id => rec[id]);
+    return c.length > 0 && c.every(id => hecho(rec, id));
   }
 
   document.querySelectorAll('.tab').forEach(t=>{
@@ -92,13 +107,18 @@
   function sanearEmoji(v){
     return typeof v === 'string' ? v.trim().slice(0, 8) : '';
   }
+  // meta numérica del hábito: entero 0..999 (0/ausente = sin contador)
+  function sanearMeta(v){
+    const n = parseInt(v, 10);
+    return (Number.isFinite(n) && n > 0) ? Math.min(999, n) : 0;
+  }
   function sanearHabitos(v){
     if(!Array.isArray(v)) return null;
     const vistos = {};
     const limpio = v
       .filter(h => h && typeof h.id === 'string' && h.id && typeof h.name === 'string' && h.name.trim())
       .filter(h => vistos[h.id] ? false : (vistos[h.id] = true)) // ids únicos
-      .map(h => ({ id: h.id, name: h.name.trim(), hint: typeof h.hint === 'string' ? h.hint.trim() : '', core: !!h.core, days: sanearDays(h.days), planB: typeof h.planB === 'string' ? h.planB.trim() : '', emoji: sanearEmoji(h.emoji), porQue: typeof h.porQue === 'string' ? h.porQue.trim() : '' }))
+      .map(h => ({ id: h.id, name: h.name.trim(), hint: typeof h.hint === 'string' ? h.hint.trim() : '', core: !!h.core, days: sanearDays(h.days), planB: typeof h.planB === 'string' ? h.planB.trim() : '', emoji: sanearEmoji(h.emoji), porQue: typeof h.porQue === 'string' ? h.porQue.trim() : '', meta: sanearMeta(h.meta), unidad: typeof h.unidad === 'string' ? h.unidad.trim().slice(0, 16) : '' }))
       .slice(0, MAX_HABITS);
     return limpio.length ? limpio : null;
   }
@@ -456,19 +476,29 @@
   });
 
   function habitBtn(h, rec){
-    const done = !!rec[h.id];
+    const num = h.meta > 0;                // hábito con contador
+    const cnt = Number(rec[h.id]) || 0;    // progreso de hoy
+    const done = hecho(rec, h.id);
     const b = document.createElement('button');
-    b.className = 'habit' + (done?' done':'');
+    b.className = 'habit' + (done?' done':'') + (num?' has-count':'');
     b.setAttribute('aria-pressed', done);
     // textContent (no innerHTML): el nombre y la pista son texto del usuario
     const check = document.createElement('span');
-    check.className = 'check'; check.setAttribute('aria-hidden','true'); check.textContent = '✓';
+    check.className = 'check'; check.setAttribute('aria-hidden','true');
+    // en un hábito con contador el "check" muestra el número (o ✓ al llegar)
+    check.textContent = num ? (done ? '✓' : String(cnt)) : '✓';
     const body = document.createElement('span'); body.className = 'h-body';
     const name = document.createElement('span'); name.className = 'h-name';
     // emoji propio del hábito (opcional): antecede al nombre
     if(h.emoji){ const em = document.createElement('span'); em.className = 'h-emoji'; em.textContent = h.emoji; name.appendChild(em); }
     name.appendChild(document.createTextNode(h.name));
     body.appendChild(name);
+    // contador: "3 / 8 vasos" bajo el nombre
+    if(num){
+      const cd = document.createElement('div'); cd.className = 'h-count';
+      cd.textContent = cnt + ' / ' + h.meta + (h.unidad ? ' ' + h.unidad : '');
+      body.appendChild(cd);
+    }
     if(h.hint){
       const hint = document.createElement('div'); hint.className = 'h-hint'; hint.textContent = h.hint;
       body.appendChild(hint);
@@ -504,17 +534,29 @@
       const mark = document.createElement('span'); mark.className = 'core-mark'; mark.textContent = 'CORE';
       b.appendChild(mark);
     }
+    // contador: botón − para restar (solo si ya hay progreso)
+    if(num && cnt > 0){
+      const minus = document.createElement('span');
+      minus.className = 'h-minus'; minus.textContent = '−';
+      minus.setAttribute('role', 'button'); minus.setAttribute('tabindex', '0');
+      minus.setAttribute('aria-label', 'Restar uno a ' + h.name);
+      const restar = (e)=>{ e.stopPropagation(); e.preventDefault(); incHabit(h, -1); };
+      minus.addEventListener('click', restar);
+      minus.addEventListener('keydown', (e)=>{ if(e.key === 'Enter' || e.key === ' ') restar(e); });
+      b.appendChild(minus);
+    }
     b.addEventListener('click', ()=>{
       if(b._swiped){ b._swiped = false; return; } // el gesto ya actuó: ignora el click
       const cur = dias[today()] || {};
-      setHabit(h, !cur[h.id]); // toque = alterna
+      if(num) incHabit(h, +1);          // contador: cada toque suma 1
+      else setHabit(h, !cur[h.id]);     // normal: toque = alterna
     });
     // deslizar para completar (estilo Instagram): derecha marca, izquierda
     // desmarca. touch-action:pan-y deja el scroll vertical intacto (CSS).
     let sx = 0, sy = 0, drag = false;
     const UMBRAL = 64;
     b.addEventListener('pointerdown', (e)=>{
-      if(e.target.closest('.h-foco')) return; // el ▶ del foco maneja lo suyo
+      if(e.target.closest('.h-foco') || e.target.closest('.h-minus')) return; // controles propios
       sx = e.clientX; sy = e.clientY; drag = false;
     });
     b.addEventListener('pointermove', (e)=>{
@@ -536,7 +578,8 @@
       sx = sy = 0;
       if(Math.abs(dx) >= UMBRAL){
         b._swiped = true; // evita el click que sigue al soltar
-        setHabit(h, dx > 0); // derecha = hecho, izquierda = deshacer
+        if(num) setCount(h, dx > 0 ? h.meta : 0); // contador: completa / reinicia
+        else setHabit(h, dx > 0); // derecha = hecho, izquierda = deshacer
       }
     };
     b.addEventListener('pointerup', finSwipe);
@@ -560,6 +603,30 @@
     }
     return true;
   }
+  // fija el contador de un hábito con meta a un valor (0..meta). Igual que
+  // setHabit pero para hábitos numéricos: 0 borra la clave (registro vacío).
+  function setCount(h, n){
+    const k = today();
+    const cur = dias[k] || {};
+    n = Math.max(0, Math.min(h.meta, Math.round(n)));
+    const prev = Number(cur[h.id]) || 0;
+    if(prev === n) return false;
+    const wasWon = isWon(cur, k);
+    if(n <= 0) delete cur[h.id]; else cur[h.id] = n;
+    dias[k] = cur;
+    save();
+    render();
+    if(n > prev){ // subió: festeja si completó o ganó el día
+      if(!wasWon && isWon(cur, k)){ sonarGanado(); toast('Día ganado. Una rep más. 🔥'); }
+      else if(n >= h.meta){ sonarCheck(); toast(h.name + ' completo ✓'); }
+      else sonarCheck();
+    }
+    return true;
+  }
+  function incHabit(h, delta){
+    const cur = dias[today()] || {};
+    setCount(h, (Number(cur[h.id]) || 0) + delta);
+  }
 
   function render(){
     $('fecha').textContent = new Date().toLocaleDateString('es-MX',{weekday:'long', day:'numeric', month:'long'});
@@ -581,7 +648,7 @@
     const secCore = $('secCore');
     if(secCore) secCore.hidden = !hoyHabs.some(h => h.core);
 
-    const coreDone = coreHoy.filter(id => rec[id]).length;
+    const coreDone = coreHoy.filter(id => hecho(rec, id)).length;
     $('coreTag').textContent = desc ? 'descanso' : (coreDone + '/' + coreHoy.length + ' = día ganado');
 
     const won = esGanado(hoyKey);
@@ -595,7 +662,7 @@
     ring.classList.toggle('rest', desc);
     $('ringTxt').textContent = desc ? '·' : (won ? '✓' : coreDone + '/' + coreHoy.length);
 
-    const done = hoyHabs.filter(h=>rec[h.id]).length;
+    const done = hoyHabs.filter(h=>hecho(rec, h.id)).length;
     const pct = hoyHabs.length ? Math.round(done/hoyHabs.length*100) : 0;
     $('progPct').textContent = pct+'%';
     $('progBar').style.width = pct+'%';
@@ -1318,8 +1385,8 @@
     const rec = dias[fecha] || {};
     const dow = dowDe(fecha);
     const extras = HABITS.filter(h => !h.core && habAplica(h, dow));
-    const coreRatio = core.filter(id => rec[id]).length / core.length;
-    const extraRatio = extras.length ? extras.filter(h => rec[h.id]).length / extras.length : 0;
+    const coreRatio = core.filter(id => hecho(rec, id)).length / core.length;
+    const extraRatio = extras.length ? extras.filter(h => hecho(rec, h.id)).length / extras.length : 0;
     const animo = cierres[fecha] && cierres[fecha].animo;
     const moodPts = animo === 'bien' ? 15 : animo === 'regular' ? 8 : animo === 'mal' ? 4 : 0;
     const coreW = extras.length ? 70 : 85, extraW = extras.length ? 15 : 0;
@@ -2331,7 +2398,7 @@
 
     // estado del día (se recalcula tras cada cambio)
     const coreDia = coreDelDia(key);
-    const coreHechos = coreDia.filter(id => r[id]).length;
+    const coreHechos = coreDia.filter(id => hecho(r, id)).length;
     $('cdEstado').textContent =
       esGanado(key) ? '🔥 Ganado' :
       esDescanso(key) ? '· Descanso' :
@@ -2349,18 +2416,24 @@
       cont.appendChild(vacio);
     }
     habs.forEach(h => {
-      const done = !!r[h.id];
+      const done = hecho(r, h.id);
+      const num = h.meta > 0;
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'cd-hab' + (done ? ' on' : '');
       const chk = document.createElement('span'); chk.className = 'cd-chk'; chk.textContent = done ? '✓' : '';
       const nm = document.createElement('span'); nm.className = 'cd-hab-nm';
-      nm.textContent = (h.emoji ? h.emoji + ' ' : '') + h.name + (h.core ? '' : ' · extra');
+      const etiqueta = num ? h.name + ' · ' + (Number(r[h.id])||0) + '/' + h.meta : h.name + (h.core ? '' : ' · extra');
+      nm.textContent = (h.emoji ? h.emoji + ' ' : '') + etiqueta;
       btn.append(chk, nm);
       btn.addEventListener('click', ()=>{
         const cur = dias[key] || {};
-        cur[h.id] = !cur[h.id];
-        if(!cur[h.id]) delete cur[h.id]; // no dejar false: registro vacío = válido
+        if(num){ // contador: alterna entre completo (meta) y vacío
+          if(hecho(cur, h.id)) delete cur[h.id]; else cur[h.id] = h.meta;
+        } else {
+          cur[h.id] = !cur[h.id];
+          if(!cur[h.id]) delete cur[h.id]; // no dejar false: registro vacío = válido
+        }
         dias[key] = cur;
         save();
         pintarDayDetail(key); render(); renderCal(); // recalcula todo con el cambio
@@ -2774,6 +2847,21 @@
       porque.setAttribute('aria-label', 'Por qué de este hábito');
       porque.addEventListener('input', ()=>{ h.porQue = porque.value; saveHabitos(); render(); });
 
+      // contador (opcional): meta numérica + unidad. Meta 0/vacío = sin contador.
+      const cnt = document.createElement('div'); cnt.className = 'hab-count-edit';
+      const meta = document.createElement('input');
+      meta.type = 'number'; meta.className = 'hab-meta'; meta.min = '0'; meta.max = '999';
+      meta.value = h.meta > 0 ? String(h.meta) : ''; meta.placeholder = '#';
+      meta.setAttribute('aria-label', 'Meta numérica (ej. 8)');
+      meta.addEventListener('input', ()=>{ h.meta = sanearMeta(meta.value); saveHabitos(); render(); });
+      const uni = document.createElement('input');
+      uni.type = 'text'; uni.className = 'hab-unidad'; uni.value = h.unidad || ''; uni.maxLength = 16;
+      uni.placeholder = 'unidad (vasos, páginas…)';
+      uni.setAttribute('aria-label', 'Unidad del contador');
+      uni.addEventListener('input', ()=>{ h.unidad = uni.value.trim().slice(0,16); saveHabitos(); render(); });
+      const cLbl = document.createElement('span'); cLbl.className = 'hab-count-lbl'; cLbl.textContent = '🔢';
+      cnt.append(cLbl, meta, uni);
+
       // borrar (confirma; el historial de ese id se conserva en reps-dias)
       const del = document.createElement('button');
       del.className = 'hab-del'; del.textContent = '✕'; del.setAttribute('aria-label', 'Borrar hábito');
@@ -2846,7 +2934,7 @@
         daysRow.appendChild(chip);
       });
 
-      row.append(top, hint, planb, porque, daysRow);
+      row.append(top, hint, planb, porque, cnt, daysRow);
       list.appendChild(row);
     });
   }
@@ -2997,7 +3085,7 @@
     const caidosN = diasCaidosSeguidos();
     const coreHoy = coreDelDia(k);
     const rec = dias[k] || {};
-    const coreDone = coreHoy.filter(id => rec[id]).length;
+    const coreDone = coreHoy.filter(id => hecho(rec, id)).length;
     const cards = [];
     // 1 · saludo + racha
     const h = new Date().getHours();
