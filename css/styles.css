@@ -469,6 +469,7 @@ body.compact .habit .h-porque{display:none}
 /* ===== Cierre del día ===== */
 .plan-hoy{margin-top:16px;background:var(--teal-dim);border:1px solid color-mix(in srgb, var(--teal) 40%, transparent);border-radius:var(--radius);padding:12px 14px;font-size:13px;line-height:1.5;white-space:pre-wrap}
 .plan-hoy b{color:var(--teal)}
+.plan-hoy .ph-flex{display:block;margin-top:4px;font-style:italic;color:var(--muted);font-size:12px}
 .cierre{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:15px 16px}
 .cierre .c-q{font-size:13px;font-weight:600;margin-bottom:8px}
 .moods{display:flex;gap:6px;margin-bottom:4px}
@@ -542,6 +543,38 @@ body.compact .habit .h-porque{display:none}
 .rut-acts button{background:none;border:1px solid var(--line);border-radius:10px;color:var(--muted);font:inherit;font-size:13px;font-weight:600;padding:9px 16px;cursor:pointer}
 .rut-acts #armarBtn{border-color:color-mix(in srgb,var(--amber) 45%,var(--line));color:var(--amber)}
 .rut-acts button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+/* Botones de IA: píldora con acento, brillo suave y flotan un poquito.
+   Sin recuadro duro; se combinan con cualquier tema (color-mix del acento). */
+.ai-btn{
+  border:none !important;
+  background:linear-gradient(135deg,
+    color-mix(in srgb,var(--amber) 90%,#fff),
+    color-mix(in srgb,var(--amber) 62%,var(--teal))) !important;
+  color:var(--on-accent) !important;
+  border-radius:999px !important;
+  padding:11px 18px !important;
+  font-weight:800 !important;
+  letter-spacing:.2px;
+  box-shadow:0 8px 22px color-mix(in srgb,var(--amber) 42%,transparent),
+             0 0 0 1px color-mix(in srgb,#fff 22%,transparent) inset;
+  animation:aiFloat 3.4s ease-in-out infinite;
+  transition:transform .12s ease, box-shadow .2s ease;
+}
+.ai-btn:hover{box-shadow:0 12px 28px color-mix(in srgb,var(--amber) 55%,transparent)}
+.ai-btn:active{transform:translateY(2px) scale(.97);animation:none}
+@keyframes aiFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@media (prefers-reduced-motion:reduce){.ai-btn{animation:none}}
+/* botón IA a lo ancho (dentro de tarjetas) */
+.ai-btn.ai-wide{display:block;width:100%;margin:12px 0 2px;font-size:14px}
+
+/* el retoño ahora se puede tocar para personalizarlo */
+.compa{cursor:pointer;position:relative}
+.compa .co-edit{position:absolute;top:8px;right:10px;font-size:12px;color:var(--muted);opacity:.7}
+/* rejilla de criaturas en el editor del compañero */
+.cri-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:8px 0 4px}
+.cri-grid button{font-size:26px;line-height:1;padding:9px 0;background:var(--card-2);border:1px solid var(--line);border-radius:12px;cursor:pointer}
+.cri-grid button.sel{border-color:var(--amber);box-shadow:0 0 0 2px color-mix(in srgb,var(--amber) 45%,transparent)}
 .alarm-row{display:flex;align-items:center;gap:12px;padding:11px 12px;background:var(--card-2);border:1px solid var(--line);border-radius:12px;margin-bottom:8px}
 .alarm-row .al-hora{font-size:14px;font-weight:800;color:var(--amber);min-width:48px}
 .alarm-row .al-nom{flex:1;min-width:0;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

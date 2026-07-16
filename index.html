@@ -32,7 +32,7 @@
 
   <div class="panel active" id="p-hoy">
     <button class="story-ring" id="storyRing" type="button"><span class="sr-emoji" id="srEmoji">🔥</span><span class="sr-lbl">Tu día</span></button>
-    <div class="plan-hoy" id="planHoy" hidden>📌 <b>Plan de hoy:</b> <span id="planHoyTxt"></span></div>
+    <div class="plan-hoy" id="planHoy" hidden>📌 <b>Plan de hoy:</b> <span id="planHoyTxt"></span><span class="ph-flex" id="planHoyFlex" hidden></span></div>
     <div class="ahora" id="ahora" hidden>
       <div class="ah-top"><span class="ah-lbl">AHORA</span><span class="ah-rest" id="ahRest"></span></div>
       <div class="ah-name" id="ahName"></div>
@@ -66,6 +66,7 @@
     </div>
     <div class="week" id="week"></div>
     <div class="compa" id="compa" hidden>
+      <span class="co-edit">✏️ personalizar</span>
       <div class="co-emoji" id="compaEmoji">🌱</div>
       <div class="co-body">
         <div class="co-nombre" id="compaNombre"></div>
@@ -124,7 +125,7 @@
     </div>
     <div class="rut-acts" style="margin:10px 0 0">
       <button id="planSemBtn">🗓️ Planear la semana</button>
-      <button id="iaBtn">🤖 Asistente</button>
+      <button id="iaBtn" class="ai-btn">🤖 Asistente</button>
     </div>
     <div class="week-plan">
       <div class="wp-head">
@@ -133,6 +134,7 @@
         <button class="cal-nav" id="wpNext" aria-label="Semana siguiente">›</button>
       </div>
       <div id="wpList"></div>
+      <button id="semIA" class="ai-btn ai-wide">🤖 Diseñar mi semana</button>
       <div class="wp-note">Tip de domingo: pasa a la semana entrante con › y déjala planeada.</div>
     </div>
     <div class="week-cierre">
@@ -206,7 +208,7 @@
     <div id="capasList"></div>
     <div class="rut-acts" style="margin-top:10px">
       <button id="capasEdit">✏️ Editar mi ruta</button>
-      <button id="capasIA">🤖 Diseñar con IA</button>
+      <button id="capasIA" class="ai-btn">🤖 Diseñar con IA</button>
     </div>
     <div class="nota-ruta">
       <b>Por qué en fila:</b> la motivación es un pico, no una meseta. Cada capa entra cuando la anterior ya no pide fuerza de voluntad.
@@ -435,6 +437,30 @@
       <div class="ia-out" id="iaOut" hidden></div>
       <textarea id="iaTxt" class="carta-txt" rows="2" placeholder="Pregúntale lo que quieras: ¿cómo me preparo para…?"></textarea>
       <button class="cel-btn" id="iaAsk" style="width:100%;margin-top:10px">Preguntar</button>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="semIAWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>🤖 Diseñar mi semana</h2><button id="siClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-note" style="margin-bottom:10px">Lee lo que escribiste cada día y te propone <b>tareas concretas</b> y cómo <b>ajustar el día</b> (más ligero en un viaje, mover el enfoque en un evento). <b>Nada cambia sin tu confirmación.</b></div>
+      <button class="ai-btn ai-wide" id="siGo">Proponme un plan 🤖</button>
+      <div class="ia-out" id="siOut" hidden></div>
+      <button class="cel-btn" id="siApply" style="width:100%;margin-top:10px" hidden>✅ Sumar tareas a mis días</button>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="compaWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>✏️ Tu compañero</h2><button id="coClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-note" style="margin-bottom:10px">Ponle nombre y elige qué es. Crece contigo con tus días ganados; nunca retrocede.</div>
+      <label class="c-lbl" for="coNombre">¿Cómo se llama?</label>
+      <input type="text" id="coNombre" class="ps-inp" maxlength="24" placeholder="Ej: Nimo, Coco, tu retoño…">
+      <label class="c-lbl">¿Qué es?</label>
+      <div class="cri-grid" id="coGrid"></div>
+      <label class="c-lbl" for="coEmoji">…o pega el emoji que quieras</label>
+      <input type="text" id="coEmoji" class="ps-inp" maxlength="8" placeholder="Ej: 🐢, 🦕, 🐉">
+      <button class="cel-btn" id="coSave" style="width:100%;margin-top:12px">Guardar</button>
     </div>
   </div>
 

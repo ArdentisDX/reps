@@ -1627,6 +1627,21 @@
     try{ localStorage.setItem(SEMANA_KEY, JSON.stringify(semana)); }
     catch(e){ toast('No se pudo guardar. Reintenta.'); }
   }
+  // ajuste de flexibilidad por día que propone la IA (día ligero por viaje,
+  // mover el enfoque por un evento…). Plano por día, aditivo, va en el respaldo.
+  const SEMANA_FLEX_KEY = 'reps-semana-flex';
+  let semFlex = {};
+  function loadSemFlex(){
+    semFlex = {};
+    try{
+      const v = JSON.parse(localStorage.getItem(SEMANA_FLEX_KEY));
+      if(esMapa(v)) Object.keys(v).forEach(k => { if(typeof v[k] === 'string') semFlex[k] = v[k]; });
+    }catch(e){ semFlex = {}; }
+  }
+  function saveSemFlex(){
+    try{ localStorage.setItem(SEMANA_FLEX_KEY, JSON.stringify(semFlex)); }
+    catch(e){}
+  }
 
   // el lunes de la semana de una fecha: getDay() da 0=dom..6=sáb,
   // y (dow+6)%7 son los días transcurridos desde el lunes
@@ -2185,8 +2200,11 @@
     const partes = [];
     if(deSemana) partes.push(deSemana);
     if(deCierre && deCierre.toLowerCase() !== deSemana.toLowerCase()) partes.push(deCierre);
-    $('planHoy').hidden = partes.length === 0;
-    if(partes.length) $('planHoyTxt').textContent = partes.join(' · ');
+    const flex = (semFlex[today()] || '').trim();
+    $('planHoy').hidden = partes.length === 0 && !flex;
+    $('planHoyTxt').textContent = partes.join(' · ');
+    $('planHoyFlex').hidden = !flex;
+    $('planHoyFlex').textContent = flex ? '\n🤖 ' + flex : '';
   }
 
   // detalle EDITABLE de cualquier día (hoy o pasado): permite marcar hábitos,
@@ -2704,35 +2722,118 @@
 
   // ===== Compañero: crece contigo y nunca retrocede =====
   // Su etapa depende del TOTAL de días ganados (que solo crece): a
-  // diferencia de Forest, aquí nada muere por un mal día.
+  // diferencia de Forest, aquí nada muere por un mal día. Es PERSONALIZABLE:
+  // le pones nombre y eliges qué es (planta, delfín, jirafa… o cualquier emoji).
   const COMPA_ETAPAS = [
-    {min:0,   emoji:'🥚', nombre:'Semilla',            sub:'Todo empieza quieto.'},
-    {min:1,   emoji:'🌱', nombre:'Brote',              sub:'Ya rompiste la tierra.'},
-    {min:5,   emoji:'🌿', nombre:'Retoño',             sub:'Cinco días te sostienen.'},
-    {min:12,  emoji:'🪴', nombre:'Planta',             sub:'Esto ya tiene raíces.'},
-    {min:25,  emoji:'🌳', nombre:'Árbol',              sub:'Da sombra. Es tuyo.'},
-    {min:50,  emoji:'🌸', nombre:'Árbol en flor',      sub:'Cincuenta días floreciendo.'},
-    {min:100, emoji:'✨', nombre:'Árbol legendario',   sub:'Cien días. Leyenda viva.'},
+    {min:0,   emoji:'🥚', nombre:'Cría',        sub:'Todo empieza quieto.'},
+    {min:1,   emoji:'🌱', nombre:'Pequeño',     sub:'Ya diste el primer paso.'},
+    {min:5,   emoji:'🌿', nombre:'Creciendo',   sub:'Cinco días te sostienen.'},
+    {min:12,  emoji:'🪴', nombre:'Fuerte',      sub:'Esto ya tiene raíces.'},
+    {min:25,  emoji:'🌳', nombre:'Grande',      sub:'Se nota. Es tuyo.'},
+    {min:50,  emoji:'🌸', nombre:'Radiante',    sub:'Cincuenta días brillando.'},
+    {min:100, emoji:'✨', nombre:'Legendario',  sub:'Cien días. Leyenda viva.'},
   ];
-  function renderCompa(total){
-    let etapa = COMPA_ETAPAS[0], siguiente = null;
+  // criatura = juego de emoji. 'planta' evoluciona (huevo→árbol, la clásica);
+  // las demás muestran su emoji en todas las etapas (crecen por nivel + barra).
+  const CRIATURAS = [
+    {id:'planta', emoji:'🌳', nombre:'Retoño', stages:['🥚','🌱','🌿','🪴','🌳','🌸','✨']},
+    {id:'delfin', emoji:'🐬', nombre:'Delfín'},
+    {id:'jirafa', emoji:'🦒', nombre:'Jirafa'},
+    {id:'gato',   emoji:'🐱', nombre:'Gato'},
+    {id:'perro',  emoji:'🐶', nombre:'Perro'},
+    {id:'zorro',  emoji:'🦊', nombre:'Zorro'},
+    {id:'buho',   emoji:'🦉', nombre:'Búho'},
+    {id:'dragon', emoji:'🐉', nombre:'Dragón'},
+    {id:'pinguino',emoji:'🐧', nombre:'Pingüino'},
+    {id:'tortuga',emoji:'🐢', nombre:'Tortuga'},
+  ];
+  const COMPA_KEY = 'reps-compa';
+  let compaConf = { nombre:'', criatura:'planta', emoji:'' };
+  function loadCompa(){
+    compaConf = { nombre:'', criatura:'planta', emoji:'' };
+    try{
+      const v = JSON.parse(localStorage.getItem(COMPA_KEY));
+      if(esMapa(v)){
+        if(typeof v.nombre === 'string') compaConf.nombre = v.nombre.trim().slice(0,24);
+        if(CRIATURAS.some(c => c.id === v.criatura)) compaConf.criatura = v.criatura;
+        if(typeof v.emoji === 'string') compaConf.emoji = sanearEmoji(v.emoji);
+      }
+    }catch(e){}
+  }
+  function saveCompa(){
+    try{ localStorage.setItem(COMPA_KEY, JSON.stringify(compaConf)); }
+    catch(e){ toast('No se pudo guardar. Reintenta.'); }
+  }
+  function etapaIdx(total){
+    let idx = 0;
     for(let i = COMPA_ETAPAS.length - 1; i >= 0; i--){
-      if(total >= COMPA_ETAPAS[i].min){ etapa = COMPA_ETAPAS[i]; siguiente = COMPA_ETAPAS[i+1] || null; break; }
+      if(total >= COMPA_ETAPAS[i].min){ idx = i; break; }
     }
+    return idx;
+  }
+  // el emoji a mostrar según total: emoji custom > etapa de planta > emoji de la criatura
+  function compaEmojiDe(total){
+    if(compaConf.emoji) return compaConf.emoji;
+    const cri = CRIATURAS.find(c => c.id === compaConf.criatura) || CRIATURAS[0];
+    if(cri.stages) return cri.stages[etapaIdx(total)];
+    return cri.emoji;
+  }
+  function renderCompa(total){
+    const idx = etapaIdx(total);
+    const etapa = COMPA_ETAPAS[idx], siguiente = COMPA_ETAPAS[idx+1] || null;
     $('compa').hidden = false;
-    $('compaEmoji').textContent = etapa.emoji;
-    $('compaNombre').textContent = etapa.nombre;
+    $('compaEmoji').textContent = compaEmojiDe(total);
+    // nombre propio si lo puso; si no, el nivel
+    $('compaNombre').textContent = compaConf.nombre || etapa.nombre;
+    const nivel = compaConf.nombre ? etapa.nombre + ' · ' : '';
     if(siguiente){
       const base = etapa.min, span = siguiente.min - base;
       const pct = Math.min(100, Math.round((total - base) / span * 100));
-      $('compaSub').textContent = etapa.sub + ' · ' + (siguiente.min - total) + ' días para evolucionar';
+      $('compaSub').textContent = nivel + etapa.sub + ' · ' + (siguiente.min - total) + ' días para evolucionar';
       $('compaBar').style.width = pct + '%';
       $('compaBar').parentElement.hidden = false;
     } else {
-      $('compaSub').textContent = etapa.sub;
+      $('compaSub').textContent = nivel + etapa.sub;
       $('compaBar').parentElement.hidden = true;
     }
   }
+  // editor del compañero (se abre tocando la tarjeta)
+  function renderCompaGrid(){
+    const g = $('coGrid'); g.innerHTML = '';
+    CRIATURAS.forEach(c => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = c.stages ? c.stages[etapaIdx(statsData().total)] : c.emoji;
+      b.title = c.nombre;
+      if(!compaConf.emoji && compaConf.criatura === c.id) b.className = 'sel';
+      b.addEventListener('click', ()=>{
+        compaConf.criatura = c.id; compaConf.emoji = ''; $('coEmoji').value = '';
+        renderCompaGrid();
+      });
+      g.appendChild(b);
+    });
+  }
+  function abrirCompaEditor(){
+    $('coNombre').value = compaConf.nombre;
+    $('coEmoji').value = compaConf.emoji;
+    renderCompaGrid();
+    $('compaWrap').hidden = false;
+  }
+  $('compa').addEventListener('click', abrirCompaEditor);
+  $('coClose').addEventListener('click', ()=>{ $('compaWrap').hidden = true; });
+  $('compaWrap').addEventListener('click', (e)=>{ if(e.target === $('compaWrap')) $('compaWrap').hidden = true; });
+  $('coEmoji').addEventListener('input', ()=>{ if($('coEmoji').value.trim()) renderCompaGridClear(); });
+  function renderCompaGridClear(){ // un emoji custom deselecciona las criaturas
+    $('coGrid').querySelectorAll('button').forEach(b => b.classList.remove('sel'));
+  }
+  $('coSave').addEventListener('click', ()=>{
+    compaConf.nombre = $('coNombre').value.trim().slice(0,24);
+    compaConf.emoji = sanearEmoji($('coEmoji').value);
+    saveCompa();
+    renderCompa(statsData().total);
+    $('compaWrap').hidden = true;
+    toast('Tu compañero está listo. ' + compaEmojiDe(statsData().total));
+  });
 
   // ===== Stories del día (carrusel estilo Instagram) =====
   // Tarjetas a pantalla completa que resumen tu día: derivadas del estado, se
@@ -2775,7 +2876,8 @@
     // 4 · compañero
     const total = statsData().total;
     const et = etapaCompaDe(total);
-    cards.push({ emoji: et.emoji, title: et.nombre, body: et.sub + '\n\n' + total + ' días ganados.' });
+    cards.push({ emoji: compaEmojiDe(total), title: compaConf.nombre || et.nombre,
+      body: (compaConf.nombre ? et.nombre + '. ' : et.sub + ' ') + '\n\n' + total + ' días ganados.' });
     // 5 · empujón
     const emp = empujeDelDia(won, desc, s, caidosN);
     if(emp) cards.push({ emoji: '💬', title: 'Para hoy', body: emp });
@@ -3553,6 +3655,98 @@
     iaEnviar('Dame un consejo concreto para organizar mi semana: qué hacer cada día con mis pendientes y eventos, usando mis bloques de rutina.');
   });
 
+  // ===== Diseñar mi semana con IA =====
+  // Lee lo escrito en cada día de la semana VISIBLE (weekOff) y propone, por
+  // día: tareas concretas + un ajuste de flexibilidad (día ligero por viaje,
+  // mover el enfoque por un evento). Vista previa; el usuario SIEMPRE confirma.
+  // Al aplicar: las tareas se suman al texto del día y el ajuste va a semFlex.
+  let siPropuesta = null;
+  // las 7 fechas de la semana visible, con etiqueta y lo ya escrito
+  function semanaVisibleDias(){
+    const mon = mondayOf(new Date());
+    mon.setDate(mon.getDate() + weekOff * 7);
+    const out = [];
+    for(let i = 0; i < 7; i++){
+      const d = new Date(mon); d.setDate(d.getDate() + i);
+      const key = localISO(d);
+      out.push({
+        key,
+        etiqueta: d.toLocaleDateString('es-MX', {weekday:'long', day:'numeric'}),
+        texto: (semana[key] || '').trim(),
+      });
+    }
+    return out;
+  }
+  function sanearSemIA(v, validKeys){
+    if(!v || !Array.isArray(v.dias)) return null;
+    const out = [];
+    v.dias.forEach(d => {
+      if(!d || !validKeys.includes(d.fecha)) return;
+      const tareas = Array.isArray(d.tareas)
+        ? d.tareas.filter(t => typeof t === 'string' && t.trim()).map(t => t.trim().slice(0,100)).slice(0,4)
+        : [];
+      const flex = typeof d.flex === 'string' ? d.flex.trim().slice(0,140) : '';
+      if(tareas.length || flex) out.push({ fecha: d.fecha, tareas, flex });
+    });
+    return out.length ? out : null;
+  }
+  $('semIA').addEventListener('click', ()=>{
+    siPropuesta = null; $('siApply').hidden = true; $('siOut').hidden = true; $('semIAWrap').hidden = false;
+  });
+  $('siClose').addEventListener('click', ()=>{ $('semIAWrap').hidden = true; });
+  $('semIAWrap').addEventListener('click', (e)=>{ if(e.target === $('semIAWrap')) $('semIAWrap').hidden = true; });
+  $('siGo').addEventListener('click', async ()=>{
+    const dias7 = semanaVisibleDias();
+    if(!dias7.some(d => d.texto)){ toast('Escribe primero qué tienes en algunos días.'); return; }
+    if(iaOcupado) return; iaOcupado = true;
+    siPropuesta = null; $('siApply').hidden = true;
+    const out = $('siOut'); out.hidden = false; out.textContent = 'Diseñando tu semana… 🤖';
+    const validKeys = dias7.map(d => d.key);
+    const sistema = 'Eres el asistente personal de organización semanal dentro de REPS. ' +
+      'Recibes lo que la persona tiene planeado cada día de una semana. Para cada día propón: ' +
+      '(a) 1 a 3 TAREAS concretas y accionables alrededor de lo que ya tiene (di el qué y, si aplica, el cuándo); ' +
+      '(b) un ajuste de FLEXIBILIDAD del día en UNA frase corta (ej: "Día de viaje: hazlo ligero, solo lo esencial", ' +
+      '"Evento en la tarde: adelanta tu bloque de enfoque a la mañana"). ' +
+      'NUNCA muevas ni inventes eventos: respeta lo que la persona escribió, solo organiza alrededor. ' +
+      'Si un día no tiene nada escrito, puedes omitirlo o proponer algo ligero acorde a sus metas. ' +
+      'Responde ÚNICAMENTE con JSON válido, sin markdown, con la forma exacta: ' +
+      '{"dias":[{"fecha":"YYYY-MM-DD","tareas":["...","..."],"flex":"..."}]}. En español.';
+    const agenda = dias7.map(d => d.key + ' (' + d.etiqueta + '): ' + (d.texto || '(sin plan)')).join('\n');
+    try{
+      const res = await fetch(PUSH_WORKER + '/ia', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ sistema, pregunta: 'Diseña mi semana. Esto tengo cada día:\n' + agenda + '\n\n' + contextoIA() }) });
+      if(!res.ok) throw new Error('worker ' + res.status);
+      const d = await res.json();
+      const m = (d.texto || '').match(/\{[\s\S]*\}/);
+      const prop = sanearSemIA(m ? JSON.parse(m[0]) : null, validKeys);
+      if(!prop) throw new Error('formato');
+      siPropuesta = prop;
+      const etiquetaDe = k => (dias7.find(x => x.key === k) || {}).etiqueta || k;
+      out.textContent = prop.map(p => '📅 ' + etiquetaDe(p.fecha) +
+        (p.tareas.length ? '\n   • ' + p.tareas.join('\n   • ') : '') +
+        (p.flex ? '\n   🤖 ' + p.flex : '')).join('\n\n');
+      $('siApply').hidden = false;
+    }catch(e){ out.textContent = 'No se pudo diseñar la semana. Revisa tu internet e intenta de nuevo.'; }
+    iaOcupado = false;
+  });
+  $('siApply').addEventListener('click', ()=>{
+    if(!siPropuesta) return;
+    if(!confirm('Esto suma las tareas propuestas al texto de cada día y guarda los ajustes. ¿Aplicar?')) return;
+    siPropuesta.forEach(p => {
+      if(p.tareas.length){
+        const prev = (semana[p.fecha] || '').trim();
+        const nuevo = (prev ? prev + ' · ' : '') + p.tareas.join(' · ');
+        semana[p.fecha] = nuevo;
+      }
+      if(p.flex) semFlex[p.fecha] = p.flex;
+      else delete semFlex[p.fecha];
+    });
+    saveSemana(); saveSemFlex();
+    renderSemana(); renderPlanHoy();
+    $('semIAWrap').hidden = true; siPropuesta = null;
+    toast('Tu semana está diseñada. 🗓️');
+  });
+
   // ===== Diseñador de hábitos con IA =====
   // Cuestionario → la IA propone hábitos con horarios → el usuario SIEMPRE
   // confirma antes de aplicar. Reemplaza HABITS (el historial se conserva:
@@ -3932,7 +4126,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -4063,7 +4257,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '' },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '' },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -4173,6 +4367,12 @@
         const cps = b.data['reps-capas'];
         if(Array.isArray(cps)) localStorage.setItem(CAPAS_KEY, JSON.stringify(cps));
         else localStorage.removeItem(CAPAS_KEY);
+        const sfx = b.data['reps-semana-flex'];
+        if(esMapa(sfx)) localStorage.setItem(SEMANA_FLEX_KEY, JSON.stringify(sfx));
+        else localStorage.removeItem(SEMANA_FLEX_KEY);
+        const cmp = b.data['reps-compa'];
+        if(esMapa(cmp)) localStorage.setItem(COMPA_KEY, JSON.stringify(cmp));
+        else localStorage.removeItem(COMPA_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -4180,7 +4380,7 @@
       localStorage.setItem(SCHEMA_KEY, String(parseInt(b.schema, 10) || 1));
       migrate();
       loadHabitos(); // antes de load/render: todo lo demás depende de HABITS
-      load(); loadTray(); loadCierres(); loadSemana();
+      load(); loadTray(); loadCierres(); loadSemana(); loadSemFlex();
       loadTheme(); applyThemeSel();
       loadDist(); applyDist();
       loadNav(); applyNav();
@@ -4201,6 +4401,7 @@
       planSemana = {}; loadPlanSemana(); renderPlanSemCard();
       recordatorios = []; recordHechos = {}; loadRecordatorios();
       capas = []; loadCapas(); renderCapas();
+      compaConf = { nombre:'', criatura:'planta', emoji:'' }; loadCompa();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -4239,6 +4440,7 @@
   loadTray();
   loadCierres();   // antes de render(): el calendario ya lee los cierres
   loadSemana();    // antes de renderPlanHoy(): el banner lee el plan semanal
+  loadSemFlex();   // ajustes de flexibilidad de la IA (los muestra el banner)
   loadCierreSemana(); // antes de renderSemana(): muestra el cierre de la semana
   loadRacha();     // antes de render(): la racha visible usa los congelados
   procesarRacha(); // aplica congeladores por los días transcurridos
@@ -4249,6 +4451,7 @@
   loadSonido();
   loadMetas();
   loadRecompensas();
+  loadCompa(); // antes de render(): renderCompa lee la config del compañero
   loadRecordatorios(); // antes de render(): suman al puntaje del día
   loadCapas(); renderCapas(); // mi ruta editable
   loadRutina();
