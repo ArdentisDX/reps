@@ -2380,6 +2380,43 @@
     $('planHoyFlex').textContent = flex ? '\n🤖 ' + flex : '';
   }
 
+  // ===== Frase del día =====
+  // Una cita que rota cada día (índice = día del año). 100% local, sin internet.
+  const FRASES = [
+    ['El secreto para salir adelante es empezar.', 'Mark Twain'],
+    ['No cuentes los días, haz que los días cuenten.', 'Muhammad Ali'],
+    ['La disciplina es el puente entre metas y logros.', 'Jim Rohn'],
+    ['Lo que haces cada día importa más que lo que haces de vez en cuando.', 'Gretchen Rubin'],
+    ['Un poco de progreso cada día suma grandes resultados.', 'Anónimo'],
+    ['No tienes que ser grande para empezar, pero tienes que empezar para ser grande.', 'Zig Ziglar'],
+    ['La motivación te pone en marcha; el hábito te mantiene.', 'Jim Rohn'],
+    ['Caer está permitido. Levantarse es obligatorio.', 'Proverbio'],
+    ['Hazlo hoy. El mañana perfecto nunca llega.', 'Anónimo'],
+    ['Somos lo que hacemos repetidamente.', 'Aristóteles'],
+    ['El único mal entrenamiento es el que no hiciste.', 'Anónimo'],
+    ['Pequeños pasos también son pasos hacia adelante.', 'Anónimo'],
+    ['La constancia vence al talento cuando el talento no es constante.', 'Anónimo'],
+    ['Enfócate en el sistema, no solo en la meta.', 'James Clear'],
+    ['Cada acción es un voto por la persona que quieres ser.', 'James Clear'],
+    ['No busques ser perfecto, busca ser constante.', 'Anónimo'],
+    ['El futuro depende de lo que hagas hoy.', 'Gandhi'],
+    ['Empieza donde estás, usa lo que tienes, haz lo que puedas.', 'Arthur Ashe'],
+    ['La energía y la persistencia lo conquistan todo.', 'Benjamin Franklin'],
+    ['Tu único límite eres tú, y hoy puedes moverlo un poco.', 'Anónimo'],
+    ['La calma también es productividad.', 'Anónimo'],
+    ['Lo difícil de hoy es la fuerza de mañana.', 'Anónimo'],
+  ];
+  function renderFrase(){
+    const inicio = new Date(new Date().getFullYear(), 0, 0);
+    const dia = Math.floor((new Date() - inicio) / 86400000); // día del año
+    const [txt, aut] = FRASES[dia % FRASES.length];
+    const el = $('frase');
+    el.hidden = false;
+    el.textContent = '“' + txt + '”';
+    const a = document.createElement('span'); a.className = 'fr-aut'; a.textContent = '— ' + aut;
+    el.appendChild(a);
+  }
+
   // ===== Resumen de la mañana (IA, 1×/día) =====
   // Al abrir la app en un día nuevo, la IA arma un saludo breve con lo que
   // toca hoy (evento, bloque en curso, un consejo). Se cachea por fecha en
@@ -4770,6 +4807,21 @@
     $('finIng').textContent = '+ ' + fmtDinero(ingresos);
     $('finGas').textContent = '− ' + fmtDinero(gastos);
 
+    // mes vs mes: compara los GASTOS con el mes anterior
+    const [ay, am] = mes.split('-').map(Number);
+    const prevD = new Date(ay, am - 2, 15); // am-2 = mes anterior (0-index)
+    const prevKey = prevD.getFullYear() + '-' + String(prevD.getMonth() + 1).padStart(2, '0');
+    const gastosPrev = fin.movs.filter(m => m.tipo === 'gasto' && (m.fecha || '').startsWith(prevKey))
+      .reduce((s, m) => s + (+m.monto), 0);
+    const vs = $('finVs');
+    if(gastosPrev > 0 && gastos > 0){
+      const dif = Math.round((gastos - gastosPrev) / gastosPrev * 100);
+      vs.hidden = false;
+      if(dif === 0) vs.innerHTML = 'Igual que el mes pasado.';
+      else vs.innerHTML = (dif > 0 ? 'Gastaste <b class="up">' + dif + '% más</b>' : 'Gastaste <b class="down">' + Math.abs(dif) + '% menos</b>') +
+        ' que el mes pasado (' + fmtDinero(gastosPrev) + ').';
+    } else vs.hidden = true;
+
     // presupuesto del mes (vs gastos)
     if(fin.presupuesto > 0){
       $('finPresuBar').hidden = false;
@@ -5142,6 +5194,7 @@
   fillCierreForm();
   renderPlanHoy();
   loadBrief(); renderBrief(); // resumen de la mañana (IA, 1×/día)
+  renderFrase(); // frase del día (local)
 
   // usuario nuevo: tras la intro, abre el cuestionario de bienvenida
   if(instalacionNueva) setTimeout(abrirBienvenida, 2100);
@@ -5211,6 +5264,7 @@
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       renderBrief(); // día nuevo: arma el resumen de la mañana otra vez
+      renderFrase(); // rota la frase del día
     }
     // el modo automático re-evalúa la hora cada vez que la app vuelve al frente
     if(document.visibilityState === 'visible' && temaAuto) applyThemeSel();
