@@ -885,3 +885,12 @@ body.font-serif #diarioTxt{font-family:Georgia,"Times New Roman",serif}
 .diario-entry .de-fecha{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:4px}
 .diario-entry .de-txt{font-size:13px;line-height:1.5;color:var(--text);white-space:pre-wrap}
 body.minimal #diarioSec{display:none}
+
+/* ===== Sueño ===== */
+.sueno-hoy{background:var(--card);border:1px solid var(--hair,var(--line));border-radius:16px;padding:16px;text-align:center;margin-bottom:12px}
+.sueno-hoy .sn-num{font-size:32px;font-weight:800;line-height:1;color:var(--teal)}
+.sueno-hoy .sn-lbl{font-size:12px;color:var(--muted);margin-top:6px}
+.sn-row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--hair,var(--line));border-radius:12px;padding:10px 13px;margin-bottom:6px}
+.sn-row .snr-f{flex:1;min-width:0;font-size:13px;color:var(--text)}
+.sn-row .snr-h{font-size:14px;font-weight:700;color:var(--teal)}
+.sn-row .snr-sub{font-size:12px;color:var(--muted)}

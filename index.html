@@ -179,6 +179,11 @@
         <span class="mas-tx"><b>Diario</b><i>Tu espacio para escribir sobre el día</i></span>
         <span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
       </button>
+      <button class="mas-item" id="suenoOpen" style="margin:8px 0 0">
+        <span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg></span>
+        <span class="mas-tx"><b>Sueño</b><i>A qué hora dormiste y despertaste</i></span>
+        <span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+      </button>
     </div>
   </div>
 
@@ -188,6 +193,21 @@
       <div class="t-note" style="margin-bottom:8px">Privado, solo en este dispositivo. Escribe sin filtro sobre tu día.</div>
       <textarea id="diarioTxt" rows="6" placeholder="¿Cómo va tu día? Lo que sientas, sin filtro…"></textarea>
       <div class="diario-list" id="diarioList"></div>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="suenoWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Sueño</h2><button id="suenoClose" aria-label="Cerrar">✕</button></div>
+      <div class="sueno-hoy">
+        <div class="sn-num" id="snHoras">—</div>
+        <div class="sn-lbl" id="snProm">Registra tu noche de hoy</div>
+      </div>
+      <div class="t-row"><label for="snAcostar">Me acosté</label><input type="time" id="snAcostar" class="desp-meta"></div>
+      <div class="t-row"><label for="snDespertar">Desperté</label><input type="time" id="snDespertar" class="desp-meta"></div>
+      <div class="t-note">Si te dormiste después de medianoche, igual se calcula bien.</div>
+      <div class="t-sub">Últimas noches</div>
+      <div id="snList"></div>
     </div>
   </div>
 

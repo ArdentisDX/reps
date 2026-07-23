@@ -4659,6 +4659,7 @@
       $('notifWrap').hidden = true;
       $('finWrap').hidden = true;
       $('diarioWrap').hidden = true;
+      $('suenoWrap').hidden = true;
       $('habWrap').hidden = true;
     }
   });
@@ -4670,7 +4671,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-diario', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-diario', 'reps-sueno', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -5173,13 +5174,74 @@
   $('diarioClose').addEventListener('click', ()=>{ $('diarioWrap').hidden = true; });
   $('diarioWrap').addEventListener('click', (e)=>{ if(e.target === $('diarioWrap')) $('diarioWrap').hidden = true; });
 
+  // ===== Sueño (pantalla propia) =====
+  // Registro simple por noche: a qué hora te acostaste y despertaste →
+  // horas dormidas (maneja el cruce de medianoche). 100% local.
+  const SUENO_KEY = 'reps-sueno';
+  let sueno = {};
+  function loadSueno(){
+    sueno = {};
+    try{
+      const v = JSON.parse(localStorage.getItem(SUENO_KEY));
+      if(esMapa(v)) Object.keys(v).forEach(k => {
+        const r = v[k];
+        if(r && (esHora(r.acostar) || esHora(r.despertar))) sueno[k] = { acostar: esHora(r.acostar) ? r.acostar : '', despertar: esHora(r.despertar) ? r.despertar : '' };
+      });
+    }catch(e){ sueno = {}; }
+  }
+  function saveSueno(){ try{ localStorage.setItem(SUENO_KEY, JSON.stringify(sueno)); }catch(e){} }
+  const minDe = h => { const [a,b] = h.split(':').map(Number); return a * 60 + b; };
+  // minutos dormidos de un registro (o null si falta un dato)
+  function minDormidos(r){
+    if(!r || !esHora(r.acostar) || !esHora(r.despertar)) return null;
+    let d = minDe(r.despertar) - minDe(r.acostar);
+    if(d <= 0) d += 1440; // cruzó medianoche
+    return d;
+  }
+  const fmtHoras = min => Math.floor(min/60) + 'h' + (min % 60 ? ' ' + (min%60) + 'm' : '');
+  function renderSueno(){
+    const k = today(), r = sueno[k] || {};
+    $('snAcostar').value = r.acostar || '';
+    $('snDespertar').value = r.despertar || '';
+    const m = minDormidos(r);
+    $('snHoras').textContent = m == null ? '—' : fmtHoras(m);
+    // promedio de las últimas noches con datos completos
+    const conDatos = Object.keys(sueno).map(f => minDormidos(sueno[f])).filter(x => x != null);
+    const prom = conDatos.length ? Math.round(conDatos.reduce((a,b)=>a+b,0) / conDatos.length) : 0;
+    $('snProm').textContent = conDatos.length ? ('Promedio: ' + fmtHoras(prom) + ' · ' + conDatos.length + ' noche' + (conDatos.length===1?'':'s')) : 'Registra tu noche de hoy';
+    // lista de las últimas 10 noches
+    const list = $('snList'); list.innerHTML = '';
+    Object.keys(sueno).sort().reverse().slice(0, 10).forEach(f => {
+      const mm = minDormidos(sueno[f]); if(mm == null) return;
+      const row = document.createElement('div'); row.className = 'sn-row';
+      const fe = document.createElement('span'); fe.className = 'snr-f';
+      fe.textContent = new Date(f + 'T12:00:00').toLocaleDateString('es-MX', {weekday:'short', day:'numeric', month:'short'});
+      const sub = document.createElement('span'); sub.className = 'snr-sub'; sub.textContent = sueno[f].acostar + '–' + sueno[f].despertar;
+      const h = document.createElement('span'); h.className = 'snr-h'; h.textContent = fmtHoras(mm);
+      row.append(fe, sub, h);
+      list.appendChild(row);
+    });
+  }
+  function setSueno(campo, val){
+    const k = today();
+    const r = sueno[k] || { acostar:'', despertar:'' };
+    r[campo] = esHora(val) ? val : '';
+    if(!r.acostar && !r.despertar) delete sueno[k]; else sueno[k] = r;
+    saveSueno(); renderSueno();
+  }
+  $('snAcostar').addEventListener('change', ()=> setSueno('acostar', $('snAcostar').value));
+  $('snDespertar').addEventListener('change', ()=> setSueno('despertar', $('snDespertar').value));
+  $('suenoOpen').addEventListener('click', ()=>{ renderSueno(); $('suenoWrap').hidden = false; });
+  $('suenoClose').addEventListener('click', ()=>{ $('suenoWrap').hidden = true; });
+  $('suenoWrap').addEventListener('click', (e)=>{ if(e.target === $('suenoWrap')) $('suenoWrap').hidden = true; });
+
   // ===== Respaldo: exportar / importar =====
   function exportBackup(){
     const backup = {
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-diario': diario, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-diario': diario, 'reps-sueno': sueno, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -5306,6 +5368,9 @@
         const dry = b.data['reps-diario'];
         if(esMapa(dry)) localStorage.setItem(DIARIO_KEY, JSON.stringify(dry));
         else localStorage.removeItem(DIARIO_KEY);
+        const slp = b.data['reps-sueno'];
+        if(esMapa(slp)) localStorage.setItem(SUENO_KEY, JSON.stringify(slp));
+        else localStorage.removeItem(SUENO_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -5338,6 +5403,7 @@
       fin = { movs:[], presupuesto:0, presuCat:{}, metas:[] }; loadFin();
       evitares = []; loadEvitar(); renderEvitar();
       diario = {}; loadDiario(); renderDiario();
+      sueno = {}; loadSueno();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -5392,6 +5458,7 @@
   loadFin();   // finanzas (menú Más); se renderiza al abrir el sheet
   loadEvitar(); // "días sin…" (hábitos a evitar)
   loadDiario(); renderDiario(); // diario del día
+  loadSueno(); // registro de sueño (pantalla propia)
   loadRecordatorios(); // antes de render(): suman al puntaje del día
   loadCapas(); renderCapas(); // mi ruta editable
   loadRutina();
