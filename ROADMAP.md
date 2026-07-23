@@ -170,10 +170,11 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 20. Íconos de IA con estilo (cambiar 🤖 por ✨ de línea).
 
 > **Rumbo acordado (jul 2026):** personalización por persona (1) + cuentas/sync (3).
-> — (1) EN MARCHA: **Biblioteca de actividades** (v70) — catálogo de hábitos
->   por actividad (yoga, pilates, correr, leer…) en el editor; cada quien en
->   su celular arma su REPS. Siguiente paso de (1): meterla también al
->   onboarding y plantillas de rutina (idea #35).
+> — (1) HECHA (v70–72): **Biblioteca de actividades** en el editor (v70),
+>   **paso de actividades en la bienvenida** (v71: yoga/pilates/correr… →
+>   hábitos a la medida) y **plantillas de rutina** (v72, idea #35: Mañana
+>   productiva / Día de estudio / trabajo / tranquilo). Cada quien —hermana
+>   yoga, tía pilates— arma su REPS desde el minuto uno.
 > — (3) NORTE GRANDE, pendiente: cuentas + sync entre dispositivos = **Capa 5**
 >   (necesita backend; plan técnico más abajo). Construir (1) dejando el
 >   `reps-perfil`/hábitos bien guardados para que (3) sincronice limpio.
