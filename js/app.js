@@ -4786,6 +4786,30 @@
     }
     $('finPresuInput').value = fin.presupuesto > 0 ? String(fin.presupuesto) : '';
 
+    // desglose de GASTOS por categoría (en qué se te va), barras ordenadas
+    const porCat = {};
+    delMes.filter(m => m.tipo === 'gasto').forEach(m => { porCat[m.cat] = (porCat[m.cat] || 0) + (+m.monto); });
+    const cats = Object.keys(porCat).sort((a,b) => porCat[b] - porCat[a]);
+    const brk = $('finCatBreak'); brk.innerHTML = '';
+    $('finCatTitle').hidden = cats.length === 0;
+    cats.forEach(id => {
+      const c = finCatOf('gasto', id);
+      const monto = porCat[id];
+      const pct = gastos > 0 ? Math.round(monto / gastos * 100) : 0;
+      const row = document.createElement('div'); row.className = 'fin-catrow';
+      const em = document.createElement('span'); em.className = 'fc-em'; em.textContent = c ? c.emoji : '💵';
+      const body = document.createElement('div'); body.className = 'fc-body';
+      const top = document.createElement('div'); top.className = 'fc-top';
+      const nm = document.createElement('span'); nm.className = 'fc-nm'; nm.textContent = c ? c.name : id;
+      const amt = document.createElement('span'); amt.className = 'fc-amt'; amt.textContent = fmtDinero(monto) + ' · ' + pct + '%';
+      top.append(nm, amt);
+      const bar = document.createElement('div'); bar.className = 'fc-bar';
+      const fill = document.createElement('i'); fill.style.width = pct + '%'; bar.appendChild(fill);
+      body.append(top, bar);
+      row.append(em, body);
+      brk.appendChild(row);
+    });
+
     // lista de movimientos del mes (recientes primero)
     const list = $('finList'); list.innerHTML = '';
     const orden = delMes.slice().sort((a,b) => (b.creado||'').localeCompare(a.creado||''));

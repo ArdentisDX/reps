@@ -129,7 +129,7 @@
     </div>
     <div class="rut-acts" style="margin:10px 0 0">
       <button id="planSemBtn">Planear la semana</button>
-      <button id="iaBtn" class="ai-btn">🤖 Asistente</button>
+      <button id="iaBtn" class="ai-btn"><svg class="ai-spark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c.4 3.6 1.4 4.6 5 5-3.6.4-4.6 1.4-5 5-.4-3.6-1.4-4.6-5-5 3.6-.4 4.6-1.4 5-5z"/></svg>Asistente</button>
     </div>
     <div class="week-plan">
       <div class="wp-head">
@@ -138,7 +138,7 @@
         <button class="cal-nav" id="wpNext" aria-label="Semana siguiente">›</button>
       </div>
       <div id="wpList"></div>
-      <button id="semIA" class="ai-btn ai-wide">🤖 Diseñar mi semana</button>
+      <button id="semIA" class="ai-btn ai-wide"><svg class="ai-spark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c.4 3.6 1.4 4.6 5 5-3.6.4-4.6 1.4-5 5-.4-3.6-1.4-4.6-5-5 3.6-.4 4.6-1.4 5-5z"/></svg>Diseñar mi semana</button>
       <div class="wp-note">Tip de domingo: pasa a la semana entrante con › y déjala planeada.</div>
     </div>
     <div class="week-cierre">
@@ -212,7 +212,7 @@
     <div id="capasList"></div>
     <div class="rut-acts" style="margin-top:10px">
       <button id="capasEdit">Editar mi ruta</button>
-      <button id="capasIA" class="ai-btn">🤖 Diseñar con IA</button>
+      <button id="capasIA" class="ai-btn"><svg class="ai-spark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c.4 3.6 1.4 4.6 5 5-3.6.4-4.6 1.4-5 5-.4-3.6-1.4-4.6-5-5 3.6-.4 4.6-1.4 5-5z"/></svg>Diseñar con IA</button>
     </div>
     <div class="nota-ruta">
       <b>Por qué en fila:</b> la motivación es un pico, no una meseta. Cada capa entra cuando la anterior ya no pide fuerza de voluntad.
@@ -354,6 +354,9 @@
         <div class="bar"><i id="finPresuFill"></i></div>
       </div>
 
+      <div class="t-sub" id="finCatTitle" hidden>En qué se te va</div>
+      <div id="finCatBreak"></div>
+
       <div class="t-sub">Registrar movimiento</div>
       <div class="fin-add">
         <div class="fin-tipo" id="finTipo">
@@ -461,7 +464,7 @@
       <div id="habList"></div>
       <button class="hab-add" id="habAdd">＋ Agregar hábito</button>
       <button class="hab-add" id="habBiblioteca" style="margin-top:8px">Elegir de la biblioteca</button>
-      <button class="hab-add" id="iaHabBtn" style="margin-top:8px">🤖 Diseñar mis hábitos con IA</button>
+      <button class="hab-add" id="iaHabBtn" style="margin-top:8px"><svg class="ai-spark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c.4 3.6 1.4 4.6 5 5-3.6.4-4.6 1.4-5 5-.4-3.6-1.4-4.6-5-5 3.6-.4 4.6-1.4 5-5z"/></svg>Diseñar mis hábitos con IA</button>
       <div class="t-note">La ⭐ marca los <b>core</b>: los que definen tu «día ganado» (entre 2 y 4). Máx. 8 hábitos. Renombrar nunca borra tu historial.</div>
     </div>
   </div>
@@ -503,11 +506,11 @@
 
   <div class="theme-wrap" id="capasIAWrap" hidden>
     <div class="theme-sheet">
-      <div class="t-head"><h2>🤖 Diseñar mi ruta</h2><button id="ciClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-head"><h2>Diseñar mi ruta</h2><button id="ciClose" aria-label="Cerrar">✕</button></div>
       <div class="t-note" style="margin-bottom:10px">Cuéntale a dónde quieres llegar y te arma un plan por capas. <b>Nada cambia sin tu confirmación.</b></div>
       <label class="c-lbl" for="ciMeta">¿A dónde quieres llegar en unos meses?</label>
       <textarea id="ciMeta" class="ps-txt" rows="3" placeholder="Ej: terminar la carrera, ponerme en forma y empezar a ahorrar; o construir un proyecto propio…"></textarea>
-      <button class="cel-btn" id="ciGo" style="width:100%;margin-top:12px">Proponme una ruta 🤖</button>
+      <button class="cel-btn" id="ciGo" style="width:100%;margin-top:12px">Proponme una ruta</button>
       <div class="ia-out" id="ciOut" hidden></div>
       <button class="cel-btn" id="ciApply" style="width:100%;margin-top:10px" hidden>✅ Usar esta ruta</button>
     </div>
@@ -515,7 +518,7 @@
 
   <div class="theme-wrap" id="iaHabWrap" hidden>
     <div class="theme-sheet">
-      <div class="t-head"><h2>🤖 Diseñar mis hábitos</h2><button id="ihClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-head"><h2>Diseñar mis hábitos</h2><button id="ihClose" aria-label="Cerrar">✕</button></div>
       <div class="t-note" style="margin-bottom:10px">Cuéntale al asistente y te propondrá hábitos con horarios. <b>Nada cambia sin tu confirmación.</b></div>
       <label class="c-lbl" for="ihMeta">¿Qué quieres lograr o en quién te quieres convertir?</label>
       <textarea id="ihMeta" class="ps-txt" rows="2" placeholder="Ej: estar en forma, terminar la escuela bien, dormir mejor…"></textarea>
@@ -525,7 +528,7 @@
       <input type="text" id="ihTiempo" class="ps-inp" maxlength="60" placeholder="Ej: 3 horas entre semana, más los findes">
       <label class="c-lbl" for="ihDejar">¿Algo que quieras dejar o evitar?</label>
       <input type="text" id="ihDejar" class="ps-inp" maxlength="80" placeholder="Ej: el celular en la noche, desvelarme">
-      <button class="cel-btn" id="ihGo" style="width:100%;margin-top:12px">Proponme hábitos 🤖</button>
+      <button class="cel-btn" id="ihGo" style="width:100%;margin-top:12px">Proponme hábitos</button>
       <div class="ia-out" id="ihOut" hidden></div>
       <button class="cel-btn" id="ihApply" style="width:100%;margin-top:10px" hidden>✅ Aplicar estos hábitos</button>
     </div>
@@ -533,7 +536,7 @@
 
   <div class="theme-wrap" id="iaWrap" hidden>
     <div class="theme-sheet">
-      <div class="t-head"><h2>🤖 Tu asistente</h2><button id="iaClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-head"><h2>Tu asistente</h2><button id="iaClose" aria-label="Cerrar">✕</button></div>
       <div class="t-note" style="margin-bottom:10px">Conoce tu semana, tus metas y tu rutina. Requiere internet; tus datos viajan solo en el momento y no se guardan fuera.</div>
       <button class="hab-add" id="iaSemana">🗓️ Consejo para mi semana</button>
       <div class="ia-out" id="iaOut" hidden></div>
@@ -544,9 +547,9 @@
 
   <div class="theme-wrap" id="semIAWrap" hidden>
     <div class="theme-sheet">
-      <div class="t-head"><h2>🤖 Diseñar mi semana</h2><button id="siClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-head"><h2>Diseñar mi semana</h2><button id="siClose" aria-label="Cerrar">✕</button></div>
       <div class="t-note" style="margin-bottom:10px">Lee lo que escribiste cada día y te propone <b>tareas concretas</b> y cómo <b>ajustar el día</b> (más ligero en un viaje, mover el enfoque en un evento). <b>Nada cambia sin tu confirmación.</b></div>
-      <button class="ai-btn ai-wide" id="siGo">Proponme un plan 🤖</button>
+      <button class="ai-btn ai-wide" id="siGo">Proponme un plan</button>
       <div class="ia-out" id="siOut" hidden></div>
       <button class="cel-btn" id="siApply" style="width:100%;margin-top:10px" hidden>✅ Sumar tareas a mis días</button>
     </div>
