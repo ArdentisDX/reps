@@ -801,3 +801,13 @@ body.minimal #p-hoy .regla{display:none}
 .fin-meta-add #finMetaNom{flex:2}
 .fin-meta-add #finMetaObj{flex:1;min-width:0}
 .fin-meta-add button,.fin-presu-cfg button{background:var(--amber);border:none;border-radius:10px;color:var(--on-accent);font:inherit;font-size:15px;font-weight:800;padding:11px 16px;cursor:pointer;white-space:nowrap}
+
+/* ===== Biblioteca de actividades ===== */
+.bib-cat{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:14px 0 8px}
+.bib-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.bib-item{display:flex;align-items:center;gap:10px;text-align:left;background:var(--card);border:1px solid var(--hair,var(--line));border-radius:12px;padding:10px 12px;cursor:pointer;color:var(--text);font:inherit;font-size:13px;font-weight:600}
+.bib-item:active{transform:scale(.98)}
+.bib-item .bi-em{font-size:20px;flex:none}
+.bib-item .bi-nm{flex:1;min-width:0}
+.bib-item.have{border-color:color-mix(in srgb,var(--teal) 45%,transparent);color:var(--muted)}
+.bib-item.have .bi-check{color:var(--teal);font-weight:800;flex:none}

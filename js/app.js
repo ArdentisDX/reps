@@ -2969,6 +2969,95 @@
     rebuildCore(); saveHabitos(); render(); renderHabEditor();
   });
 
+  // ===== Biblioteca de actividades =====
+  // Catálogo de hábitos listos por actividad/interés: así la app se moldea a
+  // cada persona (yoga, pilates, correr, leer…). Cada item = una plantilla de
+  // hábito (nombre, pista, emoji y opcional meta/unidad). Toca = se suma.
+  const ACTIVIDADES = [
+    { cat:'Movimiento', items:[
+      {name:'Correr',        emoji:'🏃', hint:'20–30 min a tu ritmo'},
+      {name:'Ir al gym',     emoji:'🏋️', hint:'Aunque sea entrenar ligero'},
+      {name:'Yoga',          emoji:'🧘', hint:'15–20 min de práctica'},
+      {name:'Pilates',       emoji:'🤸', hint:'Sesión de control y fuerza'},
+      {name:'Caminar',       emoji:'🚶', hint:'Una vuelta despejando la mente'},
+      {name:'Natación',      emoji:'🏊', hint:'Vueltas en la alberca'},
+      {name:'Bici',          emoji:'🚴', hint:'Rodar un rato'},
+      {name:'Estirar',       emoji:'🤾', hint:'5–10 min de movilidad'},
+      {name:'Bailar',        emoji:'💃', hint:'Mover el cuerpo con música'},
+      {name:'Deporte',       emoji:'⚽', hint:'Tu deporte favorito'},
+    ]},
+    { cat:'Mente y estudio', items:[
+      {name:'Leer',          emoji:'📚', hint:'Un rato de lectura', meta:20, unidad:'páginas'},
+      {name:'Meditar',       emoji:'🧠', hint:'10 min de calma'},
+      {name:'Estudiar',      emoji:'📖', hint:'Bloque de estudio enfocado'},
+      {name:'Practicar idioma',emoji:'🗣️', hint:'15 min de tu idioma'},
+      {name:'Escribir',      emoji:'✍️', hint:'Diario o lo que fluya'},
+      {name:'Aprender algo', emoji:'💡', hint:'Curso, video, tutorial'},
+    ]},
+    { cat:'Creatividad', items:[
+      {name:'Tocar guitarra',emoji:'🎸', hint:'Practicar un rato'},
+      {name:'Dibujar',       emoji:'🎨', hint:'Aunque sea un boceto'},
+      {name:'Cocinar',       emoji:'🍳', hint:'Prepararte algo rico'},
+      {name:'Fotografía',    emoji:'📷', hint:'Captura del día'},
+      {name:'Producir música',emoji:'🎧', hint:'Un rato en el DAW'},
+    ]},
+    { cat:'Bienestar', items:[
+      {name:'Tomar agua',    emoji:'💧', hint:'Mantente hidratado', meta:8, unidad:'vasos'},
+      {name:'Dormir temprano',emoji:'😴', hint:'A buena hora, sin pantallas'},
+      {name:'Cuidado de piel',emoji:'🧴', hint:'Tu rutina de skincare'},
+      {name:'Vitaminas',     emoji:'💊', hint:'No olvidarlas'},
+      {name:'Sin celular en cama',emoji:'📵', hint:'Cargar lejos de la almohada'},
+      {name:'Respirar',      emoji:'🌬️', hint:'3 min de respiración'},
+    ]},
+    { cat:'Vida y vínculos', items:[
+      {name:'Llamar a familia',emoji:'📞', hint:'Un mensaje o llamada'},
+      {name:'Tiempo en pareja',emoji:'❤️', hint:'Presencia de verdad'},
+      {name:'Pasear al perro',emoji:'🐕', hint:'Su paseo diario'},
+      {name:'Ordenar la casa',emoji:'🧹', hint:'10 min de orden'},
+      {name:'Gratitud',      emoji:'🙏', hint:'Anota 3 cosas buenas'},
+    ]},
+  ];
+  // ¿ya tienes un hábito con ese nombre? (para marcarlo en la biblioteca)
+  function tieneHabito(nombre){
+    const n = nombre.trim().toLowerCase();
+    return HABITS.some(h => h.name.trim().toLowerCase() === n);
+  }
+  function addActividad(a){
+    if(tieneHabito(a.name)){ toast('«' + a.name + '» ya está en tus hábitos.'); return; }
+    if(HABITS.length >= MAX_HABITS){ toast('Máximo ' + MAX_HABITS + ' hábitos. Borra uno para sumar otro.'); return; }
+    HABITS.push({
+      id: nuevoHabId(), name: a.name, hint: a.hint || '', core: false,
+      days: 'all', planB: '', emoji: a.emoji || '', porQue: '',
+      meta: a.meta || 0, unidad: a.unidad || '',
+    });
+    rebuildCore(); saveHabitos(); render(); renderHabEditor(); renderBiblioteca();
+    sonarCheck();
+    toast(a.emoji + ' «' + a.name + '» agregado.');
+  }
+  function renderBiblioteca(){
+    const cont = $('bibList'); cont.innerHTML = '';
+    ACTIVIDADES.forEach(grupo => {
+      const t = document.createElement('div'); t.className = 'bib-cat'; t.textContent = grupo.cat;
+      cont.appendChild(t);
+      const grid = document.createElement('div'); grid.className = 'bib-grid';
+      grupo.items.forEach(a => {
+        const have = tieneHabito(a.name);
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'bib-item' + (have ? ' have' : '');
+        const em = document.createElement('span'); em.className = 'bi-em'; em.textContent = a.emoji;
+        const nm = document.createElement('span'); nm.className = 'bi-nm'; nm.textContent = a.name;
+        b.append(em, nm);
+        if(have){ const c = document.createElement('span'); c.className = 'bi-check'; c.textContent = '✓'; b.appendChild(c); }
+        b.addEventListener('click', ()=> addActividad(a));
+        grid.appendChild(b);
+      });
+      cont.appendChild(grid);
+    });
+  }
+  $('habBiblioteca').addEventListener('click', ()=>{ renderBiblioteca(); $('bibWrap').hidden = false; });
+  $('bibClose').addEventListener('click', ()=>{ $('bibWrap').hidden = true; });
+  $('bibWrap').addEventListener('click', (e)=>{ if(e.target === $('bibWrap')) $('bibWrap').hidden = true; });
+
   // ===== Compañero: crece contigo y nunca retrocede =====
   // Su etapa depende del TOTAL de días ganados (que solo crece): a
   // diferencia de Forest, aquí nada muere por un mal día. Es PERSONALIZABLE:
