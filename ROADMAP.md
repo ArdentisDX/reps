@@ -139,7 +139,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 
 **Finanzas**
 1. Gastos fijos recurrentes (renta, suscripciones) que se auto-registran.
-2. Gráfica de gastos por categoría (dona/barras).
+2. ✅ (v73) Gráfica de gastos por categoría (barras "En qué se te va").
 3. Comparar mes vs mes.
 4. Aportar al ahorro cuenta como hábito del día.
 5. 🌐🧠 Coach financiero IA (analiza gastos → consejo).
@@ -167,7 +167,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 
 **Pulido**
 19. Buscador en Bandeja y notas.
-20. Íconos de IA con estilo (cambiar 🤖 por ✨ de línea).
+20. ✅ (v73) Íconos de IA con estilo (chispa SVG en vez de 🤖).
 
 > **Rumbo acordado (jul 2026):** personalización por persona (1) + cuentas/sync (3).
 > — (1) HECHA (v70–72): **Biblioteca de actividades** en el editor (v70),
