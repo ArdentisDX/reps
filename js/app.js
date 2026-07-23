@@ -4232,6 +4232,22 @@
     {id:'medio',    emoji:'⏱️', name:'Algo', sub:'un rato al día', core:3},
     {id:'bastante', emoji:'🕰️', name:'Bastante', sub:'quiero exigirme', core:4},
   ];
+  // actividades concretas para el onboarding (yoga vs pilates vs correr…):
+  // cada quien elige LO SUYO y se vuelve un hábito a su medida.
+  const ONB_ACTIVIDADES = [
+    {name:'Correr',        emoji:'🏃', hint:'20–30 min a tu ritmo'},
+    {name:'Ir al gym',     emoji:'🏋️', hint:'Aunque sea ligero'},
+    {name:'Yoga',          emoji:'🧘', hint:'15–20 min de práctica'},
+    {name:'Pilates',       emoji:'🤸', hint:'Control y fuerza'},
+    {name:'Caminar',       emoji:'🚶', hint:'Una vuelta despejando'},
+    {name:'Leer',          emoji:'📚', hint:'Un rato', meta:20, unidad:'páginas'},
+    {name:'Meditar',       emoji:'🧠', hint:'10 min de calma'},
+    {name:'Tomar agua',    emoji:'💧', hint:'Hidrátate', meta:8, unidad:'vasos'},
+    {name:'Tocar guitarra',emoji:'🎸', hint:'Practicar un rato'},
+    {name:'Dibujar',       emoji:'🎨', hint:'Aunque sea un boceto'},
+    {name:'Escribir',      emoji:'✍️', hint:'Diario o lo que fluya'},
+    {name:'Estudiar',      emoji:'📖', hint:'Bloque enfocado'},
+  ];
 
   function generarHabitos(d){
     const nid = () => 'h' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
@@ -4242,6 +4258,12 @@
       const a = ONB_AREAS.find(x => x.id === aid); if(!a) return;
       if(a.hab)   out.push({id:nid(), name:a.hab.name,   hint:a.hab.hint,   core:a.hab.core,   days:'all'});
       if(a.extra) out.push({id:nid(), name:a.extra.name, hint:a.extra.hint, core:a.extra.core, days:'all'});
+    });
+    // actividades concretas elegidas (yoga, pilates…): hábitos a su medida
+    (d.actividades || []).forEach(a => {
+      if(out.some(h => h.name.toLowerCase() === a.name.toLowerCase())) return; // sin duplicar
+      out.push({id:nid(), name:a.name, hint:a.hint || '', core:false, days:'all',
+        emoji:a.emoji || '', meta:a.meta || 0, unidad:a.unidad || ''});
     });
     let list = out.slice(0, MAX_HABITS);
     // ajustar core al tiempo disponible (2/3/4), respetando 2..4
@@ -4258,9 +4280,9 @@
 
   // --- el asistente paso a paso ---
   let onb = null;
-  const ONB_PASOS = 7; // 0 intro · 1 nombre · 2 despertar · 3 construir · 4 tiempo · 5 detalle · 6 preview
+  const ONB_PASOS = 8; // 0 intro·1 nombre·2 despertar·3 construir·4 actividades·5 tiempo·6 detalle·7 preview
   function abrirBienvenida(){
-    onb = { step:0, nombre:'', despertar:null, construir:[], tiempo:null, horario:'', libre:'', iaHabs:null, iaRut:null };
+    onb = { step:0, nombre:'', despertar:null, construir:[], actividades:[], tiempo:null, horario:'', libre:'', iaHabs:null, iaRut:null };
     $('welcome').hidden = false;
     renderOnb();
   }
@@ -4272,6 +4294,7 @@
     const p = [];
     p.push('Diseña mis hábitos diarios.');
     if(areas.length) p.push('Quiero enfocarme en: ' + areas.join(', ') + '.');
+    if(onb.actividades.length) p.push('Actividades concretas que hago: ' + onb.actividades.map(a => a.name).join(', ') + '.');
     if(desp) p.push('Despierto ' + desp.name.toLowerCase() + (desp.hora ? ' (~' + desp.hora + ')' : '') + '.');
     if(t) p.push('Tiempo disponible: ' + t.name.toLowerCase() + ' (' + t.core + ' innegociables al día como máximo).');
     if(onb.horario) p.push('Mi horario y traslados: ' + onb.horario + '.');
@@ -4344,6 +4367,19 @@
       next.disabled = onb.construir.length === 0;
     }
     else if(onb.step === 4){
+      title('¿Algo que hagas en específico?', 'Yoga, correr, pilates… elige lo tuyo (hasta 4). Se vuelven hábitos a tu medida. Opcional.');
+      const g = grid();
+      ONB_ACTIVIDADES.forEach(a => {
+        const activo = onb.actividades.some(x => x.name === a.name);
+        g.appendChild(opBtn(a.emoji + ' ' + a.name, '', activo, ()=>{
+          if(activo) onb.actividades = onb.actividades.filter(x => x.name !== a.name);
+          else if(onb.actividades.length < 4) onb.actividades.push(a);
+          else { toast('Hasta 4 aquí. Podrás sumar más desde la biblioteca.'); return; }
+          renderOnb();
+        }));
+      });
+    }
+    else if(onb.step === 5){
       title('¿Cuánto tiempo real tienes?', 'Define cuántos innegociables al día.');
       const g = grid();
       ONB_TIEMPO.forEach(o => g.appendChild(opBtn(o.emoji + ' ' + o.name, o.sub, onb.tiempo === o.id, ()=>{
@@ -4351,7 +4387,7 @@
       })));
       next.hidden = true;
     }
-    else if(onb.step === 5){
+    else if(onb.step === 6){
       title('Cuéntame de tu día', 'Con esto la IA puede armarte algo que de verdad te quede. Opcional — puedes saltarlo.');
       const l1 = document.createElement('div'); l1.className = 'wel-sub'; l1.style.marginTop = '10px'; l1.textContent = 'Tu horario y traslados';
       body.appendChild(l1);
@@ -4366,7 +4402,7 @@
       ta2.value = onb.libre; ta2.addEventListener('input', ()=> onb.libre = ta2.value);
       body.appendChild(ta2);
     }
-    else if(onb.step === 6){
+    else if(onb.step === 7){
       title('Tu sistema', 'Así queda. Podrás editarlo cuando quieras.');
       const usadosIA = !!onb.iaHabs;
       const habs = usadosIA ? onb.iaHabs : generarHabitos(onb);
@@ -4421,7 +4457,8 @@
     if(tieneHistorial){
       if(!confirm('Esto reemplazará tus hábitos actuales por los nuevos. Tu historial de días se conserva. ¿Continuar?')) return;
     }
-    perfil = { nombre: onb.nombre.trim(), despertar: onb.despertar, construir: onb.construir, tiempo: onb.tiempo,
+    perfil = { nombre: onb.nombre.trim(), despertar: onb.despertar, construir: onb.construir,
+      actividades: onb.actividades.map(a => a.name), tiempo: onb.tiempo,
       horario: onb.horario, libre: onb.libre, creado: new Date().toISOString() };
     savePerfil();
     if(onb.iaHabs){
@@ -4441,7 +4478,7 @@
     toast('¡Tu sistema está listo! A ganar el día. 🔥');
   }
   $('welNext').addEventListener('click', ()=>{
-    if(onb.step === 6){ finalizarBienvenida(); return; }
+    if(onb.step === 7){ finalizarBienvenida(); return; }
     onb.step++; renderOnb();
   });
   $('welBack').addEventListener('click', ()=>{ if(onb.step > 0){ onb.step--; renderOnb(); } });
