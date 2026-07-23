@@ -842,3 +842,17 @@ body.minimal #p-hoy .regla{display:none}
 .frase .fr-aut{display:block;margin-top:5px;font-style:normal;font-size:12px;color:var(--muted)}
 body.font-serif .frase{font-family:Georgia,"Times New Roman",serif}
 body.minimal .frase{display:none}
+
+/* ===== Días sin… (hábitos a evitar) ===== */
+.mini-link{background:none;border:none;color:var(--muted);font:inherit;font-size:12px;text-decoration:underline;cursor:pointer}
+.evitar-item{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--hair,var(--line));border-radius:14px;padding:12px 14px;margin-bottom:8px}
+.evitar-item .ev-em{font-size:22px;flex:none}
+.evitar-item .ev-body{flex:1;min-width:0}
+.evitar-item .ev-dias{font-size:22px;font-weight:800;line-height:1;color:var(--teal)}
+.evitar-item .ev-dias small{font-size:12px;font-weight:600;color:var(--muted)}
+.evitar-item .ev-nm{font-size:13px;color:var(--text);margin-top:2px}
+.evitar-item .ev-cai{flex:none;background:none;border:1px solid color-mix(in srgb,var(--red) 45%,var(--line));color:var(--red);font:inherit;font-size:12px;font-weight:600;border-radius:9px;padding:7px 11px;cursor:pointer}
+.ev-edit-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ev-edit-row input.ev-emoji{width:44px;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--text);font:inherit;font-size:16px;padding:8px 4px;outline:none}
+.ev-edit-row input.ev-name{flex:1;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--text);font:inherit;font-size:13px;padding:9px 10px;outline:none}
+.ev-edit-row .ev-del{background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:4px}

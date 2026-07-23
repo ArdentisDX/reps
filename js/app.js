@@ -2769,6 +2769,7 @@
   $('masNotif').addEventListener('click', ()=>{ cerrarMas(); abrirNotif(); });
   $('masHabitos').addEventListener('click', ()=>{ cerrarMas(); renderHabEditor(); $('habWrap').hidden = false; });
   $('masRutina').addEventListener('click', ()=>{ cerrarMas(); renderRutEditor(); $('rutWrap').hidden = false; });
+  $('masEvitar').addEventListener('click', ()=>{ cerrarMas(); renderEvitarEditor(); $('evitarWrap').hidden = false; });
   $('masCarta').addEventListener('click', ()=>{ cerrarMas(); abrirCarta(); });
   $('masPerfil').addEventListener('click', ()=>{ cerrarMas(); abrirBienvenida(); });
   $('masExport').addEventListener('click', ()=>{ cerrarMas(); exportBackup(); });
@@ -4608,7 +4609,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -4971,13 +4972,88 @@
   $('finClose').addEventListener('click', ()=>{ $('finWrap').hidden = true; });
   $('finWrap').addEventListener('click', (e)=>{ if(e.target === $('finWrap')) $('finWrap').hidden = true; });
 
+  // ===== Días sin… (hábitos a evitar) =====
+  // Cosas que quieres dejar (fumar, celular en cama…). Se cuenta cuántos días
+  // llevas limpio desde `desde`; "Recaí" reinicia a hoy. 100% local.
+  const EVITAR_KEY = 'reps-evitar';
+  let evitares = [];
+  function loadEvitar(){
+    evitares = [];
+    try{
+      const v = JSON.parse(localStorage.getItem(EVITAR_KEY));
+      if(Array.isArray(v)) evitares = v.filter(e => e && typeof e.nombre === 'string' && e.nombre.trim() &&
+        typeof e.desde === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(e.desde)).map(e => ({
+          id: typeof e.id === 'string' ? e.id : 'e' + Math.random().toString(36).slice(2,8),
+          nombre: e.nombre.trim().slice(0,40), emoji: sanearEmoji(e.emoji) || '🚫',
+          desde: e.desde, creado: e.creado || new Date().toISOString(),
+        }));
+    }catch(e){ evitares = []; }
+  }
+  function saveEvitar(){
+    try{ localStorage.setItem(EVITAR_KEY, JSON.stringify(evitares)); }catch(e){}
+  }
+  function diasSin(desde){
+    const a = new Date(desde + 'T00:00:00'), b = new Date(today() + 'T00:00:00');
+    return Math.max(0, Math.round((b - a) / 86400000));
+  }
+  function renderEvitar(){
+    const sec = $('evitarSec'), list = $('evitarList');
+    sec.hidden = evitares.length === 0;
+    list.innerHTML = '';
+    evitares.forEach(e => {
+      const n = diasSin(e.desde);
+      const row = document.createElement('div'); row.className = 'evitar-item';
+      const em = document.createElement('span'); em.className = 'ev-em'; em.textContent = e.emoji;
+      const body = document.createElement('div'); body.className = 'ev-body';
+      const d = document.createElement('div'); d.className = 'ev-dias';
+      d.textContent = n; const s = document.createElement('small'); s.textContent = ' día' + (n === 1 ? '' : 's') + ' sin'; d.appendChild(s);
+      const nm = document.createElement('div'); nm.className = 'ev-nm'; nm.textContent = e.nombre;
+      body.append(d, nm);
+      const cai = document.createElement('button'); cai.className = 'ev-cai'; cai.textContent = 'Recaí';
+      cai.addEventListener('click', ()=>{
+        if(!confirm('¿Reiniciar «' + e.nombre + '» a 0 días? (llevas ' + n + ')')) return;
+        e.desde = today(); saveEvitar(); renderEvitar();
+        toast('Reiniciado. Mañana es día 1 otra vez. 🌱');
+      });
+      row.append(em, body, cai);
+      list.appendChild(row);
+    });
+  }
+  function renderEvitarEditor(){
+    const cont = $('evitarEditList'); cont.innerHTML = '';
+    evitares.forEach(e => {
+      const row = document.createElement('div'); row.className = 'ev-edit-row';
+      const em = document.createElement('input'); em.className = 'ev-emoji'; em.value = e.emoji; em.maxLength = 8;
+      em.addEventListener('input', ()=>{ e.emoji = sanearEmoji(em.value) || '🚫'; saveEvitar(); renderEvitar(); });
+      const nm = document.createElement('input'); nm.className = 'ev-name'; nm.value = e.nombre; nm.maxLength = 40;
+      nm.placeholder = 'Ej: fumar, celular en cama';
+      nm.addEventListener('input', ()=>{ e.nombre = nm.value; saveEvitar(); renderEvitar(); });
+      const del = document.createElement('button'); del.className = 'ev-del'; del.textContent = '✕';
+      del.setAttribute('aria-label', 'Borrar');
+      del.addEventListener('click', ()=>{
+        evitares = evitares.filter(x => x.id !== e.id); saveEvitar(); renderEvitar(); renderEvitarEditor();
+      });
+      row.append(em, nm, del);
+      cont.appendChild(row);
+    });
+  }
+  $('evitarEdit').addEventListener('click', ()=>{ renderEvitarEditor(); $('evitarWrap').hidden = false; });
+  $('evitarAdd').addEventListener('click', ()=>{
+    if(evitares.length >= 12){ toast('Con 12 basta. Enfócate.'); return; }
+    evitares.push({ id:'e' + Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+      nombre:'Algo que quiero dejar', emoji:'🚫', desde: today(), creado: new Date().toISOString() });
+    saveEvitar(); renderEvitar(); renderEvitarEditor();
+  });
+  $('evitarClose').addEventListener('click', ()=>{ $('evitarWrap').hidden = true; });
+  $('evitarWrap').addEventListener('click', (e)=>{ if(e.target === $('evitarWrap')) $('evitarWrap').hidden = true; });
+
   // ===== Respaldo: exportar / importar =====
   function exportBackup(){
     const backup = {
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -5098,6 +5174,9 @@
         const fnz = b.data['reps-finanzas'];
         if(esMapa(fnz)) localStorage.setItem(FIN_KEY, JSON.stringify(fnz));
         else localStorage.removeItem(FIN_KEY);
+        const evt = b.data['reps-evitar'];
+        if(Array.isArray(evt)) localStorage.setItem(EVITAR_KEY, JSON.stringify(evt));
+        else localStorage.removeItem(EVITAR_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -5128,6 +5207,7 @@
       capas = []; loadCapas(); renderCapas();
       compaConf = { nombre:'', criatura:'planta', emoji:'' }; loadCompa();
       fin = { movs:[], presupuesto:0, metas:[] }; loadFin();
+      evitares = []; loadEvitar(); renderEvitar();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -5180,6 +5260,7 @@
   loadRecompensas();
   loadCompa(); // antes de render(): renderCompa lee la config del compañero
   loadFin();   // finanzas (menú Más); se renderiza al abrir el sheet
+  loadEvitar(); // "días sin…" (hábitos a evitar)
   loadRecordatorios(); // antes de render(): suman al puntaje del día
   loadCapas(); renderCapas(); // mi ruta editable
   loadRutina();
@@ -5195,6 +5276,7 @@
   renderPlanHoy();
   loadBrief(); renderBrief(); // resumen de la mañana (IA, 1×/día)
   renderFrase(); // frase del día (local)
+  renderEvitar(); // días sin… (cuenta días limpios)
 
   // usuario nuevo: tras la intro, abre el cuestionario de bienvenida
   if(instalacionNueva) setTimeout(abrirBienvenida, 2100);
@@ -5265,6 +5347,7 @@
       fillCierreForm(); renderPlanHoy();
       renderBrief(); // día nuevo: arma el resumen de la mañana otra vez
       renderFrase(); // rota la frase del día
+      renderEvitar(); // suma un día sin recaída
     }
     // el modo automático re-evalúa la hora cada vez que la app vuelve al frente
     if(document.visibilityState === 'visible' && temaAuto) applyThemeSel();
