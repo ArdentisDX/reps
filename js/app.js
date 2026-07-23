@@ -412,11 +412,10 @@
       $('rsCartaTxt').textContent = '«' + carta.texto + '»';
     }
   }
-  $('cartaBtn').addEventListener('click', ()=>{
-    $('themeWrap').hidden = true;
+  function abrirCarta(){
     $('cartaTxt').value = carta ? carta.texto : '';
     $('cartaWrap').hidden = false;
-  });
+  }
   $('cartaClose').addEventListener('click', ()=>{ $('cartaWrap').hidden = true; });
   $('cartaWrap').addEventListener('click', (e)=>{ if(e.target === $('cartaWrap')) $('cartaWrap').hidden = true; });
   $('cartaSave').addEventListener('click', ()=>{
@@ -2640,23 +2639,38 @@
     $('pickBg').value = v.bg;
   }
 
-  // abre el sheet de Apariencia y ajustes (antes era lo que abría el ⚙)
-  function abrirAjustes(){
+  // abre el sheet de Apariencia (tema, color, distribución, tipografía, efecto)
+  function abrirApariencia(){
     renderThemeUI();
     marcarAuto();
+    $('themeWrap').hidden = false;
+  }
+  // abre el sheet de Avisos y sonido (sonidos, despertar, notificaciones)
+  function abrirNotif(){
     $('sonidoToggle').checked = focoSonido;
     $('despMeta').value = despConf.meta.padStart(5, '0');
     $('despFinde').checked = despConf.finde;
     document.querySelectorAll('#despRigor button').forEach(b => b.classList.toggle('on', b.dataset.r === despConf.rigor));
     $('pushToggle').checked = pushActivo();
-    $('themeWrap').hidden = false;
+    $('notifWrap').hidden = false;
   }
-  // el ⚙ del encabezado ahora abre el menú "Más" (hub)
+  // el ⚙ del encabezado abre el menú de Ajustes (hub)
+  const cerrarMas = ()=>{ $('masWrap').hidden = true; };
   $('themeBtn').addEventListener('click', ()=>{ $('masWrap').hidden = false; });
-  $('masClose').addEventListener('click', ()=>{ $('masWrap').hidden = true; });
-  $('masWrap').addEventListener('click', (e)=>{ if(e.target === $('masWrap')) $('masWrap').hidden = true; });
-  $('masAjustes').addEventListener('click', ()=>{ $('masWrap').hidden = true; abrirAjustes(); });
-  $('masFin').addEventListener('click', ()=>{ $('masWrap').hidden = true; abrirFinanzas(); });
+  $('masClose').addEventListener('click', cerrarMas);
+  $('masWrap').addEventListener('click', (e)=>{ if(e.target === $('masWrap')) cerrarMas(); });
+  $('masFin').addEventListener('click', ()=>{ cerrarMas(); abrirFinanzas(); });
+  $('masApariencia').addEventListener('click', ()=>{ cerrarMas(); abrirApariencia(); });
+  $('masNotif').addEventListener('click', ()=>{ cerrarMas(); abrirNotif(); });
+  $('masHabitos').addEventListener('click', ()=>{ cerrarMas(); renderHabEditor(); $('habWrap').hidden = false; });
+  $('masRutina').addEventListener('click', ()=>{ cerrarMas(); renderRutEditor(); $('rutWrap').hidden = false; });
+  $('masCarta').addEventListener('click', ()=>{ cerrarMas(); abrirCarta(); });
+  $('masPerfil').addEventListener('click', ()=>{ cerrarMas(); abrirBienvenida(); });
+  $('masExport').addEventListener('click', ()=>{ cerrarMas(); exportBackup(); });
+  $('masImport').addEventListener('click', ()=>{ cerrarMas(); $('importFile').click(); });
+  $('masReset').addEventListener('click', ()=>{ cerrarMas(); $('resetBtn').click(); });
+  $('notifClose').addEventListener('click', ()=>{ $('notifWrap').hidden = true; });
+  $('notifWrap').addEventListener('click', (e)=>{ if(e.target === $('notifWrap')) $('notifWrap').hidden = true; });
   $('sonidoToggle').addEventListener('change', ()=>{
     focoSonido = $('sonidoToggle').checked; saveSonido();
     if(focoSonido) sonarCheck(); // pequeña confirmación al encender
@@ -4343,13 +4357,15 @@
   });
   $('welBack').addEventListener('click', ()=>{ if(onb.step > 0){ onb.step--; renderOnb(); } });
   $('welcome').addEventListener('click', (e)=>{ /* fondo no cierra: es un flujo */ });
-  $('rehacerBienvenida').addEventListener('click', ()=>{ $('themeWrap').hidden = true; abrirBienvenida(); });
 
   // Escape siempre cierra las hojas de Ajustes y del editor (vía de escape
   // extra; la bienvenida no, porque es un flujo con su propio botón)
   document.addEventListener('keydown', (e)=>{
     if(e.key === 'Escape'){
+      $('masWrap').hidden = true;
       $('themeWrap').hidden = true;
+      $('notifWrap').hidden = true;
+      $('finWrap').hidden = true;
       $('habWrap').hidden = true;
     }
   });

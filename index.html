@@ -317,17 +317,33 @@
 
   <div class="theme-wrap" id="masWrap" hidden>
     <div class="theme-sheet">
-      <div class="t-head"><h2>Más</h2><button id="masClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-head"><h2>Ajustes</h2><button id="masClose" aria-label="Cerrar">✕</button></div>
+
       <div class="mas-sec">Dinero</div>
-      <button class="mas-item" id="masFin"><span class="mas-ic">💰</span><span class="mas-tx"><b>Finanzas</b><i>Gastos, ingresos, presupuesto y ahorro</i></span><span class="mas-go">›</span></button>
-      <div class="mas-sec">Personalización y ajustes</div>
-      <button class="mas-item" id="masAjustes"><span class="mas-ic">🎨</span><span class="mas-tx"><b>Apariencia y ajustes</b><i>Tema, barra, tipografía, sonido, notificaciones…</i></span><span class="mas-go">›</span></button>
+      <button class="mas-item" id="masFin"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18"/><circle cx="16.5" cy="14.5" r="1.2"/></svg></span><span class="mas-tx"><b>Finanzas</b><i>Gastos, ingresos, presupuesto y ahorro</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
+
+      <div class="mas-sec">Apariencia</div>
+      <button class="mas-item" id="masApariencia"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/></svg></span><span class="mas-tx"><b>Tema y diseño</b><i>Color, distribución, tipografía, efectos</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
+
+      <div class="mas-sec">Recordatorios</div>
+      <button class="mas-item" id="masNotif"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 6-2.5 8-2.5 8h17S18 14 18 8Z"/><path d="M10.5 20.5a2 2 0 0 0 3 0"/></svg></span><span class="mas-tx"><b>Avisos y sonido</b><i>Notificaciones, sonidos, despertar a tiempo</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
+
+      <div class="mas-sec">Tu sistema</div>
+      <button class="mas-item" id="masHabitos"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11M4 12h11M4 17h7"/><path d="m17.5 6.5 1.5 1.5 3-3"/></svg></span><span class="mas-tx"><b>Hábitos</b><i>Editar tus hábitos y core</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
+      <button class="mas-item" id="masRutina"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg></span><span class="mas-tx"><b>Rutina del día</b><i>Editar los bloques de tu día</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
+      <button class="mas-item" id="masCarta"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7 8.5 6 8.5-6"/></svg></span><span class="mas-tx"><b>Carta a tu yo</b><i>Un mensaje para tus días difíciles</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
+      <button class="mas-item" id="masPerfil"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg></span><span class="mas-tx"><b>Rehacer la bienvenida</b><i>Volver a armar tus hábitos</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
+
+      <div class="mas-sec">Datos</div>
+      <button class="mas-item" id="masExport"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></span><span class="mas-tx"><b>Exportar respaldo</b><i>Guarda una copia de tus datos</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
+      <button class="mas-item" id="masImport"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14V3m0 0 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></span><span class="mas-tx"><b>Importar respaldo</b><i>Restaura desde una copia</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
+      <button class="mas-item mas-danger" id="masReset"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-9 0 1 13a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2l1-13"/></svg></span><span class="mas-tx"><b>Borrar todo el historial</b><i>No se puede deshacer</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
     </div>
   </div>
 
   <div class="theme-wrap" id="finWrap" hidden>
     <div class="theme-sheet">
-      <div class="t-head"><h2>💰 Finanzas</h2><button id="finClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-head"><h2>Finanzas</h2><button id="finClose" aria-label="Cerrar">✕</button></div>
       <div class="fin-sum">
         <div class="fin-mes" id="finMes"></div>
         <div class="fin-saldo" id="finSaldo">$0</div>
@@ -373,7 +389,7 @@
 
   <div class="theme-wrap" id="themeWrap" hidden>
     <div class="theme-sheet">
-      <div class="t-head"><h2>Tema</h2><button id="themeClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-head"><h2>Tema y diseño</h2><button id="themeClose" aria-label="Cerrar">✕</button></div>
       <div class="t-list" id="themeList"></div>
       <div class="t-sub">Automático por hora</div>
       <div class="dist-opts">
@@ -412,6 +428,12 @@
         <button class="dist-opt fx-opt" data-fx="neon">Neón</button>
       </div>
       <div class="t-note">El efecto se combina con cualquier tema o color personalizado.</div>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="notifWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Avisos y sonido</h2><button id="notifClose" aria-label="Cerrar">✕</button></div>
       <div class="t-sub">Sonidos</div>
       <div class="t-row"><label for="sonidoToggle">Sonidos y vibración</label><input type="checkbox" id="sonidoToggle"></div>
       <div class="t-note">Campanita al terminar el foco y al completar hábitos, metas e ideas.</div>
@@ -428,13 +450,8 @@
       <div class="t-note">Registras a qué hora despertaste: puntual o antes suma al puntaje, tarde resta. Los findes no cuentan salvo que marques «este día sí cuenta».</div>
       <div class="t-sub">Notificaciones</div>
       <div class="t-row"><label for="pushToggle">Avisos de tus bloques (app cerrada)</label><input type="checkbox" id="pushToggle"></div>
-      <button class="hab-add" id="pushTest" style="margin-top:8px">🔔 Probar notificación</button>
+      <button class="hab-add" id="pushTest" style="margin-top:8px">Probar notificación</button>
       <div class="t-note">Te avisa a la hora de cada bloque de tu rutina, aunque la app esté cerrada. El servidor solo conoce las horas — el texto se arma en tu dispositivo. Requiere internet para activarse.</div>
-      <div class="t-sub">Tu perfil</div>
-      <button class="hab-add" id="rehacerBienvenida" style="margin-top:0">🙋 Rehacer la bienvenida</button>
-      <div class="t-note">Vuelve a hacer el cuestionario para rearmar tus hábitos.</div>
-      <button class="hab-add" id="cartaBtn" style="margin-top:8px">💌 Carta a tu yo perdido</button>
-      <div class="t-note">Escríbela un día bueno. Solo aparecerá cuando lleves 2+ días caídos.</div>
     </div>
   </div>
 
