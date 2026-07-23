@@ -4660,6 +4660,7 @@
       $('finWrap').hidden = true;
       $('diarioWrap').hidden = true;
       $('suenoWrap').hidden = true;
+      $('anioWrap').hidden = true;
       $('habWrap').hidden = true;
     }
   });
@@ -5234,6 +5235,48 @@
   $('suenoOpen').addEventListener('click', ()=>{ renderSueno(); $('suenoWrap').hidden = false; });
   $('suenoClose').addEventListener('click', ()=>{ $('suenoWrap').hidden = true; });
   $('suenoWrap').addEventListener('click', (e)=>{ if(e.target === $('suenoWrap')) $('suenoWrap').hidden = true; });
+
+  // ===== Tu año en REPS (pantalla propia, estilo "wrapped") =====
+  function renderAnio(){
+    const y = String(new Date().getFullYear());
+    $('anioTitle').textContent = 'Tu ' + y + ' en REPS';
+    const delAnio = Object.keys(dias).filter(k => k.startsWith(y));
+    const ganados = delAnio.filter(k => esGanado(k)).length;
+    $('anBig').textContent = ganados;
+    // mejor mes (más días ganados)
+    const porMes = {};
+    delAnio.filter(k => esGanado(k)).forEach(k => { const m = k.slice(5,7); porMes[m] = (porMes[m]||0)+1; });
+    let mejorMes = '—';
+    const mm = Object.keys(porMes).sort((a,b)=>porMes[b]-porMes[a])[0];
+    if(mm) mejorMes = new Date(y + '-' + mm + '-15T12:00:00').toLocaleDateString('es-MX',{month:'long'});
+    const s = statsData();
+    const focoH = Math.floor(focoTotal / 60);
+    const noches = Object.keys(sueno).filter(k => k.startsWith(y)).length;
+    const diarios = Object.keys(diario).filter(k => k.startsWith(y) && diario[k].trim()).length;
+    const tiles = [
+      [s.best, 'racha más larga'],
+      [focoH + 'h', 'de foco acumulado'],
+      [ideas.length, 'ideas capturadas'],
+      [mejorMes, 'tu mejor mes'],
+      [noches, 'noches registradas'],
+      [diarios, 'días de diario'],
+    ];
+    const grid = $('anioGrid'); grid.innerHTML = '';
+    tiles.forEach(([n, l]) => {
+      const t = document.createElement('div'); t.className = 'anio-tile';
+      const num = document.createElement('div'); num.className = 'at-num'; num.textContent = n;
+      const lab = document.createElement('div'); lab.className = 'at-lbl'; lab.textContent = l;
+      t.append(num, lab); grid.appendChild(t);
+    });
+    $('anioFrase').textContent = ganados === 0
+      ? 'Tu año apenas empieza. El primer día ganado está a un toque.'
+      : ganados < 30 ? 'Cada día ganado es un voto por quien te estás volviendo. Vas.'
+      : ganados < 150 ? 'Esto ya no es un intento: es un patrón. Sigue.'
+      : 'Un año construido a pulso. Nadie te quita esto.';
+  }
+  $('anioOpen').addEventListener('click', ()=>{ renderAnio(); $('anioWrap').hidden = false; });
+  $('anioClose').addEventListener('click', ()=>{ $('anioWrap').hidden = true; });
+  $('anioWrap').addEventListener('click', (e)=>{ if(e.target === $('anioWrap')) $('anioWrap').hidden = true; });
 
   // ===== Respaldo: exportar / importar =====
   function exportBackup(){
