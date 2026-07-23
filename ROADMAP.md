@@ -146,7 +146,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 
 **Hábitos**
 6. ✅ (v75) Hábitos a evitar ("Días sin…", contador de días limpios).
-7. Racha por hábito individual.
+7. ✅ (v76) Racha por hábito individual (🔥N en la tarjeta).
 8. Diario/journal del día (aparte del cierre).
 9. Recordatorio por hábito a cierta hora.
 
@@ -156,7 +156,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 12. 🌐🧠 Idea de la Bandeja → plan con pasos y fechas.
 
 **Motivación**
-13. Más medallas/logros (primer mes, 100 días, 1ª meta de ahorro).
+13. ✅ (v76) Más medallas (200 días, racha 60, foco, ahorro, días sin).
 14. Retos de 30 días.
 15. ✅ (v74) Frase del día al abrir (local).
 
@@ -183,7 +183,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 
 **Finanzas avanzada**
 21. Suscripciones/gastos fijos con aviso de cobro próximo.
-22. Presupuesto por categoría (no solo global).
+22. ✅ (v77) Presupuesto por categoría (tope y alerta al pasarse).
 23. Deudas y préstamos (a quién debo / me deben).
 24. Varias carteras/cuentas (efectivo, banco, tarjeta).
 25. Gasto de viaje con conversión de divisas.
