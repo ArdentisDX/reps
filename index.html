@@ -173,9 +173,20 @@
     <div class="regla" style="margin-top:14px">
       <b>Proporción:</b> 20% orden, 80% libertad. Un sistema que sobrevive a los días sin motivación.
     </div>
-    <div class="sec" id="diarioSec">
-      <div class="sec-head"><h2>Diario</h2><div class="tag">privado, solo aquí</div></div>
-      <textarea id="diarioTxt" rows="3" placeholder="Escribe libremente sobre tu día… lo que sientas, sin filtro."></textarea>
+    <div class="sec" id="diarioSec" style="margin-top:20px">
+      <button class="mas-item" id="diarioOpen" style="margin:0">
+        <span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v18H6.5A1.5 1.5 0 0 1 5 19.5z"/><path d="M9 7h6M9 11h6M9 15h3"/></svg></span>
+        <span class="mas-tx"><b>Diario</b><i>Tu espacio para escribir sobre el día</i></span>
+        <span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="diarioWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Diario</h2><button id="diarioClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-note" style="margin-bottom:8px">Privado, solo en este dispositivo. Escribe sin filtro sobre tu día.</div>
+      <textarea id="diarioTxt" rows="6" placeholder="¿Cómo va tu día? Lo que sientas, sin filtro…"></textarea>
       <div class="diario-list" id="diarioList"></div>
     </div>
   </div>

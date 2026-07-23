@@ -4658,6 +4658,7 @@
       $('themeWrap').hidden = true;
       $('notifWrap').hidden = true;
       $('finWrap').hidden = true;
+      $('diarioWrap').hidden = true;
       $('habWrap').hidden = true;
     }
   });
@@ -5167,6 +5168,10 @@
     if(v.trim()) diario[k] = v; else delete diario[k];
     saveDiario();
   });
+  // Diario tiene su propia pantalla (se abre desde Mi día)
+  $('diarioOpen').addEventListener('click', ()=>{ renderDiario(); $('diarioWrap').hidden = false; });
+  $('diarioClose').addEventListener('click', ()=>{ $('diarioWrap').hidden = true; });
+  $('diarioWrap').addEventListener('click', (e)=>{ if(e.target === $('diarioWrap')) $('diarioWrap').hidden = true; });
 
   // ===== Respaldo: exportar / importar =====
   function exportBackup(){
