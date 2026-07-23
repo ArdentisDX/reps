@@ -129,6 +129,118 @@ dependencias" — por eso es una decisión de peso, no un incremento.
 **Precondición:** existir primero el Worker de la Capa 3 (para la clave
 de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 
+## 🗂️ Banco de ideas (jul 2026)
+
+> Lista viva de ideas propuestas al usuario para futuras entregas. No
+> implementar sin acordarlo. 🌐 = necesita internet/Worker · 🧠 = usa IA ·
+> 🏗️ = grande/arquitectónica (rompe o reta el offline-first).
+
+### Tanda 1 (ideas 1–20)
+
+**Finanzas**
+1. Gastos fijos recurrentes (renta, suscripciones) que se auto-registran.
+2. Gráfica de gastos por categoría (dona/barras).
+3. Comparar mes vs mes.
+4. Aportar al ahorro cuenta como hábito del día.
+5. 🌐🧠 Coach financiero IA (analiza gastos → consejo).
+
+**Hábitos**
+6. Hábitos a evitar (contador de días *sin*).
+7. Racha por hábito individual.
+8. Diario/journal del día (aparte del cierre).
+9. Recordatorio por hábito a cierta hora.
+
+**Asistente IA**
+10. 🌐🧠 Chat con memoria del hilo (conversación real).
+11. 🌐🧠 Reflexión semanal (analiza semana → 1 consejo).
+12. 🌐🧠 Idea de la Bandeja → plan con pasos y fechas.
+
+**Motivación**
+13. Más medallas/logros (primer mes, 100 días, 1ª meta de ahorro).
+14. Retos de 30 días.
+15. Frase del día al abrir (local).
+
+**Verte crecer**
+16. Pantalla "Resumen" unificada (días + ánimo + dinero + foco).
+17. Correlaciones (El Espejo 2.0): despertar temprano ↔ ánimo.
+18. Compartir el mes ampliado (hábitos + finanzas en la postal).
+
+**Pulido**
+19. Buscador en Bandeja y notas.
+20. Íconos de IA con estilo (cambiar 🤖 por ✨ de línea).
+
+### Tanda 2 (ideas 21–70)
+
+**Finanzas avanzada**
+21. Suscripciones/gastos fijos con aviso de cobro próximo.
+22. Presupuesto por categoría (no solo global).
+23. Deudas y préstamos (a quién debo / me deben).
+24. Varias carteras/cuentas (efectivo, banco, tarjeta).
+25. Gasto de viaje con conversión de divisas.
+26. Foto del ticket adjunta al gasto.
+27. Proyección de cierre de mes ("a este ritmo cierras en $X").
+28. 🏗️ Dividir gastos con amigos (quién debe qué).
+
+**IA avanzada**
+29. 🌐🧠 Asistente proactivo (push con el consejo del día).
+30. 🌐 Dictar ideas/gastos por voz (speech-to-text).
+31. 🌐🧠 La IA arma tu día con horas a partir de tus pendientes.
+32. 🌐🧠 "Modo entrevista": la IA te hace preguntas para reflexionar.
+33. 🌐🧠 Tu mes narrado por la IA en un párrafo.
+34. 🌐🧠 Detecta cuándo vas a fallar y te manda un empujón.
+
+**Hábitos / estructura**
+35. Plantillas de rutina (mañana ideal, día de estudio, descanso).
+36. Sub-tareas/checklist dentro de un hábito.
+37. Hábitos con ventana horaria (gym 6–8pm).
+38. Habit stacking ("después de X hago Y").
+39. Modo vacaciones/pausa sin romper racha.
+
+**Salud y bienestar**
+40. Registro de sueño (horas + calidad) con insights.
+41. Ánimo detallado (emociones, no solo 3 caras) + gráfica.
+42. Meditación/respiración guiada (pauta visual).
+43. Peso/medidas con gráfica.
+44. Recordatorio de agua/medicinas con contador.
+
+**Social / comunidad**
+45. 🏗️ Amigos: compartir racha y animarse.
+46. 🏗️ Retos con amigos.
+47. 🏗️ Accountability partner (alguien ve tu progreso).
+48. 🏗️ Ranking privado del grupo.
+
+**Plataforma (grandes)**
+49. 🏗️ Cuentas + sync entre dispositivos (Capa 5).
+50. 🏗️ App nativa (TWA/Play Store): ícono dinámico, updates in-app.
+51. 🏗️ Widgets reales de pantalla de inicio (racha, próximo bloque).
+52. 🏗️ Companion de reloj (Wear OS / Apple Watch).
+53. 🌐🏗️ Integrar Google Calendar (eventos → tu día).
+54. 🌐🏗️ Integrar Google Fit / Salud (pasos, sueño).
+55. Modo familia/pareja: varios perfiles en un dispositivo.
+
+**Gamificación / mundo**
+56. Un mundo que crece con tus días (isla/ciudad estilo Habitica).
+57. Mascota con animaciones (darle vida al compañero).
+58. Tienda: gastar "puntos ganados" en temas/cosméticos.
+59. Temporadas/eventos con recompensa.
+60. Cofres/sorpresas al cumplir hitos.
+
+**Productividad**
+61. Pomodoro avanzado (ciclos, descansos, stats de foco).
+62. Bloqueo de distracciones durante el foco.
+63. Matriz de prioridades (Eisenhower) para la Bandeja.
+64. Kanban simple para proyectos.
+
+**Datos / inteligencia**
+65. Dashboard de correlaciones (sueño↔ánimo↔productividad).
+66. Predicción de racha ("vas camino a tu mejor mes").
+67. Informe mensual en PDF bonito.
+68. "Tu año en REPS" (wrapped anual estilo Spotify).
+
+**Estética / experiencia**
+69. Animaciones y transiciones entre pantallas.
+70. Pantalla de inicio configurable (elige tus widgets).
+
 ## Reglas del proyecto
 
 1. Offline-first siempre: sin internet, la app completa sigue viva.
