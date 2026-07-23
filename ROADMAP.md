@@ -207,7 +207,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 39. Modo vacaciones/pausa sin romper racha.
 
 **Salud y bienestar**
-40. Registro de sueño (horas + calidad) con insights.
+40. ✅ (v81) Registro de sueño (horas por noche + promedio, pantalla propia).
 41. Ánimo detallado (emociones, no solo 3 caras) + gráfica.
 42. Meditación/respiración guiada (pauta visual).
 43. Peso/medidas con gráfica.
