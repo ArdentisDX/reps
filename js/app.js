@@ -2161,6 +2161,74 @@
     saveRutina(); renderRutina(); renderRutEditor();
   });
 
+  // ===== Plantillas de rutina =====
+  // Días base listos para distintas vidas. Cada quien elige el suyo y lo
+  // ajusta: la estructura del día también se moldea a la persona.
+  const RUTINA_PLANTILLAS = [
+    { id:'productivo', nombre:'Mañana productiva', sub:'Madrugar y sacar lo importante temprano', bloques:[
+      {hora:'6:30', nombre:'Despertar', desc:'Cama, agua, sol. Sin pantallas.', tipo:'core'},
+      {hora:'7:00', nombre:'Moverte', desc:'20–30 min de ejercicio.', tipo:'core'},
+      {hora:'8:00', nombre:'Baño + desayuno', desc:'Tranquilo.', tipo:'free'},
+      {hora:'9:00', nombre:'Bloque de enfoque', desc:'Lo más importante, sin distracciones.', tipo:'core'},
+      {hora:'13:00', nombre:'Comida', desc:'Sin celular.', tipo:'free'},
+      {hora:'15:00', nombre:'Segundo bloque', desc:'Pendientes o aprender.', tipo:'core'},
+      {hora:'18:00', nombre:'Tiempo libre', desc:'Tus cosas, gente.', tipo:'free'},
+      {hora:'22:30', nombre:'Bajar revoluciones', desc:'Leer, celular lejos.', tipo:'core'},
+      {hora:'23:00', nombre:'A dormir', desc:'Constante, no perfecto.', tipo:'core'},
+    ]},
+    { id:'estudiante', nombre:'Día de estudio', sub:'Bloques de estudio con descansos', bloques:[
+      {hora:'7:00', nombre:'Despertar', desc:'Arranca sin prisa.', tipo:'core'},
+      {hora:'7:45', nombre:'Repaso ligero', desc:'Revisa lo de ayer.', tipo:'free'},
+      {hora:'9:00', nombre:'Estudio profundo', desc:'45 min y descansa.', tipo:'core'},
+      {hora:'11:00', nombre:'Descanso', desc:'Camina, despeja.', tipo:'free'},
+      {hora:'12:00', nombre:'Segundo bloque de estudio', desc:'Otra materia.', tipo:'core'},
+      {hora:'14:00', nombre:'Comida + pausa', desc:'Desconecta un rato.', tipo:'free'},
+      {hora:'16:00', nombre:'Tareas / práctica', desc:'Ejercicios, entregas.', tipo:'core'},
+      {hora:'19:00', nombre:'Libre', desc:'Te lo ganaste.', tipo:'free'},
+      {hora:'22:30', nombre:'Leer + dormir', desc:'Descansa la mente.', tipo:'core'},
+    ]},
+    { id:'trabajo', nombre:'Día de trabajo', sub:'Alrededor de tu jornada laboral', bloques:[
+      {hora:'7:00', nombre:'Despertar', desc:'Rutina de mañana.', tipo:'core'},
+      {hora:'7:30', nombre:'Moverte o estirar', desc:'Activa el cuerpo.', tipo:'free'},
+      {hora:'9:00', nombre:'Trabajo', desc:'Tu jornada.', tipo:'core'},
+      {hora:'14:00', nombre:'Comida', desc:'Despega de la pantalla.', tipo:'free'},
+      {hora:'18:00', nombre:'Cierre laboral', desc:'Ordena y suelta el trabajo.', tipo:'core'},
+      {hora:'19:00', nombre:'Algo tuyo', desc:'Ejercicio, hobby, gente.', tipo:'core'},
+      {hora:'22:00', nombre:'Relajarte', desc:'Sin trabajo ya.', tipo:'free'},
+      {hora:'23:00', nombre:'A dormir', desc:'Recarga.', tipo:'core'},
+    ]},
+    { id:'tranquilo', nombre:'Día tranquilo', sub:'Ligero: descanso o fin de semana', bloques:[
+      {hora:'8:30', nombre:'Despertar sin alarma', desc:'A tu ritmo.', tipo:'free'},
+      {hora:'10:00', nombre:'Algo que disfrutes', desc:'Paseo, hobby, cocinar.', tipo:'free'},
+      {hora:'13:00', nombre:'Comida rica', desc:'Con calma.', tipo:'free'},
+      {hora:'16:00', nombre:'Una cosa útil', desc:'Un pendiente chiquito.', tipo:'core'},
+      {hora:'19:00', nombre:'Gente que quieres', desc:'Tiempo real, presente.', tipo:'free'},
+      {hora:'23:00', nombre:'A dormir', desc:'Descansa de verdad.', tipo:'core'},
+    ]},
+  ];
+  function renderRutPlantillas(){
+    const cont = $('rutPlanList'); cont.innerHTML = '';
+    RUTINA_PLANTILLAS.forEach(p => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'rutplan';
+      const nm = document.createElement('div'); nm.className = 'rp-nm'; nm.textContent = p.nombre;
+      const sub = document.createElement('div'); sub.className = 'rp-sub'; sub.textContent = p.sub;
+      const prev = document.createElement('div'); prev.className = 'rp-prev';
+      prev.textContent = p.bloques.slice(0, 4).map(x => x.hora + ' ' + x.nombre).join(' · ') + '…';
+      b.append(nm, sub, prev);
+      b.addEventListener('click', ()=>{
+        if(!confirm('Esto reemplaza tu rutina actual (' + rutina.length + ' bloques) por «' + p.nombre + '». ¿Aplicar?')) return;
+        rutina = p.bloques.map(x => ({ id:'r' + Date.now().toString(36) + Math.random().toString(36).slice(2,5), ...x }));
+        saveRutina(); renderRutina(); renderRutEditor();
+        $('rutPlanWrap').hidden = true;
+        toast('Rutina «' + p.nombre + '» aplicada. Ajústala a tu gusto. 🗓️');
+      });
+      cont.appendChild(b);
+    });
+  }
+  $('rutPlantilla').addEventListener('click', ()=>{ renderRutPlantillas(); $('rutPlanWrap').hidden = false; });
+  $('rutPlanClose').addEventListener('click', ()=>{ $('rutPlanWrap').hidden = true; });
+  $('rutPlanWrap').addEventListener('click', (e)=>{ if(e.target === $('rutPlanWrap')) $('rutPlanWrap').hidden = true; });
+
   // ===== Cierre del día =====
   const MOODS = [
     {id:'bien',    emoji:'🔥', name:'Bien'},

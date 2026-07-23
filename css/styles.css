@@ -811,3 +811,10 @@ body.minimal #p-hoy .regla{display:none}
 .bib-item .bi-nm{flex:1;min-width:0}
 .bib-item.have{border-color:color-mix(in srgb,var(--teal) 45%,transparent);color:var(--muted)}
 .bib-item.have .bi-check{color:var(--teal);font-weight:800;flex:none}
+
+/* ===== Plantillas de rutina ===== */
+.rutplan{width:100%;text-align:left;background:var(--card);border:1px solid var(--hair,var(--line));border-radius:14px;padding:13px 15px;margin-bottom:8px;cursor:pointer;color:var(--text);font:inherit}
+.rutplan:active{transform:scale(.99)}
+.rutplan .rp-nm{font-size:15px;font-weight:700}
+.rutplan .rp-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.rutplan .rp-prev{font-size:12px;color:var(--amber);margin-top:6px;line-height:1.4}
