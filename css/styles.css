@@ -289,7 +289,13 @@ body.compact .habit .h-porque{display:none}
 .idea.done .i-text{color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in srgb, var(--amber) 50%, transparent)}
 .idea .i-del{background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:6px 10px}
 .tray-empty{text-align:center;color:var(--muted);font-size:13px;padding:28px 0}
-.composer{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:460px;background:linear-gradient(to bottom,transparent,var(--bg) 26%);padding:20px 16px calc(14px + env(safe-area-inset-bottom))}
+.composer{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:460px;background:linear-gradient(to bottom,transparent,var(--bg) 26%);padding:20px 16px calc(14px + env(safe-area-inset-bottom));z-index:40}
+/* con la barra de nav abajo, el composer debe quedar ARRIBA de ella
+   (si no, la barra fija tapa el textarea y no se puede escribir) */
+body.nav-bottom .composer{bottom:calc(60px + env(safe-area-inset-bottom));padding-bottom:12px}
+/* espacio al final de la Bandeja para que el composer fijo no tape ideas */
+#p-bandeja{padding-bottom:96px}
+body.nav-bottom #p-bandeja{padding-bottom:calc(150px + env(safe-area-inset-bottom))}
 .composer form{display:flex;gap:8px}
 .composer textarea{flex:1;background:var(--card);border:1px solid var(--line);border-radius:12px;color:var(--text);font:inherit;font-size:14px;line-height:1.45;padding:12px 14px;outline:none;resize:none;max-height:120px;overflow-y:auto}
 .composer textarea::placeholder{color:var(--muted)}
