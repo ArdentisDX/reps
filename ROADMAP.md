@@ -245,10 +245,10 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 65. Dashboard de correlaciones (sueño↔ánimo↔productividad).
 66. Predicción de racha ("vas camino a tu mejor mes").
 67. Informe mensual en PDF bonito.
-68. "Tu año en REPS" (wrapped anual estilo Spotify).
+68. ✅ (v82) "Tu año en REPS" (wrapped anual, pantalla propia).
 
 **Estética / experiencia**
-69. Animaciones y transiciones entre pantallas.
+69. ✅ (v82) Animaciones y transiciones (fade de pestañas, slide de hojas).
 70. Pantalla de inicio configurable (elige tus widgets).
 
 ## Reglas del proyecto
