@@ -875,3 +875,13 @@ body.minimal .frase{display:none}
 .resumen .rz-num{font-size:22px;font-weight:800;line-height:1;color:var(--amber)}
 .resumen .rz-lbl{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.2}
 body.font-serif .resumen .rz-num{font-family:Georgia,"Times New Roman",serif}
+
+/* ===== Diario del día ===== */
+#diarioTxt{width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;color:var(--text);font:inherit;font-size:14px;line-height:1.5;padding:12px 14px;outline:none;resize:vertical;min-height:70px}
+#diarioTxt:focus{border-color:var(--amber)}
+body.font-serif #diarioTxt{font-family:Georgia,"Times New Roman",serif}
+.diario-list{margin-top:10px}
+.diario-entry{background:var(--card);border:1px solid var(--hair,var(--line));border-radius:12px;padding:10px 13px;margin-bottom:8px}
+.diario-entry .de-fecha{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:4px}
+.diario-entry .de-txt{font-size:13px;line-height:1.5;color:var(--text);white-space:pre-wrap}
+body.minimal #diarioSec{display:none}

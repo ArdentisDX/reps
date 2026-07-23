@@ -4669,7 +4669,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-diario', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -5135,13 +5135,46 @@
   $('evitarClose').addEventListener('click', ()=>{ $('evitarWrap').hidden = true; });
   $('evitarWrap').addEventListener('click', (e)=>{ if(e.target === $('evitarWrap')) $('evitarWrap').hidden = true; });
 
+  // ===== Diario del día =====
+  // Un espacio libre para escribir sobre tu día, aparte del cierre. Guarda
+  // por fecha; muestra hoy editable y las entradas pasadas abajo. 100% local.
+  const DIARIO_KEY = 'reps-diario';
+  let diario = {};
+  function loadDiario(){
+    diario = {};
+    try{
+      const v = JSON.parse(localStorage.getItem(DIARIO_KEY));
+      if(esMapa(v)) Object.keys(v).forEach(k => { if(typeof v[k] === 'string') diario[k] = v[k]; });
+    }catch(e){ diario = {}; }
+  }
+  function saveDiario(){
+    try{ localStorage.setItem(DIARIO_KEY, JSON.stringify(diario)); }catch(e){}
+  }
+  function renderDiario(){
+    const k = today();
+    $('diarioTxt').value = diario[k] || '';
+    const list = $('diarioList'); list.innerHTML = '';
+    Object.keys(diario).filter(f => f !== k && diario[f].trim()).sort().reverse().slice(0, 30).forEach(f => {
+      const e = document.createElement('div'); e.className = 'diario-entry';
+      const fe = document.createElement('div'); fe.className = 'de-fecha';
+      fe.textContent = new Date(f + 'T12:00:00').toLocaleDateString('es-MX', {weekday:'long', day:'numeric', month:'long'});
+      const tx = document.createElement('div'); tx.className = 'de-txt'; tx.textContent = diario[f];
+      e.append(fe, tx); list.appendChild(e);
+    });
+  }
+  $('diarioTxt').addEventListener('input', ()=>{
+    const k = today(), v = $('diarioTxt').value;
+    if(v.trim()) diario[k] = v; else delete diario[k];
+    saveDiario();
+  });
+
   // ===== Respaldo: exportar / importar =====
   function exportBackup(){
     const backup = {
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-diario': diario, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -5265,6 +5298,9 @@
         const evt = b.data['reps-evitar'];
         if(Array.isArray(evt)) localStorage.setItem(EVITAR_KEY, JSON.stringify(evt));
         else localStorage.removeItem(EVITAR_KEY);
+        const dry = b.data['reps-diario'];
+        if(esMapa(dry)) localStorage.setItem(DIARIO_KEY, JSON.stringify(dry));
+        else localStorage.removeItem(DIARIO_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -5296,6 +5332,7 @@
       compaConf = { nombre:'', criatura:'planta', emoji:'' }; loadCompa();
       fin = { movs:[], presupuesto:0, presuCat:{}, metas:[] }; loadFin();
       evitares = []; loadEvitar(); renderEvitar();
+      diario = {}; loadDiario(); renderDiario();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -5349,6 +5386,7 @@
   loadCompa(); // antes de render(): renderCompa lee la config del compañero
   loadFin();   // finanzas (menú Más); se renderiza al abrir el sheet
   loadEvitar(); // "días sin…" (hábitos a evitar)
+  loadDiario(); renderDiario(); // diario del día
   loadRecordatorios(); // antes de render(): suman al puntaje del día
   loadCapas(); renderCapas(); // mi ruta editable
   loadRutina();
@@ -5436,6 +5474,7 @@
       renderBrief(); // día nuevo: arma el resumen de la mañana otra vez
       renderFrase(); // rota la frase del día
       renderEvitar(); // suma un día sin recaída
+      renderDiario(); // el diario ahora apunta al día nuevo
     }
     // el modo automático re-evalúa la hora cada vez que la app vuelve al frente
     if(document.visibilityState === 'visible' && temaAuto) applyThemeSel();
