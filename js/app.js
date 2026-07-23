@@ -4557,10 +4557,10 @@
       // botón de IA: rediseña con todo el contexto (siempre puedes no usarlo)
       const iaBtn = document.createElement('button');
       iaBtn.className = 'wel-skip'; iaBtn.type = 'button';
-      iaBtn.textContent = usadosIA ? '🤖 Rediseñar con IA' : '🤖 Que la IA lo diseñe por mí';
+      iaBtn.textContent = usadosIA ? '✨ Rediseñar con IA' : '✨ Que la IA lo diseñe por mí';
       iaBtn.addEventListener('click', async ()=>{
         if(iaOcupado) return; iaOcupado = true;
-        iaBtn.textContent = 'Diseñando… 🤖'; iaBtn.disabled = true;
+        iaBtn.textContent = 'Diseñando…'; iaBtn.disabled = true;
         try{
           const habs2 = await ihGenerar(descripcionOnb());
           onb.iaHabs = habs2;
@@ -4571,7 +4571,7 @@
             nombre: (h.emoji ? h.emoji + ' ' : '') + h.name, desc: h.hint || '', tipo: h.core ? 'core' : 'free',
           })) : null;
           renderOnb();
-        }catch(e){ toast('No se pudo con la IA. Revisa tu internet.'); iaBtn.textContent = '🤖 Reintentar con IA'; iaBtn.disabled = false; }
+        }catch(e){ toast('No se pudo con la IA. Revisa tu internet.'); iaBtn.textContent = '✨ Reintentar con IA'; iaBtn.disabled = false; }
         iaOcupado = false;
       });
       body.appendChild(iaBtn);
@@ -4783,22 +4783,25 @@
       {id:'otros',emoji:'📦',name:'Otros'},
     ],
   };
-  let fin = { movs:[], presupuesto:0, metas:[] };
+  let fin = { movs:[], presupuesto:0, presuCat:{}, metas:[] };
   let finTipo = 'gasto';
   let finCatSel = { gasto:'comida', ingreso:'sueldo' };
 
   function loadFin(){
-    fin = { movs:[], presupuesto:0, metas:[] };
+    fin = { movs:[], presupuesto:0, presuCat:{}, metas:[] };
     try{
       const v = JSON.parse(localStorage.getItem(FIN_KEY));
       if(esMapa(v)){
         if(Array.isArray(v.movs)) fin.movs = v.movs.filter(m => m && typeof m.id === 'string' &&
           (m.tipo === 'gasto' || m.tipo === 'ingreso') && Number.isFinite(+m.monto) && typeof m.fecha === 'string');
         if(Number.isFinite(+v.presupuesto) && +v.presupuesto >= 0) fin.presupuesto = +v.presupuesto;
+        if(esMapa(v.presuCat)) Object.keys(v.presuCat).forEach(k => {
+          if(Number.isFinite(+v.presuCat[k]) && +v.presuCat[k] > 0) fin.presuCat[k] = +v.presuCat[k];
+        });
         if(Array.isArray(v.metas)) fin.metas = v.metas.filter(g => g && typeof g.id === 'string' &&
           typeof g.nombre === 'string' && Number.isFinite(+g.objetivo));
       }
-    }catch(e){ fin = { movs:[], presupuesto:0, metas:[] }; }
+    }catch(e){ fin = { movs:[], presupuesto:0, presuCat:{}, metas:[] }; }
   }
   function saveFin(){
     try{ localStorage.setItem(FIN_KEY, JSON.stringify(fin)); }
@@ -4886,13 +4889,38 @@
       const body = document.createElement('div'); body.className = 'fc-body';
       const top = document.createElement('div'); top.className = 'fc-top';
       const nm = document.createElement('span'); nm.className = 'fc-nm'; nm.textContent = c ? c.name : id;
-      const amt = document.createElement('span'); amt.className = 'fc-amt'; amt.textContent = fmtDinero(monto) + ' · ' + pct + '%';
+      const cb = fin.presuCat[id] || 0; // presupuesto de esta categoría
+      const over = cb > 0 && monto > cb;
+      const amt = document.createElement('span'); amt.className = 'fc-amt';
+      amt.textContent = cb > 0 ? (fmtDinero(monto) + ' / ' + fmtDinero(cb)) : (fmtDinero(monto) + ' · ' + pct + '%');
+      if(over) amt.style.color = 'var(--red)';
       top.append(nm, amt);
       const bar = document.createElement('div'); bar.className = 'fc-bar';
-      const fill = document.createElement('i'); fill.style.width = pct + '%'; bar.appendChild(fill);
+      // con presupuesto de categoría, la barra mide monto/presupuesto; si no, share del total
+      const barPct = cb > 0 ? Math.min(100, Math.round(monto / cb * 100)) : pct;
+      const fill = document.createElement('i'); fill.style.width = barPct + '%';
+      if(over) fill.style.background = 'var(--red)';
+      bar.appendChild(fill);
       body.append(top, bar);
       row.append(em, body);
       brk.appendChild(row);
+    });
+
+    // config de presupuesto por categoría (una fila por categoría de gasto)
+    const cfg = $('finPresuCatCfg'); cfg.innerHTML = '';
+    FIN_CATS.gasto.forEach(c => {
+      const row = document.createElement('div'); row.className = 'fin-pcat';
+      const lab = document.createElement('span'); lab.className = 'fp-lab'; lab.textContent = c.emoji + ' ' + c.name;
+      const inp = document.createElement('input'); inp.type = 'number'; inp.inputMode = 'decimal'; inp.min = '0';
+      inp.className = 'fp-inp'; inp.placeholder = '$'; inp.value = fin.presuCat[c.id] > 0 ? String(fin.presuCat[c.id]) : '';
+      inp.addEventListener('change', ()=>{
+        const v = parseFloat(inp.value);
+        if(Number.isFinite(v) && v > 0) fin.presuCat[c.id] = Math.round(v * 100) / 100;
+        else delete fin.presuCat[c.id];
+        saveFin(); renderFin();
+      });
+      row.append(lab, inp);
+      cfg.appendChild(row);
     });
 
     // lista de movimientos del mes (recientes primero)
@@ -5238,7 +5266,7 @@
       recordatorios = []; recordHechos = {}; loadRecordatorios();
       capas = []; loadCapas(); renderCapas();
       compaConf = { nombre:'', criatura:'planta', emoji:'' }; loadCompa();
-      fin = { movs:[], presupuesto:0, metas:[] }; loadFin();
+      fin = { movs:[], presupuesto:0, presuCat:{}, metas:[] }; loadFin();
       evitares = []; loadEvitar(); renderEvitar();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
