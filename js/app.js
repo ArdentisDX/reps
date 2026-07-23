@@ -1446,7 +1446,35 @@
     }
   }
 
+  // Resumen "Esta semana": lo esencial de tu vida + dinero en un vistazo
+  function renderResumen(){
+    const mon = mondayOf(new Date());
+    let ganados = 0, animoSum = 0, animoN = 0;
+    const animoVal = { bien:3, regular:2, mal:1 };
+    for(let i = 0; i < 7; i++){
+      const d = new Date(mon); d.setDate(d.getDate() + i);
+      const key = localISO(d);
+      if(esGanado(key)) ganados++;
+      const a = (cierres[key] || {}).animo;
+      if(animoVal[a]){ animoSum += animoVal[a]; animoN++; }
+    }
+    $('rzDias').textContent = ganados + '/7';
+    const prom = animoN ? animoSum / animoN : 0;
+    $('rzAnimo').textContent = !animoN ? '·' : prom >= 2.5 ? '🔥' : prom >= 1.7 ? '😐' : '💀';
+    const h = Math.floor(focoTotal / 60), m = focoTotal % 60;
+    $('rzFoco').textContent = h > 0 ? (h + 'h') : (m + 'm');
+    // saldo del mes (ingresos - gastos)
+    const mes = today().slice(0, 7);
+    const dm = fin.movs.filter(x => (x.fecha || '').startsWith(mes));
+    const saldo = dm.filter(x => x.tipo === 'ingreso').reduce((a,x)=>a+(+x.monto),0) -
+                  dm.filter(x => x.tipo === 'gasto').reduce((a,x)=>a+(+x.monto),0);
+    $('rzSaldo').textContent = fmtDinero(saldo);
+    $('rzSaldo').style.color = saldo < 0 ? 'var(--red)' : saldo > 0 ? 'var(--teal)' : 'var(--amber)';
+    $('rzRacha').textContent = statsData().now;
+    $('rzIdeas').textContent = ideas.filter(i => !i.done).length;
+  }
   function renderStats(){
+    renderResumen();
     renderPulso();
     renderScore();
     const s = statsData();
