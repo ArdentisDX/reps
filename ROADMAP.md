@@ -140,12 +140,12 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 **Finanzas**
 1. Gastos fijos recurrentes (renta, suscripciones) que se auto-registran.
 2. ✅ (v73) Gráfica de gastos por categoría (barras "En qué se te va").
-3. Comparar mes vs mes.
+3. ✅ (v74) Comparar mes vs mes.
 4. Aportar al ahorro cuenta como hábito del día.
 5. 🌐🧠 Coach financiero IA (analiza gastos → consejo).
 
 **Hábitos**
-6. Hábitos a evitar (contador de días *sin*).
+6. ✅ (v75) Hábitos a evitar ("Días sin…", contador de días limpios).
 7. Racha por hábito individual.
 8. Diario/journal del día (aparte del cierre).
 9. Recordatorio por hábito a cierta hora.
@@ -158,7 +158,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 **Motivación**
 13. Más medallas/logros (primer mes, 100 días, 1ª meta de ahorro).
 14. Retos de 30 días.
-15. Frase del día al abrir (local).
+15. ✅ (v74) Frase del día al abrir (local).
 
 **Verte crecer**
 16. Pantalla "Resumen" unificada (días + ánimo + dinero + foco).
