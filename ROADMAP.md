@@ -147,7 +147,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 **Hábitos**
 6. ✅ (v75) Hábitos a evitar ("Días sin…", contador de días limpios).
 7. ✅ (v76) Racha por hábito individual (🔥N en la tarjeta).
-8. Diario/journal del día (aparte del cierre).
+8. ✅ (v79) Diario/journal del día (Mi día, con historial).
 9. Recordatorio por hábito a cierta hora.
 
 **Asistente IA**
@@ -161,7 +161,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 15. ✅ (v74) Frase del día al abrir (local).
 
 **Verte crecer**
-16. Pantalla "Resumen" unificada (días + ánimo + dinero + foco).
+16. ✅ (v78) Pantalla "Resumen" — "Esta semana" en Stats.
 17. Correlaciones (El Espejo 2.0): despertar temprano ↔ ánimo.
 18. Compartir el mes ampliado (hábitos + finanzas en la postal).
 
