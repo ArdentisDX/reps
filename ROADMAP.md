@@ -169,6 +169,15 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 19. Buscador en Bandeja y notas.
 20. Íconos de IA con estilo (cambiar 🤖 por ✨ de línea).
 
+> **Rumbo acordado (jul 2026):** personalización por persona (1) + cuentas/sync (3).
+> — (1) EN MARCHA: **Biblioteca de actividades** (v70) — catálogo de hábitos
+>   por actividad (yoga, pilates, correr, leer…) en el editor; cada quien en
+>   su celular arma su REPS. Siguiente paso de (1): meterla también al
+>   onboarding y plantillas de rutina (idea #35).
+> — (3) NORTE GRANDE, pendiente: cuentas + sync entre dispositivos = **Capa 5**
+>   (necesita backend; plan técnico más abajo). Construir (1) dejando el
+>   `reps-perfil`/hábitos bien guardados para que (3) sincronice limpio.
+
 ### Tanda 2 (ideas 21–70)
 
 **Finanzas avanzada**
