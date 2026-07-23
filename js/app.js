@@ -69,6 +69,21 @@
     const c = dateKey ? coreDelDia(dateKey) : CORE;
     return c.length > 0 && c.every(id => hecho(rec, id));
   }
+  // racha individual de un hábito: días PROGRAMADOS consecutivos en que se
+  // hizo, terminando hoy. Si hoy está programado pero aún no lo haces, no
+  // rompe la racha (cuenta hasta ayer). Los días no programados se saltan.
+  function rachaHabito(h){
+    let n = 0; const d = new Date();
+    for(let i = 0; i < 400; i++){
+      const key = localISO(d);
+      if(habAplica(h, dowDe(key))){
+        if(hecho(dias[key], h.id)) n++;
+        else if(i > 0) break; // un día pasado programado y no hecho corta
+      }
+      d.setDate(d.getDate() - 1);
+    }
+    return n;
+  }
 
   document.querySelectorAll('.tab').forEach(t=>{
     t.addEventListener('click', ()=>{
@@ -491,6 +506,9 @@
     // emoji propio del hábito (opcional): antecede al nombre
     if(h.emoji){ const em = document.createElement('span'); em.className = 'h-emoji'; em.textContent = h.emoji; name.appendChild(em); }
     name.appendChild(document.createTextNode(h.name));
+    // racha individual del hábito (🔥N), visible desde 2 días seguidos
+    const rh = rachaHabito(h);
+    if(rh >= 2){ const st = document.createElement('span'); st.className = 'h-streak'; st.textContent = '🔥' + rh; name.appendChild(st); }
     body.appendChild(name);
     // contador: "3 / 8 vasos" bajo el nombre
     if(num){
@@ -1102,15 +1120,29 @@
      [30,'💪','30 días ganados','Un mes construido. Esto ya es identidad.'],
      [50,'⭐','50 días ganados','Medio centenar. Nadie te quita esto.'],
      [100,'🏆','100 días ganados','Cien. Eres otra persona.'],
+     [200,'🎖️','200 días ganados','Doscientos. Esto es quien eres.'],
      [365,'👑','365 días ganados','Un año entero. Leyenda.']
     ].forEach(([n,e,t,su]) => push(s.total >= n, 'dias'+n, e, t, su));
     [[7,'🧊','Racha de 7','Siete seguidos. La inercia ya juega a tu favor.'],
      [14,'⚡','Racha de 14','Dos semanas sin fallar. Impresionante.'],
-     [30,'🌟','Racha de 30','Treinta seguidos. Élite.']
+     [30,'🌟','Racha de 30','Treinta seguidos. Élite.'],
+     [60,'☄️','Racha de 60','Dos meses sin fallar. Imparable.']
     ].forEach(([n,e,t,su]) => push(s.best >= n, 'racha'+n, e, t, su));
     [[5,'🔄','5 regresos','Caíste y volviste cinco veces. Esa es LA habilidad.'],
      [10,'🛡️','10 regresos','Diez regresos. Ya no te rompe una caída.']
     ].forEach(([n,e,t,su]) => push(reg >= n, 'reg'+n, e, t, su));
+    // foco acumulado (minutos → medallas)
+    [[60,'⏳','1 hora enfocado','Tu primer bloque profundo cuenta.'],
+     [600,'🎯','10 horas enfocado','Diez horas de foco real.'],
+     [3000,'🧘','50 horas enfocado','Cincuenta horas. Concentración de élite.']
+    ].forEach(([n,e,t,su]) => push((typeof focoTotal === 'number' ? focoTotal : 0) >= n, 'foco'+n, e, t, su));
+    // primera meta de ahorro cumplida
+    push(fin && Array.isArray(fin.metas) && fin.metas.some(g => g.objetivo > 0 && g.ahorrado >= g.objetivo),
+      'ahorro1', '🐷', 'Meta de ahorro cumplida', 'Juntaste lo que te propusiste. Va en serio.');
+    // días sin recaída (lo más limpio que llevas)
+    const maxSin = (evitares || []).reduce((m, e) => Math.max(m, diasSin(e.desde)), 0);
+    push(maxSin >= 30,  'sin30',  '🚭', '30 días sin', 'Un mes limpio de algo que dejaste.');
+    push(maxSin >= 100, 'sin100', '💎', '100 días sin', 'Cien días. Eso es libertad.');
     return L;
   }
   function loadHitos(){

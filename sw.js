@@ -1,7 +1,7 @@
 // Service Worker de REPS — estrategia offline-first.
 // Versión del cache: súbela (v2, v3...) cada vez que cambies HTML/CSS/JS,
 // para que los dispositivos descarguen la copia nueva.
-const CACHE = 'reps-v75';
+const CACHE = 'reps-v76';
 
 // El "app shell": todos los archivos que la app necesita para funcionar.
 const ASSETS = [
