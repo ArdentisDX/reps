@@ -2640,7 +2640,8 @@
     $('pickBg').value = v.bg;
   }
 
-  $('themeBtn').addEventListener('click', ()=>{
+  // abre el sheet de Apariencia y ajustes (antes era lo que abría el ⚙)
+  function abrirAjustes(){
     renderThemeUI();
     marcarAuto();
     $('sonidoToggle').checked = focoSonido;
@@ -2649,7 +2650,13 @@
     document.querySelectorAll('#despRigor button').forEach(b => b.classList.toggle('on', b.dataset.r === despConf.rigor));
     $('pushToggle').checked = pushActivo();
     $('themeWrap').hidden = false;
-  });
+  }
+  // el ⚙ del encabezado ahora abre el menú "Más" (hub)
+  $('themeBtn').addEventListener('click', ()=>{ $('masWrap').hidden = false; });
+  $('masClose').addEventListener('click', ()=>{ $('masWrap').hidden = true; });
+  $('masWrap').addEventListener('click', (e)=>{ if(e.target === $('masWrap')) $('masWrap').hidden = true; });
+  $('masAjustes').addEventListener('click', ()=>{ $('masWrap').hidden = true; abrirAjustes(); });
+  $('masFin').addEventListener('click', ()=>{ $('masWrap').hidden = true; abrirFinanzas(); });
   $('sonidoToggle').addEventListener('change', ()=>{
     focoSonido = $('sonidoToggle').checked; saveSonido();
     if(focoSonido) sonarCheck(); // pequeña confirmación al encender
@@ -4354,7 +4361,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -4479,13 +4486,212 @@
     }
   }
 
+  // ===== Finanzas (en el menú "Más") =====
+  // Registro simple de dinero, 100% local. reps-finanzas =
+  // { movs:[{id,tipo,monto,cat,nota,fecha,creado}], presupuesto, metas:[{id,nombre,objetivo,ahorrado,creada}] }
+  const FIN_KEY = 'reps-finanzas';
+  const FIN_CATS = {
+    gasto: [
+      {id:'comida',emoji:'🍔',name:'Comida'},{id:'transporte',emoji:'🚌',name:'Transporte'},
+      {id:'ocio',emoji:'🎉',name:'Ocio'},{id:'hogar',emoji:'🏠',name:'Hogar'},
+      {id:'salud',emoji:'💊',name:'Salud'},{id:'compras',emoji:'🛍️',name:'Compras'},
+      {id:'servicios',emoji:'📄',name:'Servicios'},{id:'otros',emoji:'📦',name:'Otros'},
+    ],
+    ingreso: [
+      {id:'sueldo',emoji:'💼',name:'Sueldo'},{id:'extra',emoji:'✨',name:'Extra'},
+      {id:'regalo',emoji:'🎁',name:'Regalo'},{id:'venta',emoji:'🏷️',name:'Venta'},
+      {id:'otros',emoji:'📦',name:'Otros'},
+    ],
+  };
+  let fin = { movs:[], presupuesto:0, metas:[] };
+  let finTipo = 'gasto';
+  let finCatSel = { gasto:'comida', ingreso:'sueldo' };
+
+  function loadFin(){
+    fin = { movs:[], presupuesto:0, metas:[] };
+    try{
+      const v = JSON.parse(localStorage.getItem(FIN_KEY));
+      if(esMapa(v)){
+        if(Array.isArray(v.movs)) fin.movs = v.movs.filter(m => m && typeof m.id === 'string' &&
+          (m.tipo === 'gasto' || m.tipo === 'ingreso') && Number.isFinite(+m.monto) && typeof m.fecha === 'string');
+        if(Number.isFinite(+v.presupuesto) && +v.presupuesto >= 0) fin.presupuesto = +v.presupuesto;
+        if(Array.isArray(v.metas)) fin.metas = v.metas.filter(g => g && typeof g.id === 'string' &&
+          typeof g.nombre === 'string' && Number.isFinite(+g.objetivo));
+      }
+    }catch(e){ fin = { movs:[], presupuesto:0, metas:[] }; }
+  }
+  function saveFin(){
+    try{ localStorage.setItem(FIN_KEY, JSON.stringify(fin)); }
+    catch(e){ toast('No se pudo guardar. Reintenta.'); }
+  }
+  // formato de dinero en pesos (es-MX). Redondea a 2 decimales.
+  function fmtDinero(n){
+    return (n < 0 ? '−' : '') + '$' + Math.abs(n).toLocaleString('es-MX', {minimumFractionDigits:0, maximumFractionDigits:2});
+  }
+  const mesActual = () => today().slice(0, 7); // 'YYYY-MM'
+  function finCatOf(tipo, id){ return (FIN_CATS[tipo] || []).find(c => c.id === id); }
+
+  function abrirFinanzas(){
+    renderFinCats();
+    renderFin();
+    $('finWrap').hidden = false;
+  }
+  // chips de categoría (según el tipo elegido)
+  function renderFinCats(){
+    const cont = $('finCats'); cont.innerHTML = '';
+    (FIN_CATS[finTipo] || []).forEach(c => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'fin-cat' + (finCatSel[finTipo] === c.id ? ' on' : '');
+      b.textContent = c.emoji + ' ' + c.name;
+      b.addEventListener('click', ()=>{ finCatSel[finTipo] = c.id; renderFinCats(); });
+      cont.appendChild(b);
+    });
+  }
+  function renderFin(){
+    const mes = mesActual();
+    const delMes = fin.movs.filter(m => (m.fecha || '').startsWith(mes));
+    const ingresos = delMes.filter(m => m.tipo === 'ingreso').reduce((s,m) => s + (+m.monto), 0);
+    const gastos = delMes.filter(m => m.tipo === 'gasto').reduce((s,m) => s + (+m.monto), 0);
+    const saldo = ingresos - gastos;
+
+    $('finMes').textContent = new Date(mes + '-15T12:00:00').toLocaleDateString('es-MX', {month:'long', year:'numeric'});
+    const sc = $('finSaldo'); sc.textContent = fmtDinero(saldo);
+    sc.className = 'fin-saldo' + (saldo < 0 ? ' neg' : saldo > 0 ? ' pos' : '');
+    $('finIng').textContent = '+ ' + fmtDinero(ingresos);
+    $('finGas').textContent = '− ' + fmtDinero(gastos);
+
+    // presupuesto del mes (vs gastos)
+    if(fin.presupuesto > 0){
+      $('finPresuBar').hidden = false;
+      const pct = Math.min(100, Math.round(gastos / fin.presupuesto * 100));
+      const over = gastos > fin.presupuesto;
+      $('finPresuTxt').textContent = fmtDinero(gastos) + ' de ' + fmtDinero(fin.presupuesto);
+      $('finPresuPct').textContent = (over ? '¡pasado! ' : '') + pct + '%';
+      $('finPresuPct').style.color = over ? 'var(--red)' : 'var(--muted)';
+      const fill = $('finPresuFill');
+      fill.style.width = pct + '%';
+      fill.classList.toggle('over', over);
+    } else {
+      $('finPresuBar').hidden = true;
+    }
+    $('finPresuInput').value = fin.presupuesto > 0 ? String(fin.presupuesto) : '';
+
+    // lista de movimientos del mes (recientes primero)
+    const list = $('finList'); list.innerHTML = '';
+    const orden = delMes.slice().sort((a,b) => (b.creado||'').localeCompare(a.creado||''));
+    $('finVacio').hidden = orden.length > 0;
+    orden.forEach(m => {
+      const c = finCatOf(m.tipo, m.cat);
+      const row = document.createElement('div'); row.className = 'fin-mov';
+      const ic = document.createElement('span'); ic.className = 'fm-ic'; ic.textContent = c ? c.emoji : '💵';
+      const body = document.createElement('div'); body.className = 'fm-body';
+      const cat = document.createElement('div'); cat.className = 'fm-cat'; cat.textContent = c ? c.name : m.tipo;
+      const meta = document.createElement('div'); meta.className = 'fm-meta';
+      const dia = new Date(m.fecha + 'T12:00:00').toLocaleDateString('es-MX', {day:'numeric', month:'short'});
+      meta.textContent = dia + (m.nota ? ' · ' + m.nota : '');
+      body.append(cat, meta);
+      const amt = document.createElement('span'); amt.className = 'fm-amt ' + m.tipo;
+      amt.textContent = (m.tipo === 'gasto' ? '− ' : '+ ') + fmtDinero(+m.monto);
+      const del = document.createElement('button'); del.className = 'fm-del'; del.textContent = '✕';
+      del.setAttribute('aria-label', 'Borrar movimiento');
+      del.addEventListener('click', ()=>{
+        fin.movs = fin.movs.filter(x => x.id !== m.id); saveFin(); renderFin();
+      });
+      row.append(ic, body, amt, del);
+      list.appendChild(row);
+    });
+
+    // metas de ahorro
+    const mc = $('finMetas'); mc.innerHTML = '';
+    if(!fin.metas.length){
+      const v = document.createElement('div'); v.className = 'fin-meta-vacio';
+      v.textContent = 'Sin metas todavía. Crea una abajo.';
+      mc.appendChild(v);
+    }
+    fin.metas.forEach(g => {
+      const card = document.createElement('div'); card.className = 'fin-meta';
+      const top = document.createElement('div'); top.className = 'fin-meta-top';
+      const nom = document.createElement('span'); nom.className = 'fin-meta-nom'; nom.textContent = g.nombre;
+      const num = document.createElement('span'); num.className = 'fin-meta-num';
+      const pct = g.objetivo > 0 ? Math.min(100, Math.round(g.ahorrado / g.objetivo * 100)) : 0;
+      num.textContent = fmtDinero(g.ahorrado) + ' / ' + fmtDinero(g.objetivo) + ' · ' + pct + '%';
+      top.append(nom, num);
+      const bar = document.createElement('div'); bar.className = 'bar';
+      const fill = document.createElement('i'); fill.style.width = pct + '%'; bar.appendChild(fill);
+      const acts = document.createElement('div'); acts.className = 'fin-meta-acts';
+      const inp = document.createElement('input'); inp.type = 'number'; inp.inputMode = 'decimal';
+      inp.placeholder = '$ aportar'; inp.min = '0';
+      const add = document.createElement('button'); add.textContent = 'Aportar';
+      const aportar = ()=>{
+        const v = parseFloat(inp.value);
+        if(!(v > 0)){ toast('Escribe cuánto aportas.'); return; }
+        g.ahorrado = Math.max(0, (+g.ahorrado || 0) + v); saveFin(); renderFin();
+        if(g.ahorrado >= g.objetivo){ sonarGanado(); toast('¡Meta «' + g.nombre + '» cumplida! 🎉'); }
+        else { sonarCheck(); toast('Aporte guardado.'); }
+      };
+      add.addEventListener('click', aportar);
+      const del = document.createElement('button'); del.className = 'fin-meta-del'; del.textContent = 'borrar';
+      del.addEventListener('click', ()=>{
+        if(!confirm('¿Borrar la meta «' + g.nombre + '»?')) return;
+        fin.metas = fin.metas.filter(x => x.id !== g.id); saveFin(); renderFin();
+      });
+      acts.append(inp, add, del);
+      card.append(top, bar, acts);
+      mc.appendChild(card);
+    });
+  }
+  // tipo gasto/ingreso
+  document.querySelectorAll('#finTipo button').forEach(b => {
+    b.addEventListener('click', ()=>{
+      finTipo = b.dataset.tipo;
+      document.querySelectorAll('#finTipo button').forEach(x => x.classList.toggle('on', x === b));
+      renderFinCats();
+    });
+  });
+  $('finAdd').addEventListener('click', ()=>{
+    const monto = parseFloat($('finMonto').value);
+    if(!(monto > 0)){ toast('Escribe un monto válido.'); return; }
+    fin.movs.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      tipo: finTipo, monto: Math.round(monto * 100) / 100,
+      cat: finCatSel[finTipo], nota: $('finNota').value.trim().slice(0,60),
+      fecha: today(), creado: new Date().toISOString(),
+    });
+    saveFin();
+    $('finMonto').value = ''; $('finNota').value = '';
+    sonarCheck(); renderFin();
+    toast('Movimiento registrado.');
+  });
+  $('finMetaAdd').addEventListener('click', ()=>{
+    const nombre = $('finMetaNom').value.trim().slice(0,30);
+    const obj = parseFloat($('finMetaObj').value);
+    if(!nombre){ toast('Ponle nombre a la meta.'); return; }
+    if(!(obj > 0)){ toast('¿Cuánto quieres juntar?'); return; }
+    fin.metas.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      nombre, objetivo: Math.round(obj * 100) / 100, ahorrado: 0, creada: new Date().toISOString(),
+    });
+    saveFin();
+    $('finMetaNom').value = ''; $('finMetaObj').value = '';
+    renderFin();
+    toast('Meta creada. 🎯');
+  });
+  $('finPresuSave').addEventListener('click', ()=>{
+    const p = parseFloat($('finPresuInput').value);
+    fin.presupuesto = (Number.isFinite(p) && p > 0) ? Math.round(p * 100) / 100 : 0;
+    saveFin(); renderFin();
+    toast(fin.presupuesto > 0 ? 'Presupuesto guardado.' : 'Sin límite de presupuesto.');
+  });
+  $('finClose').addEventListener('click', ()=>{ $('finWrap').hidden = true; });
+  $('finWrap').addEventListener('click', (e)=>{ if(e.target === $('finWrap')) $('finWrap').hidden = true; });
+
   // ===== Respaldo: exportar / importar =====
   function exportBackup(){
     const backup = {
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -4603,6 +4809,9 @@
         const cmp = b.data['reps-compa'];
         if(esMapa(cmp)) localStorage.setItem(COMPA_KEY, JSON.stringify(cmp));
         else localStorage.removeItem(COMPA_KEY);
+        const fnz = b.data['reps-finanzas'];
+        if(esMapa(fnz)) localStorage.setItem(FIN_KEY, JSON.stringify(fnz));
+        else localStorage.removeItem(FIN_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -4632,6 +4841,7 @@
       recordatorios = []; recordHechos = {}; loadRecordatorios();
       capas = []; loadCapas(); renderCapas();
       compaConf = { nombre:'', criatura:'planta', emoji:'' }; loadCompa();
+      fin = { movs:[], presupuesto:0, metas:[] }; loadFin();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -4683,6 +4893,7 @@
   loadMetas();
   loadRecompensas();
   loadCompa(); // antes de render(): renderCompa lee la config del compañero
+  loadFin();   // finanzas (menú Más); se renderiza al abrir el sheet
   loadRecordatorios(); // antes de render(): suman al puntaje del día
   loadCapas(); renderCapas(); // mi ruta editable
   loadRutina();

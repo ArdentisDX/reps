@@ -315,6 +315,62 @@
     </div>
   </div>
 
+  <div class="theme-wrap" id="masWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Más</h2><button id="masClose" aria-label="Cerrar">✕</button></div>
+      <div class="mas-sec">Dinero</div>
+      <button class="mas-item" id="masFin"><span class="mas-ic">💰</span><span class="mas-tx"><b>Finanzas</b><i>Gastos, ingresos, presupuesto y ahorro</i></span><span class="mas-go">›</span></button>
+      <div class="mas-sec">Personalización y ajustes</div>
+      <button class="mas-item" id="masAjustes"><span class="mas-ic">🎨</span><span class="mas-tx"><b>Apariencia y ajustes</b><i>Tema, barra, tipografía, sonido, notificaciones…</i></span><span class="mas-go">›</span></button>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="finWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>💰 Finanzas</h2><button id="finClose" aria-label="Cerrar">✕</button></div>
+      <div class="fin-sum">
+        <div class="fin-mes" id="finMes"></div>
+        <div class="fin-saldo" id="finSaldo">$0</div>
+        <div class="fin-io"><span class="fin-ing" id="finIng">+ $0</span><span class="fin-gas" id="finGas">− $0</span></div>
+      </div>
+      <div class="fin-presu-bar" id="finPresuBar" hidden>
+        <div class="fin-presu-top"><span id="finPresuTxt"></span><span id="finPresuPct"></span></div>
+        <div class="bar"><i id="finPresuFill"></i></div>
+      </div>
+
+      <div class="t-sub">Registrar movimiento</div>
+      <div class="fin-add">
+        <div class="fin-tipo" id="finTipo">
+          <button type="button" data-tipo="gasto" class="on">− Gasto</button>
+          <button type="button" data-tipo="ingreso">+ Ingreso</button>
+        </div>
+        <input id="finMonto" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Monto $">
+        <div class="fin-cats" id="finCats"></div>
+        <input id="finNota" type="text" maxlength="60" placeholder="Nota (opcional): ej. súper, uber…">
+        <button class="cel-btn" id="finAdd" style="width:100%;margin-top:10px">Registrar</button>
+      </div>
+
+      <div class="t-sub">Movimientos del mes</div>
+      <div id="finList"></div>
+      <div class="fin-vacio" id="finVacio" hidden>Aún no registras nada este mes.</div>
+
+      <div class="t-sub">Metas de ahorro</div>
+      <div id="finMetas"></div>
+      <div class="fin-meta-add">
+        <input id="finMetaNom" type="text" maxlength="30" placeholder="Meta (ej. Viaje, Compu)">
+        <input id="finMetaObj" type="number" inputmode="decimal" min="1" placeholder="$ objetivo">
+        <button id="finMetaAdd">＋</button>
+      </div>
+
+      <div class="t-sub">Presupuesto mensual</div>
+      <div class="fin-presu-cfg">
+        <input id="finPresuInput" type="number" inputmode="decimal" min="0" placeholder="$ límite del mes (0 = sin límite)">
+        <button id="finPresuSave">Guardar</button>
+      </div>
+      <div class="t-note">El presupuesto se compara con tus gastos del mes en curso. Déjalo en 0 para no ponerte límite.</div>
+    </div>
+  </div>
+
   <div class="theme-wrap" id="themeWrap" hidden>
     <div class="theme-sheet">
       <div class="t-head"><h2>Tema</h2><button id="themeClose" aria-label="Cerrar">✕</button></div>
