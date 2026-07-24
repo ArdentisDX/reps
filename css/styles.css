@@ -954,3 +954,15 @@ body.font-serif .anio-hero .an-big{font-family:Georgia,"Times New Roman",serif}
 .fin-deuda .fd-monto.meDeben{color:var(--teal)}
 .fin-deuda .fd-del{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 4px}
 .fin-deuda-add #finDeudaQuien{width:100%;margin-bottom:6px;background:var(--card);border:1px solid var(--line);border-radius:9px;color:var(--text);font:inherit;font-size:13px;padding:9px 10px;outline:none}
+
+/* ===== Mascota animada (compañero) ===== */
+@media (prefers-reduced-motion:no-preference){
+  .compa .co-emoji{animation:compaBob 3.2s ease-in-out infinite;transform-origin:50% 80%}
+  @keyframes compaBob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-5px) rotate(3deg)}}
+  .compa:active .co-emoji{animation:none;transform:scale(1.15)}
+}
+
+/* ===== Bandeja: ideas importantes (prioridad) ===== */
+.idea.prio{border-color:color-mix(in srgb,var(--amber) 55%,var(--line));background:color-mix(in srgb,var(--amber) 7%,var(--card))}
+.i-star{flex:none;background:none;border:none;font-size:16px;cursor:pointer;padding:4px 6px;color:var(--line);line-height:1}
+.i-star.on{color:var(--amber)}

@@ -871,15 +871,16 @@
     mkChip('todas', 'Todas');
     CATS.forEach(c => mkChip(c.id, c.emoji + ' ' + c.name));
 
-    // lista de ideas (las más nuevas arriba)
+    // lista de ideas: importantes (no hechas) arriba, luego el resto por fecha
     const list = $('trayList'); list.innerHTML = '';
-    const shown = ideas.filter(i => trayFilter === 'todas' || i.cat === trayFilter);
+    const shown = ideas.filter(i => trayFilter === 'todas' || i.cat === trayFilter)
+      .slice().sort((a,b) => ((b.prio && !b.done) ? 1 : 0) - ((a.prio && !a.done) ? 1 : 0));
     $('trayEmpty').hidden = shown.length > 0;
 
     shown.forEach(i => {
       const c = catOf(i.cat);
       const card = document.createElement('div');
-      card.className = 'idea' + (i.done ? ' done' : '');
+      card.className = 'idea' + (i.done ? ' done' : '') + (i.prio && !i.done ? ' prio' : '');
 
       const main = document.createElement('button');
       main.className = 'i-main';
@@ -897,6 +898,13 @@
       main.append(emoji, body);
       main.addEventListener('click', ()=>{ i.done = !i.done; if(i.done) sonarCheck(); saveTray(); renderTray(); });
 
+      // estrella de prioridad: marca la idea como importante (la sube)
+      const star = document.createElement('button');
+      star.className = 'i-star' + (i.prio ? ' on' : '');
+      star.textContent = i.prio ? '★' : '☆';
+      star.setAttribute('aria-label', i.prio ? 'Quitar importante' : 'Marcar importante');
+      star.addEventListener('click', ()=>{ i.prio = !i.prio; saveTray(); renderTray(); });
+
       const del = document.createElement('button');
       del.className = 'i-del'; del.textContent = '✕';
       del.setAttribute('aria-label', 'Borrar idea');
@@ -906,7 +914,7 @@
         toast('Idea borrada.');
       });
 
-      card.append(main, del);
+      card.append(main, star, del);
       list.appendChild(card);
     });
   }
