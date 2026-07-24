@@ -1103,6 +1103,29 @@
         : 'Curioso: ganas más aun despertando tarde (' + pL + '% vs ' + pT + '%). Tu mañana no es el problema.');
     }
 
+    // 8) sueño ↔ ánimo: ¿dormir bien te pone 🔥? (usa reps-sueno; mín. 3 por lado)
+    const nochesAnimo = Object.keys(sueno).filter(k => minDormidos(sueno[k]) != null && (cierres[k] || {}).animo);
+    if(nochesAnimo.length >= 6){
+      const bien = nochesAnimo.filter(k => minDormidos(sueno[k]) >= 420); // 7h+
+      const poco = nochesAnimo.filter(k => minDormidos(sueno[k]) < 420);
+      if(bien.length >= 3 && poco.length >= 3){
+        const pB = Math.round(bien.filter(k => cierres[k].animo === 'bien').length / bien.length * 100);
+        const pP = Math.round(poco.filter(k => cierres[k].animo === 'bien').length / poco.length * 100);
+        if(pB > pP) out.push('Durmiendo 7h+, tu ánimo es 🔥 el ' + pB + '%; con menos, el ' + pP + '%. El sueño te sostiene.');
+      }
+    }
+
+    // 9) predicción de racha: qué tan cerca estás de tu récord
+    const sp = statsData();
+    if(sp.now > 0 && sp.best > 0){
+      if(sp.now >= sp.best){
+        out.push('Estás en tu mejor racha de la historia (' + sp.now + ' días). Cada día es un récord nuevo. 🔥');
+      } else if(sp.best - sp.now <= 7){
+        const faltan = sp.best - sp.now;
+        out.push('Te faltan ' + faltan + ' día' + (faltan === 1 ? '' : 's') + ' para igualar tu mejor racha (' + sp.best + '). Vas.');
+      }
+    }
+
     return out;
   }
 
