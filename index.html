@@ -449,6 +449,19 @@
         <button id="finMetaAdd">＋</button>
       </div>
 
+      <div class="t-sub">Deudas y préstamos</div>
+      <div class="fin-deuda-tot" id="finDeudaTot" hidden></div>
+      <div id="finDeudas"></div>
+      <div class="fin-deuda-add">
+        <input id="finDeudaQuien" type="text" maxlength="30" placeholder="¿Quién? (nombre)">
+        <div class="fin-sub-row2">
+          <input id="finDeudaMonto" type="number" inputmode="decimal" min="0" placeholder="$ monto">
+          <select id="finDeudaTipo" aria-label="Tipo"><option value="debo">Yo debo</option><option value="meDeben">Me deben</option></select>
+          <button id="finDeudaAdd">＋</button>
+        </div>
+      </div>
+      <div class="t-note">Marca ✓ cuando se salde. No afecta tu saldo del mes; es solo tu registro.</div>
+
       <div class="t-sub">Gastos fijos / suscripciones</div>
       <div id="finSubs"></div>
       <div class="fin-sub-add">

@@ -4837,12 +4837,12 @@
       {id:'otros',emoji:'📦',name:'Otros'},
     ],
   };
-  let fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[] };
+  let fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[], deudas:[] };
   let finTipo = 'gasto';
   let finCatSel = { gasto:'comida', ingreso:'sueldo' };
 
   function loadFin(){
-    fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[] };
+    fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[], deudas:[] };
     try{
       const v = JSON.parse(localStorage.getItem(FIN_KEY));
       if(esMapa(v)){
@@ -4859,8 +4859,12 @@
           .map(sb => ({ id: sb.id, nombre: sb.nombre.trim().slice(0,30), monto: +sb.monto,
             dia: Math.min(31, Math.max(1, parseInt(sb.dia,10) || 1)),
             cat: FIN_CATS.gasto.some(c => c.id === sb.cat) ? sb.cat : 'servicios' }));
+        if(Array.isArray(v.deudas)) fin.deudas = v.deudas.filter(d => d && typeof d.id === 'string' &&
+          typeof d.quien === 'string' && d.quien.trim() && Number.isFinite(+d.monto) && +d.monto > 0)
+          .map(d => ({ id: d.id, quien: d.quien.trim().slice(0,30), monto: +d.monto,
+            tipo: d.tipo === 'meDeben' ? 'meDeben' : 'debo', saldada: !!d.saldada, creada: d.creada || new Date().toISOString() }));
       }
-    }catch(e){ fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[] }; }
+    }catch(e){ fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[], deudas:[] }; }
     procesarSubs(); // registra los fijos que ya tocan este mes
   }
   // registra como gasto las suscripciones cuyo día ya llegó y aún no están
@@ -5098,6 +5102,31 @@
     if(!sel.options.length) FIN_CATS.gasto.forEach(c => {
       const o = document.createElement('option'); o.value = c.id; o.textContent = c.emoji + ' ' + c.name; sel.appendChild(o);
     });
+
+    // deudas y préstamos (solo cuentan las NO saldadas en los totales)
+    const dc = $('finDeudas'); dc.innerHTML = '';
+    const activas = (fin.deudas || []).filter(d => !d.saldada);
+    const debo = activas.filter(d => d.tipo === 'debo').reduce((a,d)=>a+d.monto, 0);
+    const deben = activas.filter(d => d.tipo === 'meDeben').reduce((a,d)=>a+d.monto, 0);
+    const dt = $('finDeudaTot');
+    dt.hidden = (fin.deudas || []).length === 0;
+    dt.innerHTML = '<span class="fd-debo">Debo ' + fmtDinero(debo) + '</span><span class="fd-deben">Me deben ' + fmtDinero(deben) + '</span>';
+    (fin.deudas || []).forEach(d => {
+      const row = document.createElement('div'); row.className = 'fin-deuda' + (d.saldada ? ' saldada' : '');
+      const chk = document.createElement('button'); chk.className = 'fd-chk'; chk.textContent = '✓';
+      chk.setAttribute('aria-label', 'Marcar saldada');
+      chk.addEventListener('click', ()=>{ d.saldada = !d.saldada; saveFin(); renderFin(); });
+      const body = document.createElement('div'); body.className = 'fd-body';
+      const q = document.createElement('div'); q.className = 'fd-quien'; q.textContent = d.quien;
+      const tp = document.createElement('div'); tp.className = 'fd-tipo'; tp.textContent = d.tipo === 'debo' ? 'le debo' : 'me debe';
+      body.append(q, tp);
+      const amt = document.createElement('span'); amt.className = 'fd-monto ' + d.tipo; amt.textContent = fmtDinero(d.monto);
+      const del = document.createElement('button'); del.className = 'fd-del'; del.textContent = '✕';
+      del.setAttribute('aria-label', 'Borrar');
+      del.addEventListener('click', ()=>{ fin.deudas = fin.deudas.filter(x => x.id !== d.id); saveFin(); renderFin(); });
+      row.append(chk, body, amt, del);
+      dc.appendChild(row);
+    });
   }
   // tipo gasto/ingreso
   document.querySelectorAll('#finTipo button').forEach(b => {
@@ -5151,6 +5180,21 @@
     $('finSubNom').value = ''; $('finSubMonto').value = ''; $('finSubDia').value = '';
     renderFin();
     toast('Gasto fijo guardado.');
+  });
+  $('finDeudaAdd').addEventListener('click', ()=>{
+    const quien = $('finDeudaQuien').value.trim().slice(0,30);
+    const monto = parseFloat($('finDeudaMonto').value);
+    if(!quien){ toast('¿Quién?'); return; }
+    if(!(monto > 0)){ toast('¿De cuánto?'); return; }
+    fin.deudas.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      quien, monto: Math.round(monto * 100) / 100, tipo: $('finDeudaTipo').value === 'meDeben' ? 'meDeben' : 'debo',
+      saldada: false, creada: new Date().toISOString(),
+    });
+    saveFin();
+    $('finDeudaQuien').value = ''; $('finDeudaMonto').value = '';
+    renderFin();
+    toast('Anotado.');
   });
   $('finPresuSave').addEventListener('click', ()=>{
     const p = parseFloat($('finPresuInput').value);
@@ -5541,7 +5585,7 @@
       recordatorios = []; recordHechos = {}; loadRecordatorios();
       capas = []; loadCapas(); renderCapas();
       compaConf = { nombre:'', criatura:'planta', emoji:'' }; loadCompa();
-      fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[] }; loadFin();
+      fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[], deudas:[] }; loadFin();
       evitares = []; loadEvitar(); renderEvitar();
       diario = {}; loadDiario(); renderDiario();
       sueno = {}; loadSueno();
