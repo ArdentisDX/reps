@@ -230,7 +230,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 
 **Gamificación / mundo**
 56. Un mundo que crece con tus días (isla/ciudad estilo Habitica).
-57. Mascota con animaciones (darle vida al compañero).
+57. ✅ (v86) Mascota animada (el compañero flota).
 58. Tienda: gastar "puntos ganados" en temas/cosméticos.
 59. Temporadas/eventos con recompensa.
 60. Cofres/sorpresas al cumplir hitos.
@@ -238,7 +238,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 **Productividad**
 61. Pomodoro avanzado (ciclos, descansos, stats de foco).
 62. Bloqueo de distracciones durante el foco.
-63. Matriz de prioridades (Eisenhower) para la Bandeja.
+63. ✅ (v86) Prioridad en la Bandeja (estrella importante, sube al tope).
 64. Kanban simple para proyectos.
 
 **Datos / inteligencia**
