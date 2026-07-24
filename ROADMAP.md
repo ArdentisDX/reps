@@ -162,7 +162,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 
 **Verte crecer**
 16. ✅ (v78) Pantalla "Resumen" — "Esta semana" en Stats.
-17. Correlaciones (El Espejo 2.0): despertar temprano ↔ ánimo.
+17. ✅ (v84) Correlaciones (El Espejo 2.0): sueño↔ánimo, despertar↔ganar.
 18. Compartir el mes ampliado (hábitos + finanzas en la postal).
 
 **Pulido**
@@ -184,7 +184,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 **Finanzas avanzada**
 21. ✅ (v83) Suscripciones/gastos fijos (se registran solos cada mes).
 22. ✅ (v77) Presupuesto por categoría (tope y alerta al pasarse).
-23. Deudas y préstamos (a quién debo / me deben).
+23. ✅ (v85) Deudas y préstamos (a quién debo / me deben).
 24. Varias carteras/cuentas (efectivo, banco, tarjeta).
 25. Gasto de viaje con conversión de divisas.
 26. Foto del ticket adjunta al gasto.
@@ -243,7 +243,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 
 **Datos / inteligencia**
 65. Dashboard de correlaciones (sueño↔ánimo↔productividad).
-66. Predicción de racha ("vas camino a tu mejor mes").
+66. ✅ (v84) Predicción de racha (cerca de tu récord).
 67. Informe mensual en PDF bonito.
 68. ✅ (v82) "Tu año en REPS" (wrapped anual, pantalla propia).
 
