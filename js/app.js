@@ -4814,12 +4814,12 @@
       {id:'otros',emoji:'📦',name:'Otros'},
     ],
   };
-  let fin = { movs:[], presupuesto:0, presuCat:{}, metas:[] };
+  let fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[] };
   let finTipo = 'gasto';
   let finCatSel = { gasto:'comida', ingreso:'sueldo' };
 
   function loadFin(){
-    fin = { movs:[], presupuesto:0, presuCat:{}, metas:[] };
+    fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[] };
     try{
       const v = JSON.parse(localStorage.getItem(FIN_KEY));
       if(esMapa(v)){
@@ -4831,8 +4831,32 @@
         });
         if(Array.isArray(v.metas)) fin.metas = v.metas.filter(g => g && typeof g.id === 'string' &&
           typeof g.nombre === 'string' && Number.isFinite(+g.objetivo));
+        if(Array.isArray(v.subs)) fin.subs = v.subs.filter(sb => sb && typeof sb.id === 'string' &&
+          typeof sb.nombre === 'string' && sb.nombre.trim() && Number.isFinite(+sb.monto) && +sb.monto > 0)
+          .map(sb => ({ id: sb.id, nombre: sb.nombre.trim().slice(0,30), monto: +sb.monto,
+            dia: Math.min(31, Math.max(1, parseInt(sb.dia,10) || 1)),
+            cat: FIN_CATS.gasto.some(c => c.id === sb.cat) ? sb.cat : 'servicios' }));
       }
-    }catch(e){ fin = { movs:[], presupuesto:0, presuCat:{}, metas:[] }; }
+    }catch(e){ fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[] }; }
+    procesarSubs(); // registra los fijos que ya tocan este mes
+  }
+  // registra como gasto las suscripciones cuyo día ya llegó y aún no están
+  // registradas este mes (dedupe por m.sub). Idempotente.
+  function procesarSubs(){
+    const mes = mesActual();
+    const hoyDia = new Date().getDate();
+    let cambio = false;
+    (fin.subs || []).forEach(sb => {
+      if(hoyDia < sb.dia) return; // aún no toca este mes
+      if(fin.movs.some(m => m.sub === sb.id && (m.fecha || '').startsWith(mes))) return; // ya está
+      fin.movs.push({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+        tipo: 'gasto', monto: sb.monto, cat: sb.cat, nota: sb.nombre + ' (fijo)',
+        fecha: mes + '-' + String(sb.dia).padStart(2,'0'), creado: new Date().toISOString(), sub: sb.id,
+      });
+      cambio = true;
+    });
+    if(cambio) saveFin();
   }
   function saveFin(){
     try{ localStorage.setItem(FIN_KEY, JSON.stringify(fin)); }
@@ -4846,6 +4870,7 @@
   function finCatOf(tipo, id){ return (FIN_CATS[tipo] || []).find(c => c.id === id); }
 
   function abrirFinanzas(){
+    procesarSubs(); // por si un fijo venció mientras la app estaba abierta
     renderFinCats();
     renderFin();
     $('finWrap').hidden = false;
@@ -4888,6 +4913,16 @@
       else vs.innerHTML = (dif > 0 ? 'Gastaste <b class="up">' + dif + '% más</b>' : 'Gastaste <b class="down">' + Math.abs(dif) + '% menos</b>') +
         ' que el mes pasado (' + fmtDinero(gastosPrev) + ').';
     } else vs.hidden = true;
+
+    // proyección de fin de mes (según el ritmo de gasto)
+    const proy = $('finProy');
+    const diaHoy = new Date().getDate();
+    const diasMes = new Date(ay, am, 0).getDate(); // último día del mes
+    if(gastos > 0 && diaHoy < diasMes){
+      const est = Math.round(gastos / diaHoy * diasMes);
+      proy.hidden = false;
+      proy.innerHTML = 'A este ritmo cerrarás el mes en <b>' + fmtDinero(est) + '</b> de gastos.';
+    } else proy.hidden = true;
 
     // presupuesto del mes (vs gastos)
     if(fin.presupuesto > 0){
@@ -5017,6 +5052,29 @@
       card.append(top, bar, acts);
       mc.appendChild(card);
     });
+
+    // suscripciones / gastos fijos
+    const subsCont = $('finSubs'); subsCont.innerHTML = '';
+    (fin.subs || []).forEach(sb => {
+      const c = finCatOf('gasto', sb.cat);
+      const row = document.createElement('div'); row.className = 'fin-sub';
+      const em = document.createElement('span'); em.className = 'fs-em'; em.textContent = c ? c.emoji : '📄';
+      const body = document.createElement('div'); body.className = 'fs-body';
+      const nm = document.createElement('div'); nm.className = 'fs-nm'; nm.textContent = sb.nombre;
+      const meta = document.createElement('div'); meta.className = 'fs-meta'; meta.textContent = 'cada mes · día ' + sb.dia;
+      body.append(nm, meta);
+      const amt = document.createElement('span'); amt.className = 'fs-amt'; amt.textContent = '− ' + fmtDinero(sb.monto);
+      const del = document.createElement('button'); del.className = 'fs-del'; del.textContent = '✕';
+      del.setAttribute('aria-label', 'Borrar suscripción');
+      del.addEventListener('click', ()=>{ fin.subs = fin.subs.filter(x => x.id !== sb.id); saveFin(); renderFin(); });
+      row.append(em, body, amt, del);
+      subsCont.appendChild(row);
+    });
+    // llena el <select> de categoría (una sola vez)
+    const sel = $('finSubCat');
+    if(!sel.options.length) FIN_CATS.gasto.forEach(c => {
+      const o = document.createElement('option'); o.value = c.id; o.textContent = c.emoji + ' ' + c.name; sel.appendChild(o);
+    });
   }
   // tipo gasto/ingreso
   document.querySelectorAll('#finTipo button').forEach(b => {
@@ -5053,6 +5111,23 @@
     $('finMetaNom').value = ''; $('finMetaObj').value = '';
     renderFin();
     toast('Meta creada. 🎯');
+  });
+  $('finSubAdd').addEventListener('click', ()=>{
+    const nombre = $('finSubNom').value.trim().slice(0,30);
+    const monto = parseFloat($('finSubMonto').value);
+    const dia = parseInt($('finSubDia').value, 10);
+    if(!nombre){ toast('Ponle nombre al gasto fijo.'); return; }
+    if(!(monto > 0)){ toast('¿De cuánto es?'); return; }
+    if(!(dia >= 1 && dia <= 31)){ toast('¿Qué día del mes se paga? (1–31)'); return; }
+    fin.subs.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      nombre, monto: Math.round(monto * 100) / 100, dia, cat: $('finSubCat').value || 'servicios',
+    });
+    saveFin();
+    procesarSubs(); // si ya pasó su día este mes, lo registra al toque
+    $('finSubNom').value = ''; $('finSubMonto').value = ''; $('finSubDia').value = '';
+    renderFin();
+    toast('Gasto fijo guardado.');
   });
   $('finPresuSave').addEventListener('click', ()=>{
     const p = parseFloat($('finPresuInput').value);
@@ -5443,7 +5518,7 @@
       recordatorios = []; recordHechos = {}; loadRecordatorios();
       capas = []; loadCapas(); renderCapas();
       compaConf = { nombre:'', criatura:'planta', emoji:'' }; loadCompa();
-      fin = { movs:[], presupuesto:0, presuCat:{}, metas:[] }; loadFin();
+      fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[] }; loadFin();
       evitares = []; loadEvitar(); renderEvitar();
       diario = {}; loadDiario(); renderDiario();
       sueno = {}; loadSueno();

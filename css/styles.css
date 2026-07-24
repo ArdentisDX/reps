@@ -917,3 +917,22 @@ body.font-serif .anio-hero .an-big{font-family:Georgia,"Times New Roman",serif}
   .theme-wrap:not([hidden]){animation:fadeBg .2s ease}
   @keyframes fadeBg{from{opacity:0}to{opacity:1}}
 }
+
+/* ===== Finanzas: proyección + suscripciones ===== */
+.fin-proy{margin-top:6px;font-size:12px;font-weight:600;color:var(--muted)}
+.fin-proy b{color:var(--amber)}
+.fin-sub{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--hair,var(--line));border-radius:12px;padding:9px 12px;margin-bottom:6px}
+.fin-sub .fs-em{font-size:17px;flex:none}
+.fin-sub .fs-body{flex:1;min-width:0}
+.fin-sub .fs-nm{font-size:13px;font-weight:700;color:var(--text)}
+.fin-sub .fs-meta{font-size:12px;color:var(--muted)}
+.fin-sub .fs-amt{font-size:14px;font-weight:700;color:var(--red);white-space:nowrap}
+.fin-sub .fs-del{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 4px}
+.fin-sub-add{margin-bottom:6px}
+.fin-sub-add input,.fin-sub-add select{background:var(--card);border:1px solid var(--line);border-radius:9px;color:var(--text);font:inherit;font-size:13px;padding:9px 10px;outline:none}
+.fin-sub-add #finSubNom{width:100%;margin-bottom:6px}
+.fin-sub-row2{display:flex;gap:6px}
+.fin-sub-row2 #finSubMonto{flex:1;min-width:0}
+.fin-sub-row2 #finSubDia{width:56px}
+.fin-sub-row2 #finSubCat{flex:1;min-width:0}
+.fin-sub-row2 #finSubAdd{background:var(--amber);border:none;border-radius:9px;color:var(--on-accent);font-weight:800;font-size:15px;padding:0 14px;cursor:pointer}

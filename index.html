@@ -415,6 +415,7 @@
         <div class="fin-saldo" id="finSaldo">$0</div>
         <div class="fin-io"><span class="fin-ing" id="finIng">+ $0</span><span class="fin-gas" id="finGas">− $0</span></div>
         <div class="fin-vs" id="finVs" hidden></div>
+        <div class="fin-proy" id="finProy" hidden></div>
       </div>
       <div class="fin-presu-bar" id="finPresuBar" hidden>
         <div class="fin-presu-top"><span id="finPresuTxt"></span><span id="finPresuPct"></span></div>
@@ -447,6 +448,19 @@
         <input id="finMetaObj" type="number" inputmode="decimal" min="1" placeholder="$ objetivo">
         <button id="finMetaAdd">＋</button>
       </div>
+
+      <div class="t-sub">Gastos fijos / suscripciones</div>
+      <div id="finSubs"></div>
+      <div class="fin-sub-add">
+        <input id="finSubNom" type="text" maxlength="30" placeholder="Nombre (ej. Renta, Spotify)">
+        <div class="fin-sub-row2">
+          <input id="finSubMonto" type="number" inputmode="decimal" min="0" placeholder="$ monto">
+          <input id="finSubDia" type="number" min="1" max="31" placeholder="día">
+          <select id="finSubCat" aria-label="Categoría"></select>
+          <button id="finSubAdd">＋</button>
+        </div>
+      </div>
+      <div class="t-note">Se registran solos como gasto cuando llega su día del mes.</div>
 
       <div class="t-sub">Presupuesto mensual</div>
       <div class="fin-presu-cfg">
