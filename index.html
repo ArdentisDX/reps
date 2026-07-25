@@ -521,6 +521,24 @@
       <button class="mas-item" id="biAgua" style="margin:8px 0 0"><span class="mas-ic">💧</span><span class="mas-tx"><b>Agua</b><i>Cuenta tus vasos del día</i></span><span class="mas-go">›</span></button>
       <button class="mas-item" id="biPausas" style="margin:8px 0 0"><span class="mas-ic">🤸</span><span class="mas-tx"><b>Pausas activas</b><i>Estírate cada cierto tiempo sentado</i></span><span class="mas-go">›</span></button>
       <button class="mas-item" id="biSueno" style="margin:8px 0 0"><span class="mas-ic">🌙</span><span class="mas-tx"><b>Higiene del sueño</b><i>Rutina de bajada antes de dormir</i></span><span class="mas-go">›</span></button>
+      <button class="mas-item" id="biPeso" style="margin:8px 0 0"><span class="mas-ic">⚖️</span><span class="mas-tx"><b>Peso</b><i>Registra tu peso y ve la tendencia</i></span><span class="mas-go">›</span></button>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="pesoWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Peso</h2><button id="pesoClose" aria-label="Cerrar">✕</button></div>
+      <div class="peso-hero">
+        <div class="pe-big"><span id="pePeso">—</span> <span class="pe-unit">kg</span></div>
+        <div class="pe-trend" id="peTrend"></div>
+      </div>
+      <div class="peso-add">
+        <input type="number" id="peInput" inputmode="decimal" min="1" max="500" step="0.1" placeholder="Peso de hoy (kg)">
+        <button class="cel-btn" id="peSave">Guardar</button>
+      </div>
+      <canvas id="peChart" class="peso-chart" width="600" height="240" aria-label="Gráfica de peso"></canvas>
+      <div class="t-sub">Registros</div>
+      <div id="peList"></div>
     </div>
   </div>
 

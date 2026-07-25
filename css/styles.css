@@ -1285,3 +1285,19 @@ body.font-serif .anio-hero .an-big{font-family:Georgia,"Times New Roman",serif}
 .tray-search{margin-bottom:10px}
 .tray-search input{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:11px 14px;color:var(--text);font-size:14px}
 .tray-search input::placeholder{color:var(--muted)}
+
+/* ===== Peso / medidas (idea #43, v105) ===== */
+.peso-hero{text-align:center;padding:10px 0 14px}
+.pe-big{font-size:38px;font-weight:800}
+.pe-unit{font-size:16px;color:var(--muted);font-weight:600}
+.pe-trend{font-size:13px;color:var(--muted);margin-top:4px}
+.pe-trend.down{color:var(--teal)}
+.pe-trend.up{color:var(--amber)}
+.peso-add{display:flex;gap:8px;margin-bottom:14px}
+.peso-add input{flex:1;min-width:0;background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:11px 12px;color:var(--text);font-size:15px}
+.peso-chart{width:100%;height:auto;background:var(--card-2);border:1px solid var(--line);border-radius:14px;margin-bottom:14px}
+.pe-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.pe-row:first-child{border-top:none}
+.pe-fecha{flex:1;font-size:13px;color:var(--muted)}
+.pe-val{font-size:15px;font-weight:700}
+.pe-del{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 6px}

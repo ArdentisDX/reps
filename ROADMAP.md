@@ -210,7 +210,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 40. ✅ (v81) Registro de sueño (horas por noche + promedio, pantalla propia).
 41. ✅ (v89) Ánimo detallado (emociones opcionales en el cierre).
 42. Meditación/respiración guiada (pauta visual).
-43. Peso/medidas con gráfica.
+43. ✅ Peso con gráfica de tendencia (canvas, hub Bienestar; reps-peso). (v105)
 44. Recordatorio de agua/medicinas con contador.
 
 **Social / comunidad**

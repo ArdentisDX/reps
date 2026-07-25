@@ -5412,7 +5412,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-diario', 'reps-sueno', 'reps-kanban', 'reps-retos', 'reps-energia', 'reps-solo', 'reps-ia-chat', 'reps-gratitud', 'reps-agua', 'reps-pausas', 'reps-sueno-rutina', 'reps-checkin', 'reps-mantra', 'reps-carta-futuro', 'reps-victorias', 'reps-brutal', 'reps-hoy-cfg', 'reps-degradado', 'reps-sonidos', 'reps-eventos', 'reps-viaje', 'reps-rutina-tpl', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-diario', 'reps-sueno', 'reps-kanban', 'reps-retos', 'reps-energia', 'reps-solo', 'reps-ia-chat', 'reps-gratitud', 'reps-agua', 'reps-pausas', 'reps-sueno-rutina', 'reps-checkin', 'reps-mantra', 'reps-carta-futuro', 'reps-victorias', 'reps-brutal', 'reps-hoy-cfg', 'reps-degradado', 'reps-sonidos', 'reps-eventos', 'reps-viaje', 'reps-rutina-tpl', 'reps-peso', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -6677,6 +6677,77 @@
   $('srClose').addEventListener('click', ()=>{ $('suenoRutinaWrap').hidden = true; });
   $('suenoRutinaWrap').addEventListener('click', (e)=>{ if(e.target === $('suenoRutinaWrap')) $('suenoRutinaWrap').hidden = true; });
 
+  // ---- #43 Peso / medidas con gráfica ----
+  const PESO_KEY = 'reps-peso';
+  let peso = {}; // {fecha: kg}
+  function loadPeso(){ peso = {}; try{ const v = JSON.parse(localStorage.getItem(PESO_KEY)); if(esMapa(v)) Object.keys(v).forEach(k => { if(/^\d{4}-\d{2}-\d{2}$/.test(k) && Number.isFinite(+v[k]) && +v[k] > 0) peso[k] = +v[k]; }); }catch(e){ peso = {}; } }
+  function savePeso(){ try{ localStorage.setItem(PESO_KEY, JSON.stringify(peso)); }catch(e){} }
+  function pesoChart(){
+    const cv = $('peChart'); if(!cv) return;
+    const ctx = cv.getContext('2d');
+    const W = cv.width, H = cv.height, PAD = 30;
+    ctx.clearRect(0, 0, W, H);
+    const css = getComputedStyle(document.documentElement);
+    const C = n => css.getPropertyValue(n).trim();
+    const accent = C('--amber'), line = C('--line'), muted = C('--muted');
+    const keys = Object.keys(peso).sort().slice(-30); // últimos 30 registros
+    if(keys.length < 2){
+      ctx.fillStyle = muted; ctx.font = '15px system-ui, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('Registra al menos 2 días para ver la tendencia.', W/2, H/2);
+      return;
+    }
+    const vals = keys.map(k => peso[k]);
+    let min = Math.min(...vals), max = Math.max(...vals);
+    if(min === max){ min -= 1; max += 1; } else { const m = (max-min)*0.15; min -= m; max += m; }
+    const x = i => PAD + i * (W - PAD*2) / (keys.length - 1);
+    const y = v => H - PAD - (v - min) / (max - min) * (H - PAD*2);
+    // rejilla y etiquetas min/max
+    ctx.strokeStyle = line; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(PAD, H-PAD); ctx.lineTo(W-PAD, H-PAD); ctx.stroke();
+    ctx.fillStyle = muted; ctx.font = '12px system-ui, sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText(max.toFixed(1), 2, y(max)+4);
+    ctx.fillText(min.toFixed(1), 2, y(min)+4);
+    // línea
+    ctx.strokeStyle = accent; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+    ctx.beginPath(); keys.forEach((k, i) => { const px = x(i), py = y(peso[k]); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }); ctx.stroke();
+    // puntos
+    ctx.fillStyle = accent; keys.forEach((k, i) => { ctx.beginPath(); ctx.arc(x(i), y(peso[k]), 3, 0, 7); ctx.fill(); });
+  }
+  function renderPeso(){
+    const hoy = today();
+    const keys = Object.keys(peso).sort();
+    const ultimo = keys[keys.length - 1];
+    $('pePeso').textContent = ultimo ? peso[ultimo].toFixed(1) : '—';
+    $('peInput').value = peso[hoy] ? peso[hoy] : '';
+    // tendencia vs el registro anterior
+    const tr = $('peTrend');
+    if(keys.length >= 2){
+      const dif = peso[keys[keys.length-1]] - peso[keys[keys.length-2]];
+      const abs = Math.abs(dif).toFixed(1);
+      tr.textContent = dif === 0 ? 'Igual que el registro anterior' : (dif < 0 ? '▼ ' + abs + ' kg desde el anterior' : '▲ ' + abs + ' kg desde el anterior');
+      tr.className = 'pe-trend ' + (dif < 0 ? 'down' : dif > 0 ? 'up' : '');
+    } else tr.textContent = ultimo ? 'Primer registro. Sigue anotando.' : 'Aún sin registros.';
+    pesoChart();
+    // historial (más nuevos primero)
+    const list = $('peList'); list.innerHTML = '';
+    keys.slice().reverse().slice(0, 30).forEach(k => {
+      const row = document.createElement('div'); row.className = 'pe-row';
+      const dt = document.createElement('span'); dt.className = 'pe-fecha'; dt.textContent = new Date(k+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'});
+      const v = document.createElement('span'); v.className = 'pe-val'; v.textContent = peso[k].toFixed(1) + ' kg';
+      const del = document.createElement('button'); del.className = 'pe-del'; del.textContent = '✕'; del.setAttribute('aria-label','Borrar');
+      del.addEventListener('click', ()=>{ delete peso[k]; savePeso(); renderPeso(); });
+      row.append(dt, v, del); list.appendChild(row);
+    });
+  }
+  $('peSave').addEventListener('click', ()=>{
+    const v = parseFloat($('peInput').value);
+    if(!(v > 0 && v < 500)){ toast('Escribe un peso válido.'); return; }
+    peso[today()] = Math.round(v * 10) / 10; savePeso(); renderPeso(); sonarCheck(); toast('Peso guardado. ⚖️');
+  });
+  $('biPeso').addEventListener('click', ()=>{ renderPeso(); $('pesoWrap').hidden = false; });
+  $('pesoClose').addEventListener('click', ()=>{ $('pesoWrap').hidden = true; });
+  $('pesoWrap').addEventListener('click', (e)=>{ if(e.target === $('pesoWrap')) $('pesoWrap').hidden = true; });
+
   // ---- #91 Chequeo de ánimo a media jornada (tarjeta en Hoy) ----
   const CHECKIN_KEY = 'reps-checkin';
   let checkin = {}; // {fecha:{mid}}
@@ -7186,7 +7257,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-diario': diario, 'reps-sueno': sueno, 'reps-kanban': kanban, 'reps-retos': retos, 'reps-energia': energia, 'reps-solo': solo, 'reps-ia-chat': iaChat, 'reps-gratitud': gratitud, 'reps-agua': agua, 'reps-pausas': pausas, 'reps-sueno-rutina': suenoRut, 'reps-checkin': checkin, 'reps-mantra': mantra, 'reps-carta-futuro': cartaFut, 'reps-victorias': victorias, 'reps-brutal': brutal ? '1' : '', 'reps-hoy-cfg': hoyCfg, 'reps-degradado': grad.on ? grad : '', 'reps-sonidos': sonCfg, 'reps-eventos': eventos, 'reps-viaje': viaje, 'reps-rutina-tpl': rutTpl, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-diario': diario, 'reps-sueno': sueno, 'reps-kanban': kanban, 'reps-retos': retos, 'reps-energia': energia, 'reps-solo': solo, 'reps-ia-chat': iaChat, 'reps-gratitud': gratitud, 'reps-agua': agua, 'reps-pausas': pausas, 'reps-sueno-rutina': suenoRut, 'reps-checkin': checkin, 'reps-mantra': mantra, 'reps-carta-futuro': cartaFut, 'reps-victorias': victorias, 'reps-brutal': brutal ? '1' : '', 'reps-hoy-cfg': hoyCfg, 'reps-degradado': grad.on ? grad : '', 'reps-sonidos': sonCfg, 'reps-eventos': eventos, 'reps-viaje': viaje, 'reps-rutina-tpl': rutTpl, 'reps-peso': peso, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -7375,6 +7446,9 @@
         const rtp = b.data['reps-rutina-tpl'];
         if(Array.isArray(rtp)) localStorage.setItem(RUT_TPL_KEY, JSON.stringify(rtp));
         else localStorage.removeItem(RUT_TPL_KEY);
+        const pso = b.data['reps-peso'];
+        if(esMapa(pso)) localStorage.setItem(PESO_KEY, JSON.stringify(pso));
+        else localStorage.removeItem(PESO_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -7428,6 +7502,7 @@
       loadEventos();
       viaje = { activo:false, dias:{} }; loadViaje();
       loadRutTpl();
+      loadPeso();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -7497,6 +7572,7 @@
   loadPausas(); armarPausas(); // pausas activas (idea #94)
   loadSuenoRut(); // higiene del sueño (idea #95)
   loadCheckin(); // chequeo de media jornada (idea #91)
+  loadPeso(); // peso / medidas (idea #43)
   loadMantra(); // mantra arriba de Hoy (idea #97)
   loadCartaFut(); // carta a tu futuro yo (idea #96)
   loadVictorias(); // muro de victorias (idea #98)
