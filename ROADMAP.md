@@ -311,11 +311,13 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 111. ✅ Atajo del ícono a «Arma mi día» (manifest ?tab=armadia). (v100)
 
 **Estructura / tiempo**
-112. Agenda visual del día (timeline con tus bloques + progreso en vivo).
-113. Bloques de tiempo arrastrables (planear el día visualmente).
-114. Repetir plantillas de día por tipo (lun-vie vs finde).
-115. Cuenta regresiva a un evento importante (examen, viaje).
-116. "Modo viaje/vacaciones" temporal que ajusta expectativas y racha.
+112. ✅ Agenda visual: la rutina marca el bloque «en curso» + El Ahora (HUD con progreso en vivo, ya existía). (v101)
+113. ✅ Bloques arrastrables: asa ⠿ en cada bloque; arrastra vertical para mover su hora. (v101)
+114. ✅ Plantillas de día propias: guarda tu rutina (ej. «Entre semana», «Finde») y aplícala. Sumado a las 4 base que ya había. (v101)
+115. ✅ Cuenta regresiva a un evento (reps-eventos; el más cercano en Hoy). (v101)
+116. ✅ Modo viaje/vacaciones: los días marcados son neutrales (descanso), la racha se sostiene (hook en coreDelDia). (v101)
+
+**Bug corregido en v101:** el timeline #102 (v99) compartía `id="tlList"` con la rutina de Mi día; renombrado a `tlMeses`.
 
 ## Reglas del proyecto
 

@@ -21,6 +21,9 @@
 
   const KEY = 'reps-dias';
   let dias = {};
+  // modo viaje/vacaciones (idea #116): días marcados como neutrales. Se
+  // declara aquí arriba porque coreDelDia lo consulta desde el arranque.
+  let viaje = { activo:false, dias:{} };
 
   const $ = id => document.getElementById(id);
 
@@ -37,6 +40,9 @@
   }
   // ids de los hábitos CORE programados para ese día (según su calendario)
   function coreDelDia(dateKey){
+    // modo viaje/vacaciones (idea #116): un día marcado como viaje no exige
+    // nada → es DESCANSO (neutral, la racha se sostiene, sin culpa).
+    if(viaje && viaje.dias && viaje.dias[dateKey]) return [];
     const dow = dowDe(dateKey);
     return HABITS.filter(h => h.core && habAplica(h, dow)).map(h => h.id);
   }
@@ -876,6 +882,8 @@
     renderAhora(); // HUD del bloque en curso (El Ahora)
     const dw = $('despWrap'); if(dw){ dw.innerHTML = ''; dw.appendChild(buildDespertarUI(hoyKey)); }
     renderMantra(); // frase/mantra arriba de Hoy (idea #97)
+    renderCuentaCard(); // cuenta regresiva al próximo evento (idea #115)
+    renderViajeBanner(); // banner de modo viaje (idea #116)
     renderEnergia(); // semáforo de energía del día (idea #77)
     renderCheckin(); // chequeo de ánimo a media jornada (idea #91)
     renderStats(); // mantiene la pestaña Stats al día con cada cambio
@@ -2429,19 +2437,51 @@
 
   function renderRutina(){
     const tl = $('tlList'); tl.innerHTML = '';
+    const b = bloqueActual(); // #112: bloque en curso para resaltarlo
+    const curId = b && b.cur ? b.cur.id : null;
     rutinaOrdenada().forEach(s => {
       const slot = document.createElement('div');
-      slot.className = 'slot ' + (s.tipo === 'core' ? 'core' : 'free');
-      // textContent siempre: nombre y descripción son texto del usuario
+      slot.className = 'slot ' + (s.tipo === 'core' ? 'core' : 'free') + (s.id === curId ? ' now' : '');
+      // asa para arrastrar el bloque en el tiempo (idea #113)
+      const grip = document.createElement('span'); grip.className = 'slot-grip'; grip.textContent = '⠿';
+      grip.setAttribute('aria-label', 'Arrastra para mover «' + s.nombre + '» en el tiempo');
       const t = document.createElement('div'); t.className = 't'; t.textContent = s.hora;
-      const n = document.createElement('div'); n.className = 'n'; n.textContent = s.nombre;
-      slot.append(t, n);
+      const n = document.createElement('div'); n.className = 'n'; n.textContent = s.nombre + (s.id === curId ? ' · ahora' : '');
+      slot.append(grip, t, n);
       if(s.desc){
         const d = document.createElement('div'); d.className = 'd'; d.textContent = s.desc;
         slot.appendChild(d);
       }
       slot.appendChild(botonAlarma(s));
+      // arrastre vertical → cambia la hora (3px ≈ 1 min, se ajusta a 5)
+      arrastrarBloque(grip, t, s);
       tl.appendChild(slot);
+    });
+  }
+  // #113 arrastre de un bloque para reprogramarlo. El asa evita chocar con
+  // el scroll de la página (solo arrastra si empiezas en el ⠿).
+  function arrastrarBloque(grip, tLabel, s){
+    grip.addEventListener('pointerdown', (e)=>{
+      e.preventDefault(); grip.setPointerCapture(e.pointerId);
+      const startY = e.clientY; const baseMin = minCrudos(s.hora);
+      let nuevoMin = baseMin;
+      const move = (ev)=>{
+        const delta = Math.round((ev.clientY - startY) / 3 / 5) * 5; // 3px/min, paso 5
+        nuevoMin = Math.max(0, Math.min(1439, baseMin + delta));
+        const h = Math.floor(nuevoMin / 60), m = nuevoMin % 60;
+        tLabel.textContent = h + ':' + String(m).padStart(2, '0'); // vista previa
+        tLabel.classList.add('drag');
+      };
+      const up = ()=>{
+        grip.removeEventListener('pointermove', move);
+        grip.removeEventListener('pointerup', up);
+        tLabel.classList.remove('drag');
+        const h = Math.floor(nuevoMin / 60), m = nuevoMin % 60;
+        const nueva = h + ':' + String(m).padStart(2, '0');
+        if(nueva !== s.hora){ s.hora = nueva; saveRutina(); renderRutina(); renderRutEditor(); }
+      };
+      grip.addEventListener('pointermove', move);
+      grip.addEventListener('pointerup', up);
     });
   }
 
@@ -2588,7 +2628,48 @@
       cont.appendChild(b);
     });
   }
-  $('rutPlantilla').addEventListener('click', ()=>{ renderRutPlantillas(); $('rutPlanWrap').hidden = false; });
+  // #114 plantillas PROPIAS: guarda tu rutina actual (ej. «Entre semana»,
+  // «Finde») y aplícala cuando quieras.
+  const RUT_TPL_KEY = 'reps-rutina-tpl';
+  let rutTpl = []; // [{id, nombre, bloques}]
+  function loadRutTpl(){
+    rutTpl = [];
+    try{ const v = JSON.parse(localStorage.getItem(RUT_TPL_KEY));
+      if(Array.isArray(v)) rutTpl = v.filter(t => t && typeof t.nombre === 'string' && Array.isArray(t.bloques))
+        .map(t => ({ id: t.id || ('t'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)), nombre: t.nombre.trim().slice(0,30), bloques: sanearRutina(t.bloques) || [] }))
+        .filter(t => t.bloques.length);
+    }catch(e){ rutTpl = []; }
+  }
+  function saveRutTpl(){ try{ localStorage.setItem(RUT_TPL_KEY, JSON.stringify(rutTpl)); }catch(e){} }
+  function renderRutPlanUser(){
+    const cont = $('rutPlanUser'); if(!cont) return; cont.innerHTML = '';
+    if(!rutTpl.length) return;
+    const t = document.createElement('div'); t.className = 't-sub'; t.textContent = 'Tus plantillas'; t.style.marginTop = '0';
+    cont.appendChild(t);
+    rutTpl.forEach(p => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'rutplan';
+      const nm = document.createElement('div'); nm.className = 'rp-nm'; nm.textContent = p.nombre;
+      const prev = document.createElement('div'); prev.className = 'rp-prev';
+      prev.textContent = [...p.bloques].sort((a,c)=>minutosDe(a.hora)-minutosDe(c.hora)).slice(0,4).map(x => x.hora + ' ' + x.nombre).join(' · ') + '…';
+      const del = document.createElement('span'); del.className = 'rp-del'; del.textContent = '✕'; del.setAttribute('role','button'); del.setAttribute('aria-label','Borrar plantilla');
+      del.addEventListener('click', (e)=>{ e.stopPropagation(); if(!confirm('¿Borrar la plantilla «' + p.nombre + '»?')) return; rutTpl = rutTpl.filter(x => x.id !== p.id); saveRutTpl(); renderRutPlanUser(); });
+      b.append(nm, prev, del);
+      b.addEventListener('click', ()=>{
+        if(!confirm('Reemplazar tu rutina actual por «' + p.nombre + '»?')) return;
+        rutina = p.bloques.map(x => ({ id:'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), ...x }));
+        saveRutina(); renderRutina(); renderRutEditor(); $('rutPlanWrap').hidden = true;
+        toast('Rutina «' + p.nombre + '» aplicada.');
+      });
+      cont.appendChild(b);
+    });
+  }
+  $('rutSaveTpl').addEventListener('click', ()=>{
+    const nombre = (prompt('Nombre de la plantilla (ej. «Entre semana», «Finde»):', '') || '').trim().slice(0,30);
+    if(!nombre) return;
+    rutTpl.unshift({ id:'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), nombre, bloques: rutina.map(s => ({ hora:s.hora, nombre:s.nombre, desc:s.desc, tipo:s.tipo })) });
+    saveRutTpl(); renderRutPlanUser(); toast('Plantilla «' + nombre + '» guardada. 💾');
+  });
+  $('rutPlantilla').addEventListener('click', ()=>{ renderRutPlanUser(); renderRutPlantillas(); $('rutPlanWrap').hidden = false; });
   $('rutPlanClose').addEventListener('click', ()=>{ $('rutPlanWrap').hidden = true; });
   $('rutPlanWrap').addEventListener('click', (e)=>{ if(e.target === $('rutPlanWrap')) $('rutPlanWrap').hidden = true; });
 
@@ -5323,7 +5404,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-diario', 'reps-sueno', 'reps-kanban', 'reps-retos', 'reps-energia', 'reps-solo', 'reps-ia-chat', 'reps-gratitud', 'reps-agua', 'reps-pausas', 'reps-sueno-rutina', 'reps-checkin', 'reps-mantra', 'reps-carta-futuro', 'reps-victorias', 'reps-brutal', 'reps-hoy-cfg', 'reps-degradado', 'reps-sonidos', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-diario', 'reps-sueno', 'reps-kanban', 'reps-retos', 'reps-energia', 'reps-solo', 'reps-ia-chat', 'reps-gratitud', 'reps-agua', 'reps-pausas', 'reps-sueno-rutina', 'reps-checkin', 'reps-mantra', 'reps-carta-futuro', 'reps-victorias', 'reps-brutal', 'reps-hoy-cfg', 'reps-degradado', 'reps-sonidos', 'reps-eventos', 'reps-viaje', 'reps-rutina-tpl', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -6757,6 +6838,88 @@
     renderBrutal();
   });
 
+  // ===== Estructura / tiempo (ideas #115–#116) =====
+
+  // ---- #115 Cuenta regresiva a eventos ----
+  const EVENTOS_KEY = 'reps-eventos';
+  let eventos = []; // [{id, nombre, fecha}]
+  function loadEventos(){
+    eventos = [];
+    try{ const v = JSON.parse(localStorage.getItem(EVENTOS_KEY));
+      if(Array.isArray(v)) eventos = v.filter(e => e && typeof e.id === 'string' && typeof e.nombre === 'string' && e.nombre.trim() && /^\d{4}-\d{2}-\d{2}$/.test(e.fecha))
+        .map(e => ({ id: e.id, nombre: e.nombre.trim().slice(0,40), fecha: e.fecha }));
+    }catch(e){ eventos = []; }
+  }
+  function saveEventos(){ try{ localStorage.setItem(EVENTOS_KEY, JSON.stringify(eventos)); }catch(e){} }
+  // el próximo evento futuro (o de hoy), el más cercano
+  function proximoEvento(){
+    const hoy = today();
+    return eventos.filter(e => e.fecha >= hoy).sort((a,b) => a.fecha.localeCompare(b.fecha))[0] || null;
+  }
+  function renderCuentaCard(){
+    const card = $('cuentaCard'); if(!card) return;
+    const ev = proximoEvento();
+    if(!ev){ card.hidden = true; return; }
+    const d = diasRestantes(ev.fecha);
+    card.hidden = false;
+    card.textContent = d === 0 ? '📅 ¡Hoy es «' + ev.nombre + '»!' : '📅 Faltan ' + d + ' día' + (d===1?'':'s') + ' para «' + ev.nombre + '»';
+  }
+  function renderEventos(){
+    const cont = $('evList'); if(!cont) return; cont.innerHTML = '';
+    const hoy = today();
+    const orden = eventos.slice().sort((a,b) => a.fecha.localeCompare(b.fecha));
+    if(!orden.length){ const e = document.createElement('div'); e.className = 'ev-empty'; e.textContent = 'Sin fechas aún. Agrega una arriba.'; cont.appendChild(e); return; }
+    orden.forEach(ev => {
+      const d = diasRestantes(ev.fecha);
+      const row = document.createElement('div'); row.className = 'ev-row' + (ev.fecha < hoy ? ' pasado' : '');
+      const body = document.createElement('div'); body.className = 'ev-body';
+      const nm = document.createElement('div'); nm.className = 'ev-nm'; nm.textContent = ev.nombre;
+      const ft = document.createElement('div'); ft.className = 'ev-ft';
+      ft.textContent = new Date(ev.fecha+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'}) +
+        ' · ' + (d > 0 ? 'faltan ' + d + 'd' : d === 0 ? '¡hoy!' : 'hace ' + (-d) + 'd');
+      body.append(nm, ft);
+      const del = document.createElement('button'); del.className = 'ev-del'; del.textContent = '✕'; del.setAttribute('aria-label','Borrar');
+      del.addEventListener('click', ()=>{ eventos = eventos.filter(x => x.id !== ev.id); saveEventos(); renderEventos(); renderCuentaCard(); });
+      row.append(body, del); cont.appendChild(row);
+    });
+  }
+  $('evAdd').addEventListener('click', ()=>{
+    const nombre = $('evNombre').value.trim().slice(0,40);
+    const fecha = $('evFecha').value;
+    if(!nombre){ toast('Ponle nombre al evento.'); return; }
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(fecha)){ toast('Elige una fecha.'); return; }
+    eventos.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), nombre, fecha });
+    saveEventos(); $('evNombre').value = ''; $('evFecha').value = '';
+    renderEventos(); renderCuentaCard(); sonarCheck(); toast('Evento agregado. 📅');
+  });
+  $('masEventos').addEventListener('click', ()=>{ cerrarMas(); renderEventos(); $('eventosWrap').hidden = false; });
+  $('evClose').addEventListener('click', ()=>{ $('eventosWrap').hidden = true; });
+  $('eventosWrap').addEventListener('click', (e)=>{ if(e.target === $('eventosWrap')) $('eventosWrap').hidden = true; });
+  $('cuentaCard').addEventListener('click', ()=>{ renderEventos(); $('eventosWrap').hidden = false; });
+
+  // ---- #116 Modo viaje / vacaciones ----
+  const VIAJE_KEY = 'reps-viaje';
+  function loadViaje(){
+    viaje = { activo:false, dias:{} };
+    try{ const v = JSON.parse(localStorage.getItem(VIAJE_KEY)); if(esMapa(v)){ viaje.activo = !!v.activo; if(esMapa(v.dias)) viaje.dias = v.dias; } }catch(e){ viaje = { activo:false, dias:{} }; }
+    if(viaje.activo) viaje.dias[today()] = true; // hoy cuenta como viaje mientras esté activo
+  }
+  function saveViaje(){ try{ localStorage.setItem(VIAJE_KEY, JSON.stringify(viaje)); }catch(e){} }
+  function renderViajeBanner(){
+    const b = $('viajeBanner'); if(b) b.hidden = !viaje.activo;
+    const st = $('masViajeState'); if(st) st.textContent = viaje.activo ? '● Activo' : '';
+    const sub = $('masViajeSub'); if(sub) sub.textContent = viaje.activo ? 'Activo — hoy y los días de viaje no cuentan' : 'Pausa expectativas sin romper tu racha';
+  }
+  function setViaje(on){
+    viaje.activo = on;
+    if(on) viaje.dias[today()] = true; // marca hoy; los días siguientes se marcan al abrir la app
+    saveViaje();
+    procesarRacha(); render();
+    toast(on ? '✈️ Modo viaje activado. Descansa sin culpa.' : 'Modo viaje terminado. ¡Bienvenido de vuelta!');
+  }
+  $('masViaje').addEventListener('click', ()=>{ cerrarMas(); setViaje(!viaje.activo); });
+  { const vo = $('viajeOff'); if(vo) vo.addEventListener('click', ()=> setViaje(false)); }
+
   // ===== Experiencia / personalización (ideas #106–#111) =====
 
   // ---- #106/#107 Personalizar Hoy: enciende/apaga tarjetas ----
@@ -6881,7 +7044,7 @@
     return { ganados, conReg };
   }
   function renderTimeline(){
-    const cont = $('tlList'); if(!cont) return; cont.innerHTML = '';
+    const cont = $('tlMeses'); if(!cont) return; cont.innerHTML = '';
     const keys = Object.keys(dias).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
     if(!keys.length){ const e = document.createElement('div'); e.className = 'tl-empty'; e.textContent = 'Aún no hay historia. Empieza hoy.'; cont.appendChild(e); return; }
     const primero = keys[0].slice(0,7);
@@ -7001,7 +7164,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-diario': diario, 'reps-sueno': sueno, 'reps-kanban': kanban, 'reps-retos': retos, 'reps-energia': energia, 'reps-solo': solo, 'reps-ia-chat': iaChat, 'reps-gratitud': gratitud, 'reps-agua': agua, 'reps-pausas': pausas, 'reps-sueno-rutina': suenoRut, 'reps-checkin': checkin, 'reps-mantra': mantra, 'reps-carta-futuro': cartaFut, 'reps-victorias': victorias, 'reps-brutal': brutal ? '1' : '', 'reps-hoy-cfg': hoyCfg, 'reps-degradado': grad.on ? grad : '', 'reps-sonidos': sonCfg, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-diario': diario, 'reps-sueno': sueno, 'reps-kanban': kanban, 'reps-retos': retos, 'reps-energia': energia, 'reps-solo': solo, 'reps-ia-chat': iaChat, 'reps-gratitud': gratitud, 'reps-agua': agua, 'reps-pausas': pausas, 'reps-sueno-rutina': suenoRut, 'reps-checkin': checkin, 'reps-mantra': mantra, 'reps-carta-futuro': cartaFut, 'reps-victorias': victorias, 'reps-brutal': brutal ? '1' : '', 'reps-hoy-cfg': hoyCfg, 'reps-degradado': grad.on ? grad : '', 'reps-sonidos': sonCfg, 'reps-eventos': eventos, 'reps-viaje': viaje, 'reps-rutina-tpl': rutTpl, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -7181,6 +7344,15 @@
         const snc = b.data['reps-sonidos'];
         if(esMapa(snc)) localStorage.setItem(SONIDOS_KEY, JSON.stringify(snc));
         else localStorage.removeItem(SONIDOS_KEY);
+        const evt2 = b.data['reps-eventos'];
+        if(Array.isArray(evt2)) localStorage.setItem(EVENTOS_KEY, JSON.stringify(evt2));
+        else localStorage.removeItem(EVENTOS_KEY);
+        const vje = b.data['reps-viaje'];
+        if(esMapa(vje)) localStorage.setItem(VIAJE_KEY, JSON.stringify(vje));
+        else localStorage.removeItem(VIAJE_KEY);
+        const rtp = b.data['reps-rutina-tpl'];
+        if(Array.isArray(rtp)) localStorage.setItem(RUT_TPL_KEY, JSON.stringify(rtp));
+        else localStorage.removeItem(RUT_TPL_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -7231,6 +7403,9 @@
       loadHoyCfg();
       loadGrad(); applyGrad();
       loadSonCfg();
+      loadEventos();
+      viaje = { activo:false, dias:{} }; loadViaje();
+      loadRutTpl();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -7275,6 +7450,7 @@
   loadSemana();    // antes de renderPlanHoy(): el banner lee el plan semanal
   loadSemFlex();   // ajustes de flexibilidad de la IA (los muestra el banner)
   loadCierreSemana(); // antes de renderSemana(): muestra el cierre de la semana
+  loadViaje();     // antes de procesarRacha: los días de viaje son descanso (idea #116)
   loadRacha();     // antes de render(): la racha visible usa los congelados
   procesarRacha(); // aplica congeladores por los días transcurridos
   loadCaidas();    // antes de render(): el ritual y El Espejo leen las caídas
@@ -7303,6 +7479,8 @@
   loadCartaFut(); // carta a tu futuro yo (idea #96)
   loadVictorias(); // muro de victorias (idea #98)
   loadBrutal(); // modo espejo brutal (idea #100)
+  loadEventos(); // cuenta regresiva (idea #115)
+  loadRutTpl(); // plantillas de rutina propias (idea #114)
   loadRecordatorios(); // antes de render(): suman al puntaje del día
   loadCapas(); renderCapas(); // mi ruta editable
   loadRutina();

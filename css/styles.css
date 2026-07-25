@@ -1244,3 +1244,34 @@ body.font-serif .anio-hero .an-big{font-family:Georgia,"Times New Roman",serif}
 .cfg-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px;cursor:pointer}
 .cfg-row input[type=checkbox]{width:20px;height:20px;accent-color:var(--amber);flex:none}
 .grad-opts{display:flex;gap:8px;margin-top:8px}
+
+/* ===== Bloque Tiempo v101 (#112-#116) ===== */
+/* #112 bloque en curso en la agenda */
+.slot.now{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber) inset}
+.slot .t.drag{color:var(--amber);font-weight:800}
+/* #113 asa de arrastre del bloque */
+.slot{position:relative}
+.slot-grip{position:absolute;top:8px;right:8px;color:var(--muted);cursor:grab;touch-action:none;font-size:14px;user-select:none}
+.slot-grip:active{cursor:grabbing}
+/* #114 borrar plantilla propia */
+.rutplan{position:relative}
+.rp-del{position:absolute;top:10px;right:12px;color:var(--muted);font-size:14px;cursor:pointer}
+/* #115 cuenta regresiva */
+.cuenta-card{display:block;width:100%;text-align:left;background:color-mix(in srgb,var(--teal) 12%,var(--card));border:1px solid color-mix(in srgb,var(--teal) 35%,var(--line));border-radius:14px;padding:12px 14px;margin:6px 0 12px;font-size:14px;font-weight:600;color:var(--text);cursor:pointer}
+.ev-add{margin-bottom:14px}
+.ev-add input{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:11px 12px;color:var(--text);font-size:14px;margin-bottom:8px}
+.ev-add-row{display:flex;gap:8px}
+.ev-add-row input{flex:1;margin-bottom:0}
+.ev-add-row button{background:var(--amber);color:var(--on-accent);border:none;border-radius:12px;padding:0 16px;font-size:20px;font-weight:800;cursor:pointer}
+.ev-empty{font-size:13px;color:var(--muted);text-align:center;padding:18px 0}
+.ev-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.ev-row:first-child{border-top:none}
+.ev-row.pasado{opacity:.5}
+.ev-body{flex:1;min-width:0}
+.ev-nm{font-size:15px;font-weight:600}
+.ev-ft{font-size:12px;color:var(--muted)}
+.ev-del{background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:2px 6px;flex:none}
+/* #116 banner modo viaje */
+.viaje-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;background:color-mix(in srgb,var(--teal) 14%,var(--card));border:1px solid color-mix(in srgb,var(--teal) 40%,var(--line));border-radius:14px;padding:11px 14px;margin:6px 0 12px;font-size:13px;line-height:1.4;font-weight:600}
+.viaje-banner button{background:var(--card-2);border:1px solid var(--line);color:var(--text);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+#masViajeState{font-size:12px;color:var(--teal);font-weight:700}

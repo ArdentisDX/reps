@@ -60,6 +60,11 @@
       </div>
       <div class="ring" id="dayRing" aria-label="Progreso de innegociables"><div class="ring-in"><span id="ringTxt">0/0</span></div></div>
     </div>
+    <div class="viaje-banner" id="viajeBanner" hidden>
+      <span id="viajeTxt">✈️ Modo viaje activo — hoy no cuenta, tu racha descansa contigo.</span>
+      <button type="button" id="viajeOff">Terminar</button>
+    </div>
+    <button class="cuenta-card" id="cuentaCard" type="button" hidden></button>
     <div class="pide" id="pide" hidden></div>
     <div class="empuje" id="empuje" hidden></div>
     <div class="riesgo" id="riesgoCard" hidden></div>
@@ -451,6 +456,9 @@
       <div class="mas-sec">Bienestar</div>
       <button class="mas-item" id="masBienestar"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6C19 16.5 12 21 12 21z"/></svg></span><span class="mas-tx"><b>Bienestar</b><i>Respiración, gratitud, agua, pausas, sueño</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
 
+      <button class="mas-item" id="masEventos"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 3v3M16 3v3"/></svg></span><span class="mas-tx"><b>Cuenta regresiva</b><i>Días para un examen, viaje o evento</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
+      <button class="mas-item" id="masViaje"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16l20-6-6 20-3-8-8-3 3-3z"/></svg></span><span class="mas-tx"><b>Modo viaje</b><i id="masViajeSub">Pausa expectativas sin romper tu racha</i></span><span class="mas-go" id="masViajeState"></span></button>
+
       <div class="mas-sec">Tu sistema</div>
       <button class="mas-item" id="masHabitos"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11M4 12h11M4 17h7"/><path d="m17.5 6.5 1.5 1.5 3-3"/></svg></span><span class="mas-tx"><b>Hábitos</b><i>Editar tus hábitos y core</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
       <button class="mas-item" id="masRutina"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg></span><span class="mas-tx"><b>Rutina del día</b><i>Editar los bloques de tu día</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
@@ -469,11 +477,26 @@
     </div>
   </div>
 
+  <div class="theme-wrap" id="eventosWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Cuenta regresiva</h2><button id="evClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-note" style="margin-bottom:10px">Fechas que importan: un examen, un viaje, un cumpleaños. La más cercana aparece en Hoy.</div>
+      <div class="ev-add">
+        <input type="text" id="evNombre" maxlength="40" placeholder="Nombre (ej. Examen final)">
+        <div class="ev-add-row">
+          <input type="date" id="evFecha" aria-label="Fecha">
+          <button id="evAdd">＋</button>
+        </div>
+      </div>
+      <div id="evList"></div>
+    </div>
+  </div>
+
   <div class="theme-wrap" id="timelineWrap" hidden>
     <div class="theme-sheet">
       <div class="t-head"><h2>Tu vida en REPS</h2><button id="tlClose" aria-label="Cerrar">✕</button></div>
       <div class="t-note" style="margin-bottom:10px">Cada mes desde que empezaste, mes a mes.</div>
-      <div id="tlList"></div>
+      <div id="tlMeses"></div>
     </div>
   </div>
 
@@ -842,6 +865,9 @@
     <div class="theme-sheet">
       <div class="t-head"><h2>Plantillas de rutina</h2><button id="rutPlanClose" aria-label="Cerrar">✕</button></div>
       <div class="t-note" style="margin-bottom:8px">Elige un día base y ajústalo a tu gusto. Reemplaza tu rutina actual (te preguntamos antes).</div>
+      <div id="rutPlanUser"></div>
+      <button class="hab-add" id="rutSaveTpl" style="margin-bottom:10px">💾 Guardar rutina actual como plantilla</button>
+      <div class="t-sub">Plantillas base</div>
       <div id="rutPlanList"></div>
     </div>
   </div>
