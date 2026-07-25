@@ -1185,3 +1185,29 @@ body.font-serif .anio-hero .an-big{font-family:Georgia,"Times New Roman",serif}
 .ci-opts{display:flex;gap:6px}
 .ci-opt{background:var(--card-2);border:1.5px solid var(--line);border-radius:12px;padding:6px 10px;font-size:20px;cursor:pointer;line-height:1}
 .ci-opt.on{border-color:var(--amber)}
+
+/* ===== Bloque Motivación v98 (#96-#100) ===== */
+/* #97 mantra */
+.mantra{display:block;width:100%;text-align:center;background:none;border:none;color:var(--text);font-size:16px;font-style:italic;font-weight:600;padding:6px 12px 10px;cursor:pointer;line-height:1.4}
+.mantra.vacio{color:var(--muted);font-style:normal;font-size:13px;font-weight:500}
+/* #96 carta futuro */
+.cf-lock{font-size:48px;text-align:center;margin:20px 0 12px}
+.cf-lock-txt{text-align:center;font-size:14px;color:var(--muted);line-height:1.5}
+.cf-carta{background:var(--card-2);border:1px solid var(--line);border-radius:14px;padding:16px;font-size:15px;line-height:1.6;white-space:pre-wrap}
+/* #98 victorias */
+.vi-add{display:flex;gap:8px;margin-bottom:14px}
+.vi-add input{flex:1;min-width:0;background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:11px 12px;color:var(--text);font-size:14px}
+.vi-add button{background:var(--amber);color:var(--on-accent);border:none;border-radius:12px;padding:0 16px;font-size:20px;font-weight:800;cursor:pointer}
+.vi-empty{font-size:13px;color:var(--muted);text-align:center;padding:20px 0}
+.vi-card{display:flex;align-items:flex-start;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+.vi-body{flex:1;min-width:0}
+.vi-tx{font-size:15px;line-height:1.4;font-weight:600}
+.vi-fecha{font-size:11px;color:var(--muted);margin-top:3px}
+.vi-del{background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:2px 4px;flex:none}
+/* #99 frases de identidad */
+.id-frase{font-size:14px;font-weight:700;color:var(--amber);padding:8px 0;line-height:1.4;border-bottom:1px solid var(--line)}
+/* #100 modo brutal */
+.brutal-toggle{background:var(--card-2);border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer}
+.brutal-toggle.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+.brutal-card{margin-top:12px;background:#0a0a0a;border:1px solid #333;border-radius:12px;padding:14px}
+.brutal-card .br-line{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:#e8e8e8;padding:4px 0;line-height:1.4}

@@ -289,11 +289,11 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 (Todo agrupado en el hub «Bienestar» del menú Más; el chequeo #91 vive en Hoy.)
 
 **Motivación / identidad**
-96. "Carta desde tu futuro yo" (a 1 año) que se abre en la fecha.
-97. Frase/mantra personal fijado arriba de Hoy.
-98. Muro de victorias (captura momentos de orgullo).
-99. Contador de identidad ampliado ("ya eres alguien que…").
-100. Modo espejo brutal (opcional): datos duros sin adornos.
+96. ✅ Carta a tu futuro yo (se sella y se abre en 1 año; reps-carta-futuro). (v98)
+97. ✅ Frase/mantra fijado arriba de Hoy (tap para editar; reps-mantra). (v98)
+98. ✅ Muro de victorias (momentos de orgullo; reps-victorias). (v98)
+99. ✅ Frases de identidad ("X ya es parte de quién eres" al cruzar 10×). (v98)
+100. ✅ Modo espejo brutal: números duros sin adornos (toggle en El Espejo). (v98)
 
 **Datos / visualización**
 101. Mapa de calor por hábito (no solo global).

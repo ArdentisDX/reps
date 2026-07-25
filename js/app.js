@@ -875,6 +875,7 @@
 
     renderAhora(); // HUD del bloque en curso (El Ahora)
     const dw = $('despWrap'); if(dw){ dw.innerHTML = ''; dw.appendChild(buildDespertarUI(hoyKey)); }
+    renderMantra(); // frase/mantra arriba de Hoy (idea #97)
     renderEnergia(); // semáforo de energía del día (idea #77)
     renderCheckin(); // chequeo de ánimo a media jornada (idea #91)
     renderStats(); // mantiene la pestaña Stats al día con cada cambio
@@ -1764,6 +1765,13 @@
     // Las rachas se rompen; estos números solo crecen.
     const il = $('identList'); il.innerHTML = '';
 
+    // frases de identidad (idea #99): "ya eres alguien que…" al cruzar umbrales
+    frasesIdentidad().forEach(f => {
+      const row = document.createElement('div'); row.className = 'id-frase';
+      row.textContent = '✦ ' + f.txt;
+      il.appendChild(row);
+    });
+
     // regresos: caer y volver es la habilidad. Va primero y resaltado.
     const reg = contarRegresos();
     if(reg > 0){
@@ -1807,6 +1815,7 @@
       });
     }
 
+    renderBrutal(); // modo espejo brutal (idea #100)
     renderCompa(s.total);
     renderRecompensas(s.total);
     renderRecordatorios();
@@ -5294,7 +5303,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-diario', 'reps-sueno', 'reps-kanban', 'reps-retos', 'reps-energia', 'reps-solo', 'reps-ia-chat', 'reps-gratitud', 'reps-agua', 'reps-pausas', 'reps-sueno-rutina', 'reps-checkin', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-diario', 'reps-sueno', 'reps-kanban', 'reps-retos', 'reps-energia', 'reps-solo', 'reps-ia-chat', 'reps-gratitud', 'reps-agua', 'reps-pausas', 'reps-sueno-rutina', 'reps-checkin', 'reps-mantra', 'reps-carta-futuro', 'reps-victorias', 'reps-brutal', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -6585,13 +6594,156 @@
     });
   })();
 
+  // ===== Motivación / identidad (ideas #96–#100) =====
+
+  // ---- #97 Mantra fijado arriba de Hoy ----
+  const MANTRA_KEY = 'reps-mantra';
+  let mantra = '';
+  function loadMantra(){ try{ const v = localStorage.getItem(MANTRA_KEY); mantra = typeof v === 'string' ? v : ''; }catch(e){ mantra = ''; } }
+  function saveMantra(){ try{ if(mantra) localStorage.setItem(MANTRA_KEY, mantra); else localStorage.removeItem(MANTRA_KEY); }catch(e){} }
+  function renderMantra(){
+    const el = $('mantra'); if(!el) return;
+    el.hidden = false;
+    el.textContent = mantra ? '“' + mantra + '”' : '✏️ Fija tu frase o mantra';
+    el.classList.toggle('vacio', !mantra);
+  }
+  $('mantra').addEventListener('click', ()=>{
+    const v = prompt('Tu frase o mantra (aparece arriba de Hoy):', mantra);
+    if(v === null) return;
+    mantra = v.trim().slice(0, 120); saveMantra(); renderMantra();
+    toast(mantra ? 'Mantra fijado.' : 'Mantra quitado.');
+  });
+
+  // ---- #96 Carta a tu futuro yo (sellada 1 año) ----
+  const CARTA_FUT_KEY = 'reps-carta-futuro';
+  let cartaFut = null; // {texto, escrita, abre}
+  function loadCartaFut(){
+    cartaFut = null;
+    try{ const v = JSON.parse(localStorage.getItem(CARTA_FUT_KEY));
+      if(esMapa(v) && typeof v.texto === 'string' && v.texto.trim()) cartaFut = { texto: v.texto, escrita: v.escrita || today(), abre: /^\d{4}-\d{2}-\d{2}$/.test(v.abre) ? v.abre : today() };
+    }catch(e){ cartaFut = null; }
+  }
+  function saveCartaFut(){ try{ if(cartaFut) localStorage.setItem(CARTA_FUT_KEY, JSON.stringify(cartaFut)); else localStorage.removeItem(CARTA_FUT_KEY); }catch(e){} }
+  function renderCartaFut(){
+    const ed = $('cfEditor'), se = $('cfSellada'), ab = $('cfAbierta');
+    ed.hidden = true; se.hidden = true; ab.hidden = true;
+    if(!cartaFut){ ed.hidden = false; $('cfTxt').value = ''; return; }
+    const abierta = today() >= cartaFut.abre;
+    if(abierta){
+      ab.hidden = false;
+      $('cfAbiertaMeta').textContent = 'La escribiste el ' + new Date(cartaFut.escrita+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'}) + '. Hoy se abre.';
+      $('cfCartaTxt').textContent = cartaFut.texto;
+    } else {
+      se.hidden = false;
+      const d = new Date(cartaFut.abre+'T12:00:00');
+      const faltan = Math.ceil((d - new Date(today()+'T12:00:00')) / 86400000);
+      $('cfLockTxt').textContent = 'Sellada hasta el ' + d.toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'}) + '. Faltan ' + faltan + ' día' + (faltan===1?'':'s') + '.';
+    }
+  }
+  $('masCartaFuturo').addEventListener('click', ()=>{ cerrarMas(); renderCartaFut(); $('cartaFuturoWrap').hidden = false; });
+  $('cfClose').addEventListener('click', ()=>{ $('cartaFuturoWrap').hidden = true; });
+  $('cartaFuturoWrap').addEventListener('click', (e)=>{ if(e.target === $('cartaFuturoWrap')) $('cartaFuturoWrap').hidden = true; });
+  $('cfSave').addEventListener('click', ()=>{
+    const t = $('cfTxt').value.trim();
+    if(!t){ toast('Escribe algo primero.'); return; }
+    const d = new Date(today()+'T12:00:00'); d.setFullYear(d.getFullYear() + 1);
+    cartaFut = { texto: t.slice(0,2000), escrita: today(), abre: localISO(d) };
+    saveCartaFut(); renderCartaFut(); sonarGanado(); toast('Sellada. Nos vemos en un año. 🔒');
+  });
+  $('cfBorrar').addEventListener('click', ()=>{ if(!confirm('¿Romper el sello y escribir otra? La actual se borra.')) return; cartaFut = null; saveCartaFut(); renderCartaFut(); });
+  $('cfNueva').addEventListener('click', ()=>{ cartaFut = null; saveCartaFut(); renderCartaFut(); });
+
+  // ---- #98 Muro de victorias ----
+  const VICT_KEY = 'reps-victorias';
+  let victorias = []; // [{id, texto, fecha}]
+  function loadVictorias(){
+    victorias = [];
+    try{ const v = JSON.parse(localStorage.getItem(VICT_KEY));
+      if(Array.isArray(v)) victorias = v.filter(x => x && typeof x.id === 'string' && typeof x.texto === 'string' && x.texto.trim())
+        .map(x => ({ id: x.id, texto: x.texto.trim().slice(0,140), fecha: /^\d{4}-\d{2}-\d{2}$/.test(x.fecha) ? x.fecha : today() }));
+    }catch(e){ victorias = []; }
+  }
+  function saveVictorias(){ try{ localStorage.setItem(VICT_KEY, JSON.stringify(victorias)); }catch(e){} }
+  function renderVictorias(){
+    const cont = $('viList'); if(!cont) return; cont.innerHTML = '';
+    if(!victorias.length){ const e = document.createElement('div'); e.className = 'vi-empty'; e.textContent = 'Aún no hay victorias. Anota la primera arriba. 🏆'; cont.appendChild(e); return; }
+    victorias.forEach(v => {
+      const card = document.createElement('div'); card.className = 'vi-card';
+      const body = document.createElement('div'); body.className = 'vi-body';
+      const tx = document.createElement('div'); tx.className = 'vi-tx'; tx.textContent = v.texto;
+      const dt = document.createElement('div'); dt.className = 'vi-fecha'; dt.textContent = new Date(v.fecha+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'});
+      body.append(tx, dt);
+      const del = document.createElement('button'); del.className = 'vi-del'; del.textContent = '✕'; del.setAttribute('aria-label','Borrar');
+      del.addEventListener('click', ()=>{ victorias = victorias.filter(x => x.id !== v.id); saveVictorias(); renderVictorias(); });
+      card.append(body, del); cont.appendChild(card);
+    });
+  }
+  $('viAdd').addEventListener('click', ()=>{
+    const t = $('viInput').value.trim().slice(0,140);
+    if(!t){ toast('Escribe tu victoria.'); return; }
+    victorias.unshift({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), texto: t, fecha: today() });
+    saveVictorias(); $('viInput').value = ''; renderVictorias(); sonarCheck(); toast('¡Victoria guardada! 🏆');
+  });
+  $('viInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); $('viAdd').click(); } });
+  $('masVictorias').addEventListener('click', ()=>{ cerrarMas(); renderVictorias(); $('victoriasWrap').hidden = false; });
+  $('viClose').addEventListener('click', ()=>{ $('victoriasWrap').hidden = true; });
+  $('victoriasWrap').addEventListener('click', (e)=>{ if(e.target === $('victoriasWrap')) $('victoriasWrap').hidden = true; });
+
+  // ---- #99 Frases de identidad ("ya eres alguien que…") ----
+  // Derivadas de tus totales: al cruzar umbrales, un hábito deja de ser algo
+  // que "haces" y pasa a ser algo que "eres". Se muestran arriba de Identidad.
+  function frasesIdentidad(){
+    const out = [];
+    HABITS.forEach(h => {
+      const n = Object.keys(dias).filter(k => dias[k] && hecho(dias[k], h.id)).length;
+      if(n >= 10){
+        // plantilla que suena natural con cualquier nombre de hábito
+        out.push({ txt: h.name + ' ya es parte de quién eres (' + n + '×)', n });
+      }
+    });
+    return out.sort((a,b) => b.n - a.n).slice(0, 6);
+  }
+
+  // ---- #100 Modo espejo brutal ----
+  const BRUTAL_KEY = 'reps-brutal';
+  let brutal = false;
+  function loadBrutal(){ try{ brutal = localStorage.getItem(BRUTAL_KEY) === '1'; }catch(e){ brutal = false; } }
+  function renderBrutal(){
+    const card = $('brutalCard'), tg = $('brutalToggle'); if(!card || !tg) return;
+    tg.classList.toggle('on', brutal);
+    if(!brutal){ card.hidden = true; return; }
+    // números duros, sin adornos: días con requisito, ganados, perdidos, tasa real
+    let req = 0, won = 0, lost = 0;
+    Object.keys(dias).forEach(k => {
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(k) || k > today() || esDescanso(k)) return;
+      req++; if(esGanado(k)) won++; else lost++;
+    });
+    const s = statsData();
+    const tasa = req ? Math.round(won / req * 100) : 0;
+    // caídas de racha (transiciones ganado→perdido) ~ regresos requeridos
+    const lineas = [
+      'Días que exigían core: ' + req,
+      'Ganados: ' + won + '  ·  Perdidos: ' + lost,
+      'Tasa real de cumplimiento: ' + tasa + '%',
+      'Racha actual: ' + s.now + '  ·  Mejor histórica: ' + s.best,
+      s.now < s.best ? 'Estás ' + (s.best - s.now) + ' días por debajo de tu mejor marca.' : 'Estás en tu mejor marca. No la sueltes.',
+    ];
+    card.hidden = false; card.innerHTML = '';
+    lineas.forEach(t => { const d = document.createElement('div'); d.className = 'br-line'; d.textContent = t; card.appendChild(d); });
+  }
+  $('brutalToggle').addEventListener('click', ()=>{
+    brutal = !brutal;
+    try{ if(brutal) localStorage.setItem(BRUTAL_KEY, '1'); else localStorage.removeItem(BRUTAL_KEY); }catch(e){}
+    renderBrutal();
+  });
+
   // ===== Respaldo: exportar / importar =====
   function exportBackup(){
     const backup = {
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-diario': diario, 'reps-sueno': sueno, 'reps-kanban': kanban, 'reps-retos': retos, 'reps-energia': energia, 'reps-solo': solo, 'reps-ia-chat': iaChat, 'reps-gratitud': gratitud, 'reps-agua': agua, 'reps-pausas': pausas, 'reps-sueno-rutina': suenoRut, 'reps-checkin': checkin, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-diario': diario, 'reps-sueno': sueno, 'reps-kanban': kanban, 'reps-retos': retos, 'reps-energia': energia, 'reps-solo': solo, 'reps-ia-chat': iaChat, 'reps-gratitud': gratitud, 'reps-agua': agua, 'reps-pausas': pausas, 'reps-sueno-rutina': suenoRut, 'reps-checkin': checkin, 'reps-mantra': mantra, 'reps-carta-futuro': cartaFut, 'reps-victorias': victorias, 'reps-brutal': brutal ? '1' : '', 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -6751,6 +6903,17 @@
         const chk = b.data['reps-checkin'];
         if(esMapa(chk)) localStorage.setItem(CHECKIN_KEY, JSON.stringify(chk));
         else localStorage.removeItem(CHECKIN_KEY);
+        const mnt = b.data['reps-mantra'];
+        if(typeof mnt === 'string' && mnt) localStorage.setItem(MANTRA_KEY, mnt);
+        else localStorage.removeItem(MANTRA_KEY);
+        const cfu = b.data['reps-carta-futuro'];
+        if(esMapa(cfu)) localStorage.setItem(CARTA_FUT_KEY, JSON.stringify(cfu));
+        else localStorage.removeItem(CARTA_FUT_KEY);
+        const vic = b.data['reps-victorias'];
+        if(Array.isArray(vic)) localStorage.setItem(VICT_KEY, JSON.stringify(vic));
+        else localStorage.removeItem(VICT_KEY);
+        if(b.data['reps-brutal'] === '1') localStorage.setItem(BRUTAL_KEY, '1');
+        else localStorage.removeItem(BRUTAL_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -6794,6 +6957,10 @@
       pausas = { intervalo:60, activo:false }; loadPausas(); armarPausas();
       suenoRut = {}; loadSuenoRut();
       checkin = {}; loadCheckin();
+      mantra = ''; loadMantra();
+      cartaFut = null; loadCartaFut();
+      victorias = []; loadVictorias();
+      brutal = false; loadBrutal();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -6859,6 +7026,10 @@
   loadPausas(); armarPausas(); // pausas activas (idea #94)
   loadSuenoRut(); // higiene del sueño (idea #95)
   loadCheckin(); // chequeo de media jornada (idea #91)
+  loadMantra(); // mantra arriba de Hoy (idea #97)
+  loadCartaFut(); // carta a tu futuro yo (idea #96)
+  loadVictorias(); // muro de victorias (idea #98)
+  loadBrutal(); // modo espejo brutal (idea #100)
   loadRecordatorios(); // antes de render(): suman al puntaje del día
   loadCapas(); renderCapas(); // mi ruta editable
   loadRutina();
