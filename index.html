@@ -453,7 +453,14 @@
         <div class="fin-io"><span class="fin-ing" id="finIng">+ $0</span><span class="fin-gas" id="finGas">− $0</span></div>
         <div class="fin-vs" id="finVs" hidden></div>
         <div class="fin-proy" id="finProy" hidden></div>
+        <div class="fin-ahorro-mes" id="finAhorroMes" hidden></div>
       </div>
+      <div class="fin-card fin-semana" id="finSemana" hidden></div>
+      <div class="fin-card fin-proximos" id="finProximos" hidden>
+        <div class="fin-card-t">📅 Próximos pagos</div>
+        <div id="finProxList"></div>
+      </div>
+      <div class="fin-card fin-hormiga" id="finHormiga" hidden></div>
       <div class="fin-presu-bar" id="finPresuBar" hidden>
         <div class="fin-presu-top"><span id="finPresuTxt"></span><span id="finPresuPct"></span></div>
         <div class="bar"><i id="finPresuFill"></i></div>
@@ -489,6 +496,14 @@
         <input id="finMetaObj" type="number" inputmode="decimal" min="1" placeholder="$ objetivo">
         <button id="finMetaAdd">＋</button>
       </div>
+
+      <div class="t-sub">Días sin gastar</div>
+      <div id="finNoGasto"></div>
+      <div class="fin-nogasto-add">
+        <select id="finNoGastoCat" aria-label="Categoría a vigilar"></select>
+        <button id="finNoGastoAdd">＋ Vigilar</button>
+      </div>
+      <div class="t-note">Elige una categoría y cuenta tus días limpios sin gastar en ella (ej. no pedir comida a domicilio).</div>
 
       <div class="t-sub">Carteras</div>
       <div id="finCarteras"></div>

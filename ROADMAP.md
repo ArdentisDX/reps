@@ -263,12 +263,12 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 77. ✅ "Semáforo de energía" del día que sugiere cómo encarar lo que falta. (v94)
 
 **Finanzas**
-78. Reporte semanal de gastos (resumen automático cada domingo).
-79. Ahorro sincero: al aportar a una meta, el saldo real baja (o marca de dónde salió), para saber EXACTO cuánto tienes ahorrado sin mentirte. (Reemplaza el "redondeo": aquí no hay banco real, redondear sería dinero falso.)
-80. Sobres/presupuesto por sobres (envelope budgeting).
-81. Recordatorio de pago de deudas/suscripciones con fecha.
-82. 🧠 Detectar gastos hormiga (la IA marca fugas pequeñas repetidas).
-83. Meta "no gastar" (días sin gastar en X categoría).
+78. ✅ Reporte semanal de gastos (tarjeta "Esta semana" vs la anterior). (v95)
+79. ✅ Ahorro sincero: aportar registra un movimiento de ahorro y baja tu saldo real; botón Retirar. (v95)
+80. ✅ Sobres/presupuesto por sobres (tope por categoría con "queda $X"). (v95)
+81. ✅ Próximos pagos (suscripciones ordenadas por cuándo tocan, avisa a ≤3 días). (v95)
+82. ✅ Detectar gastos hormiga (detección LOCAL de compras chicas repetidas, sin IA). (v95)
+83. ✅ Días sin gastar en X categoría (racha de días limpios por categoría vigilada). (v95)
 
 **IA / asistente**
 84. 🧠 Chat con memoria persistente (recuerda tus charlas, no solo la sesión).

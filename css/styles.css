@@ -1089,3 +1089,35 @@ body.font-serif .anio-hero .an-big{font-family:Georgia,"Times New Roman",serif}
 .reto-ops{display:flex;gap:8px;margin-top:12px}
 .reto-op{flex:1;background:var(--card-2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:8px;font-size:15px;font-weight:800;cursor:pointer}
 .reto-op.mas{background:var(--amber);color:var(--on-accent);border-color:var(--amber)}
+
+/* ===== Bloque Finanzas v95 (#78,#79,#80,#81,#82,#83) ===== */
+.fin-ahorro-mes{font-size:12px;color:var(--teal);margin-top:6px;font-weight:600}
+.fin-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:0 0 12px}
+.fin-card-t{font-size:13px;font-weight:800;margin-bottom:8px}
+/* #78 semanal */
+.fin-sem-big{font-size:26px;font-weight:800}
+.fin-sem-sub{font-size:12px;color:var(--muted);margin-top:2px}
+/* #81 próximos pagos */
+.fin-prox{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.fin-prox:first-child{border-top:none}
+.fin-prox.pronto .fp-when{color:var(--amber);font-weight:700}
+.fp-em{font-size:18px;flex:none}
+.fp-body{flex:1;min-width:0}
+.fp-nm{font-size:14px;font-weight:600}
+.fp-when{font-size:11px;color:var(--muted)}
+.fp-amt{font-size:14px;font-weight:700;flex:none}
+/* #82 hormiga */
+.fin-horm-b{font-size:13px;line-height:1.4;color:var(--text)}
+/* #83 días sin gastar */
+.fin-ng{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.fin-ng:first-child{border-top:none}
+.fng-em{font-size:18px;flex:none}
+.fng-body{flex:1;min-width:0}
+.fng-nm{font-size:14px;font-weight:600}
+.fng-st{font-size:11px;color:var(--muted)}
+.fng-del{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 6px;flex:none}
+.fin-nogasto-add{display:flex;gap:8px;margin-top:8px}
+.fin-nogasto-add select{flex:1;min-width:0;background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:9px;color:var(--text);font-size:13px}
+.fin-nogasto-add button{background:var(--card-2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:9px 12px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+/* #79 botón retirar */
+.fin-meta-ret{background:var(--card-2)!important;color:var(--muted)!important}

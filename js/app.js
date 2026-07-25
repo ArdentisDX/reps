@@ -5311,17 +5311,17 @@
       {id:'otros',emoji:'📦',name:'Otros'},
     ],
   };
-  let fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[], deudas:[], carteras:[] };
+  let fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[], deudas:[], carteras:[], noGasto:[] };
   let finTipo = 'gasto';
   let finCatSel = { gasto:'comida', ingreso:'sueldo' };
 
   function loadFin(){
-    fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[], deudas:[], carteras:[] };
+    fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[], deudas:[], carteras:[], noGasto:[] };
     try{
       const v = JSON.parse(localStorage.getItem(FIN_KEY));
       if(esMapa(v)){
         if(Array.isArray(v.movs)) fin.movs = v.movs.filter(m => m && typeof m.id === 'string' &&
-          (m.tipo === 'gasto' || m.tipo === 'ingreso') && Number.isFinite(+m.monto) && typeof m.fecha === 'string');
+          (m.tipo === 'gasto' || m.tipo === 'ingreso' || m.tipo === 'ahorro') && Number.isFinite(+m.monto) && typeof m.fecha === 'string');
         if(Number.isFinite(+v.presupuesto) && +v.presupuesto >= 0) fin.presupuesto = +v.presupuesto;
         if(esMapa(v.presuCat)) Object.keys(v.presuCat).forEach(k => {
           if(Number.isFinite(+v.presuCat[k]) && +v.presuCat[k] > 0) fin.presuCat[k] = +v.presuCat[k];
@@ -5339,8 +5339,9 @@
             tipo: d.tipo === 'meDeben' ? 'meDeben' : 'debo', saldada: !!d.saldada, creada: d.creada || new Date().toISOString() }));
         if(Array.isArray(v.carteras)) fin.carteras = v.carteras.filter(w => w && typeof w.id === 'string' &&
           typeof w.nombre === 'string' && w.nombre.trim()).map(w => ({ id: w.id, nombre: w.nombre.trim().slice(0,24) }));
+        if(Array.isArray(v.noGasto)) fin.noGasto = [...new Set(v.noGasto.filter(id => FIN_CATS.gasto.some(c => c.id === id)))]; // categorías vigiladas (idea #83)
       }
-    }catch(e){ fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[], deudas:[], carteras:[] }; }
+    }catch(e){ fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[], deudas:[], carteras:[], noGasto:[] }; }
     procesarSubs(); // registra los fijos que ya tocan este mes
   }
   // registra como gasto las suscripciones cuyo día ya llegó y aún no están
@@ -5389,12 +5390,136 @@
       cont.appendChild(b);
     });
   }
+  // suma de gastos "de verdad" (excluye ahorro y fijos) en un rango de fechas
+  function gastoEntre(desde, hasta){
+    return fin.movs.filter(m => m.tipo === 'gasto' && m.fecha >= desde && m.fecha <= hasta)
+      .reduce((s,m) => s + (+m.monto), 0);
+  }
+  // #78 Reporte semanal: gasto de esta semana (lun–hoy) vs la anterior
+  function renderFinSemana(){
+    const card = $('finSemana'); if(!card) return;
+    const mon = mondayOf(new Date());
+    const lunKey = localISO(mon);
+    const hoyKey = today();
+    const estaSem = gastoEntre(lunKey, hoyKey);
+    // misma cantidad de días de la semana pasada
+    const monPrev = new Date(mon); monPrev.setDate(monPrev.getDate() - 7);
+    const finPrev = new Date(monPrev); finPrev.setDate(finPrev.getDate() + (new Date(hoyKey+'T12:00:00') - mon) / 86400000);
+    const semPrev = gastoEntre(localISO(monPrev), localISO(finPrev));
+    if(estaSem === 0 && semPrev === 0){ card.hidden = true; return; }
+    // categoría top de la semana
+    const porCat = {};
+    fin.movs.filter(m => m.tipo === 'gasto' && m.fecha >= lunKey && m.fecha <= hoyKey)
+      .forEach(m => { porCat[m.cat] = (porCat[m.cat] || 0) + (+m.monto); });
+    const topId = Object.keys(porCat).sort((a,b)=>porCat[b]-porCat[a])[0];
+    const topC = topId ? finCatOf('gasto', topId) : null;
+    let cmp = '';
+    if(semPrev > 0){ const dif = Math.round((estaSem - semPrev)/semPrev*100);
+      cmp = dif === 0 ? ' · igual que la semana pasada' : (dif > 0 ? ' · ' + dif + '% más que la pasada' : ' · ' + Math.abs(dif) + '% menos que la pasada'); }
+    card.hidden = false;
+    card.innerHTML = '';
+    const t = document.createElement('div'); t.className = 'fin-card-t'; t.textContent = '🗓️ Esta semana';
+    const big = document.createElement('div'); big.className = 'fin-sem-big'; big.textContent = fmtDinero(estaSem);
+    const sub = document.createElement('div'); sub.className = 'fin-sem-sub';
+    sub.textContent = (topC ? 'Más en ' + topC.emoji + ' ' + topC.name : 'Sin gastos aún') + cmp;
+    card.append(t, big, sub);
+  }
+  // #81 Próximos pagos: suscripciones ordenadas por cuándo toca su día
+  function renderFinProximos(){
+    const wrap = $('finProximos'); if(!wrap) return;
+    const list = $('finProxList'); list.innerHTML = '';
+    const subs = (fin.subs || []);
+    if(!subs.length){ wrap.hidden = true; return; }
+    wrap.hidden = false;
+    const hoyDia = new Date().getDate();
+    const conFalta = subs.map(sb => {
+      const pagadoEsteMes = fin.movs.some(m => m.sub === sb.id && (m.fecha||'').startsWith(mesActual()));
+      // días hasta su próximo cobro (si ya pasó y está pagado, cuenta al mes que viene)
+      let falta = sb.dia - hoyDia;
+      if(falta < 0 || (falta === 0 && pagadoEsteMes)) falta += 30; // aprox mes siguiente
+      return { sb, falta, pagadoEsteMes };
+    }).sort((a,b) => a.falta - b.falta);
+    conFalta.forEach(({sb, falta, pagadoEsteMes}) => {
+      const c = finCatOf('gasto', sb.cat);
+      const row = document.createElement('div'); row.className = 'fin-prox';
+      const em = document.createElement('span'); em.className = 'fp-em'; em.textContent = c ? c.emoji : '📄';
+      const body = document.createElement('div'); body.className = 'fp-body';
+      const nm = document.createElement('div'); nm.className = 'fp-nm'; nm.textContent = sb.nombre;
+      const meta = document.createElement('div'); meta.className = 'fp-when';
+      meta.textContent = pagadoEsteMes && sb.dia <= hoyDia ? 'pagado este mes' : (falta === 0 ? '¡hoy!' : 'en ' + falta + ' día' + (falta===1?'':'s'));
+      body.append(nm, meta);
+      const amt = document.createElement('span'); amt.className = 'fp-amt'; amt.textContent = fmtDinero(sb.monto);
+      if(falta <= 3 && !(pagadoEsteMes && sb.dia <= hoyDia)) row.classList.add('pronto');
+      row.append(em, body, amt);
+      list.appendChild(row);
+    });
+  }
+  // #82 Gastos hormiga: compras chicas y repetidas (detección local, sin IA)
+  function renderFinHormiga(){
+    const card = $('finHormiga'); if(!card) return;
+    const mes = mesActual();
+    const UMBRAL = 150; // "chico" (pesos)
+    const chicos = fin.movs.filter(m => m.tipo === 'gasto' && !m.sub && (m.fecha||'').startsWith(mes) && (+m.monto) <= UMBRAL);
+    if(chicos.length < 5){ card.hidden = true; return; }
+    const total = chicos.reduce((s,m)=>s+(+m.monto),0);
+    const porCat = {};
+    chicos.forEach(m => { porCat[m.cat] = (porCat[m.cat] || 0) + (+m.monto); });
+    const topId = Object.keys(porCat).sort((a,b)=>porCat[b]-porCat[a])[0];
+    const topC = finCatOf('gasto', topId);
+    card.hidden = false; card.innerHTML = '';
+    const t = document.createElement('div'); t.className = 'fin-card-t'; t.textContent = '🐜 Gastos hormiga';
+    const b = document.createElement('div'); b.className = 'fin-horm-b';
+    b.textContent = chicos.length + ' compras chicas (≤' + fmtDinero(UMBRAL) + ') suman ' + fmtDinero(total) + ' este mes' + (topC ? ', sobre todo en ' + topC.emoji + ' ' + topC.name : '') + '.';
+    card.append(t, b);
+  }
+  // #83 Días sin gastar: por cada categoría vigilada, racha de días limpios
+  function renderFinNoGasto(){
+    const cont = $('finNoGasto'); if(!cont) return; cont.innerHTML = '';
+    const hoyKey = today();
+    (fin.noGasto || []).forEach(catId => {
+      const c = finCatOf('gasto', catId); if(!c) return;
+      // última fecha con gasto en esa categoría
+      const fechas = fin.movs.filter(m => m.tipo === 'gasto' && m.cat === catId).map(m => m.fecha).sort();
+      const ultima = fechas[fechas.length - 1] || null;
+      let dias;
+      if(!ultima) dias = null; // nunca has gastado ahí
+      else { dias = Math.round((new Date(hoyKey+'T12:00:00') - new Date(ultima+'T12:00:00')) / 86400000); }
+      const row = document.createElement('div'); row.className = 'fin-ng';
+      const em = document.createElement('span'); em.className = 'fng-em'; em.textContent = c.emoji;
+      const body = document.createElement('div'); body.className = 'fng-body';
+      const nm = document.createElement('div'); nm.className = 'fng-nm'; nm.textContent = c.name;
+      const st = document.createElement('div'); st.className = 'fng-st';
+      st.textContent = dias === null ? 'Aún limpio (sin registros)' : dias === 0 ? 'Hoy gastaste aquí' : dias + ' día' + (dias===1?'':'s') + ' sin gastar 🔥';
+      body.append(nm, st);
+      const del = document.createElement('button'); del.className = 'fng-del'; del.textContent = '✕'; del.setAttribute('aria-label', 'Dejar de vigilar');
+      del.addEventListener('click', ()=>{ fin.noGasto = fin.noGasto.filter(x => x !== catId); saveFin(); renderFin(); });
+      row.append(em, body, del);
+      cont.appendChild(row);
+    });
+    // llena el select con categorías aún no vigiladas
+    const sel = $('finNoGastoCat'); if(sel){ sel.innerHTML = '';
+      FIN_CATS.gasto.filter(c => !(fin.noGasto||[]).includes(c.id)).forEach(c => {
+        const o = document.createElement('option'); o.value = c.id; o.textContent = c.emoji + ' ' + c.name; sel.appendChild(o);
+      });
+    }
+  }
+
   function renderFin(){
     const mes = mesActual();
     const delMes = fin.movs.filter(m => (m.fecha || '').startsWith(mes));
     const ingresos = delMes.filter(m => m.tipo === 'ingreso').reduce((s,m) => s + (+m.monto), 0);
     const gastos = delMes.filter(m => m.tipo === 'gasto').reduce((s,m) => s + (+m.monto), 0);
-    const saldo = ingresos - gastos;
+    // ahorro apartado este mes (idea #79): 'in' resta del saldo, 'out' (retiro) suma
+    const ahorroMes = delMes.filter(m => m.tipo === 'ahorro')
+      .reduce((s,m) => s + (m.dir === 'out' ? -(+m.monto) : (+m.monto)), 0);
+    const saldo = ingresos - gastos - ahorroMes; // lo que te queda tras gastar Y apartar
+    // línea "apartado a ahorro este mes"
+    const amEl = $('finAhorroMes');
+    if(amEl){ if(ahorroMes !== 0){ amEl.hidden = false; amEl.textContent = (ahorroMes > 0 ? '🏦 Apartaste ' + fmtDinero(ahorroMes) + ' a tus metas este mes.' : '🏦 Retiraste ' + fmtDinero(-ahorroMes) + ' de tus ahorros este mes.'); } else amEl.hidden = true; }
+    renderFinSemana();   // #78
+    renderFinProximos(); // #81
+    renderFinHormiga();  // #82
+    renderFinNoGasto();  // #83
 
     $('finMes').textContent = new Date(mes + '-15T12:00:00').toLocaleDateString('es-MX', {month:'long', year:'numeric'});
     const sc = $('finSaldo'); sc.textContent = fmtDinero(saldo);
@@ -5461,7 +5586,8 @@
       const cb = fin.presuCat[id] || 0; // presupuesto de esta categoría
       const over = cb > 0 && monto > cb;
       const amt = document.createElement('span'); amt.className = 'fc-amt';
-      amt.textContent = cb > 0 ? (fmtDinero(monto) + ' / ' + fmtDinero(cb)) : (fmtDinero(monto) + ' · ' + pct + '%');
+      // sobre (idea #80): con tope, muestra "gastado / tope · queda $X"
+      amt.textContent = cb > 0 ? (fmtDinero(monto) + ' / ' + fmtDinero(cb) + (over ? ' · pasado' : ' · queda ' + fmtDinero(cb - monto))) : (fmtDinero(monto) + ' · ' + pct + '%');
       if(over) amt.style.color = 'var(--red)';
       top.append(nm, amt);
       const bar = document.createElement('div'); bar.className = 'fc-bar';
@@ -5494,7 +5620,7 @@
 
     // lista de movimientos del mes (recientes primero)
     const list = $('finList'); list.innerHTML = '';
-    const orden = delMes.slice().sort((a,b) => (b.creado||'').localeCompare(a.creado||''));
+    const orden = delMes.filter(m => m.tipo !== 'ahorro').slice().sort((a,b) => (b.creado||'').localeCompare(a.creado||''));
     $('finVacio').hidden = orden.length > 0;
     orden.forEach(m => {
       const c = finCatOf(m.tipo, m.cat);
@@ -5538,20 +5664,39 @@
       const inp = document.createElement('input'); inp.type = 'number'; inp.inputMode = 'decimal';
       inp.placeholder = '$ aportar'; inp.min = '0';
       const add = document.createElement('button'); add.textContent = 'Aportar';
+      // aportar (idea #79): registra un movimiento de AHORRO para que tu
+      // saldo del mes baje de verdad — sabes EXACTO cuánto tienes apartado.
       const aportar = ()=>{
         const v = parseFloat(inp.value);
         if(!(v > 0)){ toast('Escribe cuánto aportas.'); return; }
-        g.ahorrado = Math.max(0, (+g.ahorrado || 0) + v); saveFin(); renderFin();
+        g.ahorrado = Math.max(0, (+g.ahorrado || 0) + v);
+        fin.movs.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+          tipo: 'ahorro', dir: 'in', monto: Math.round(v * 100) / 100, cat: 'ahorro',
+          nota: g.nombre, meta: g.id, fecha: today(), creado: new Date().toISOString() });
+        saveFin(); renderFin();
         if(g.ahorrado >= g.objetivo){ sonarGanado(); toast('¡Meta «' + g.nombre + '» cumplida! 🎉'); }
-        else { sonarCheck(); toast('Aporte guardado.'); }
+        else { sonarCheck(); toast('Apartaste ' + fmtDinero(v) + '. Tu saldo bajó igual.'); }
       };
       add.addEventListener('click', aportar);
+      // retirar: devuelve dinero del ahorro al saldo (registra el movimiento inverso)
+      const ret = document.createElement('button'); ret.textContent = 'Retirar'; ret.className = 'fin-meta-ret';
+      ret.addEventListener('click', ()=>{
+        const v = parseFloat(inp.value);
+        if(!(v > 0)){ toast('Escribe cuánto retiras.'); return; }
+        const real = Math.min(v, +g.ahorrado || 0);
+        if(real <= 0){ toast('No hay nada que retirar.'); return; }
+        g.ahorrado = Math.max(0, (+g.ahorrado || 0) - real);
+        fin.movs.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+          tipo: 'ahorro', dir: 'out', monto: Math.round(real * 100) / 100, cat: 'ahorro',
+          nota: g.nombre, meta: g.id, fecha: today(), creado: new Date().toISOString() });
+        saveFin(); renderFin(); sonarCheck(); toast('Retiraste ' + fmtDinero(real) + '.');
+      });
       const del = document.createElement('button'); del.className = 'fin-meta-del'; del.textContent = 'borrar';
       del.addEventListener('click', ()=>{
         if(!confirm('¿Borrar la meta «' + g.nombre + '»?')) return;
         fin.metas = fin.metas.filter(x => x.id !== g.id); saveFin(); renderFin();
       });
-      acts.append(inp, add, del);
+      acts.append(inp, add, ret, del);
       card.append(top, bar, acts);
       mc.appendChild(card);
     });
@@ -5709,6 +5854,13 @@
     $('finDeudaQuien').value = ''; $('finDeudaMonto').value = '';
     renderFin();
     toast('Anotado.');
+  });
+  $('finNoGastoAdd').addEventListener('click', ()=>{
+    const id = $('finNoGastoCat').value;
+    if(!id){ toast('No hay más categorías por vigilar.'); return; }
+    if(!fin.noGasto) fin.noGasto = [];
+    if(!fin.noGasto.includes(id)) fin.noGasto.push(id);
+    saveFin(); renderFin(); toast('Vigilando esa categoría. 👀');
   });
   $('finPresuSave').addEventListener('click', ()=>{
     const p = parseFloat($('finPresuInput').value);
@@ -6255,7 +6407,7 @@
       recordatorios = []; recordHechos = {}; loadRecordatorios();
       capas = []; loadCapas(); renderCapas();
       compaConf = { nombre:'', criatura:'planta', emoji:'' }; loadCompa();
-      fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[], deudas:[], carteras:[] }; loadFin();
+      fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[], deudas:[], carteras:[], noGasto:[] }; loadFin();
       evitares = []; loadEvitar(); renderEvitar();
       diario = {}; loadDiario(); renderDiario();
       sueno = {}; loadSueno();
