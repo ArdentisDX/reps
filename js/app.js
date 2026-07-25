@@ -898,6 +898,12 @@
       main.append(emoji, body);
       main.addEventListener('click', ()=>{ i.done = !i.done; if(i.done) sonarCheck(); saveTray(); renderTray(); });
 
+      // ✨ IA: convierte la idea en pasos concretos
+      const plan = document.createElement('button');
+      plan.className = 'i-plan'; plan.textContent = '✨';
+      plan.setAttribute('aria-label', 'Convertir en pasos con IA');
+      plan.addEventListener('click', ()=> ideaAPlan(i.text));
+
       // estrella de prioridad: marca la idea como importante (la sube)
       const star = document.createElement('button');
       star.className = 'i-star' + (i.prio ? ' on' : '');
@@ -914,10 +920,31 @@
         toast('Idea borrada.');
       });
 
-      card.append(main, star, del);
+      card.append(main, plan, star, del);
       list.appendChild(card);
     });
   }
+  // #12 idea → plan: la IA la desarma en pasos concretos (sheet #ideaPlanWrap)
+  async function ideaAPlan(texto){
+    if(iaOcupado) return;
+    $('ipIdea').textContent = '«' + texto + '»';
+    const out = $('ipOut'); out.textContent = 'Armando los pasos… ✨';
+    $('ideaPlanWrap').hidden = false;
+    iaOcupado = true;
+    const sistema = 'Convierte una idea/pendiente en un plan de acción claro. Devuelve 3 a 5 pasos concretos y ' +
+      'accionables, cada uno en su línea empezando con "• ". Si aplica, sugiere cuándo hacer el primero. ' +
+      'En español, breve, sin markdown ni encabezados.';
+    try{
+      const res = await fetch(PUSH_WORKER + '/ia', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ sistema, pregunta: 'Idea: ' + texto }) });
+      if(!res.ok) throw new Error('worker ' + res.status);
+      const d = await res.json();
+      out.textContent = (d.texto || '').trim() || 'No pude armar el plan. Intenta de nuevo.';
+    }catch(e){ out.textContent = 'No se pudo conectar. Revisa tu internet e intenta de nuevo.'; }
+    iaOcupado = false;
+  }
+  $('ipClose').addEventListener('click', ()=>{ $('ideaPlanWrap').hidden = true; });
+  $('ideaPlanWrap').addEventListener('click', (e)=>{ if(e.target === $('ideaPlanWrap')) $('ideaPlanWrap').hidden = true; });
 
   // capturar: Enter o botón ＋ → muestra el selector de categoría
   $('trayForm').addEventListener('submit', (e)=>{
@@ -4692,6 +4719,7 @@
       $('diarioWrap').hidden = true;
       $('suenoWrap').hidden = true;
       $('anioWrap').hidden = true;
+      $('ideaPlanWrap').hidden = true;
       $('habWrap').hidden = true;
     }
   });
@@ -5212,6 +5240,36 @@
   });
   $('finClose').addEventListener('click', ()=>{ $('finWrap').hidden = true; });
   $('finWrap').addEventListener('click', (e)=>{ if(e.target === $('finWrap')) $('finWrap').hidden = true; });
+
+  // #5 Coach financiero (IA): analiza el mes y da UN consejo. Stateless.
+  $('finCoach').addEventListener('click', async ()=>{
+    if(iaOcupado) return;
+    const mes = mesActual();
+    const dm = fin.movs.filter(m => (m.fecha || '').startsWith(mes));
+    const ingresos = dm.filter(m => m.tipo === 'ingreso').reduce((a,m)=>a+(+m.monto),0);
+    const gastos = dm.filter(m => m.tipo === 'gasto').reduce((a,m)=>a+(+m.monto),0);
+    if(gastos === 0){ toast('Registra algunos gastos primero.'); return; }
+    const porCat = {};
+    dm.filter(m => m.tipo === 'gasto').forEach(m => { porCat[m.cat] = (porCat[m.cat]||0)+(+m.monto); });
+    const desglose = Object.keys(porCat).sort((a,b)=>porCat[b]-porCat[a])
+      .map(id => { const c = finCatOf('gasto', id); return (c?c.name:id) + ': ' + fmtDinero(porCat[id]); }).join(', ');
+    iaOcupado = true;
+    const out = $('finCoachOut'); out.hidden = false; out.textContent = 'Analizando tus gastos… ✨';
+    const sistema = 'Eres un asesor financiero cercano y práctico (no un asesor de inversiones). ' +
+      'Da UN consejo concreto y accionable para ahorrar este mes, en 2-3 frases, en español, sin juzgar. ' +
+      'Usa los números que te doy. Nada de listas ni markdown.';
+    const preg = 'Mi mes (pesos MX): ingresos ' + fmtDinero(ingresos) + ', gastos ' + fmtDinero(gastos) +
+      (fin.presupuesto > 0 ? ', presupuesto ' + fmtDinero(fin.presupuesto) : '') +
+      '. Gastos por categoría: ' + desglose + '.';
+    try{
+      const res = await fetch(PUSH_WORKER + '/ia', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ sistema, pregunta: preg }) });
+      if(!res.ok) throw new Error('worker ' + res.status);
+      const d = await res.json();
+      out.textContent = (d.texto || '').trim() || 'No pude generar el consejo. Intenta de nuevo.';
+    }catch(e){ out.textContent = 'No se pudo conectar. Revisa tu internet e intenta de nuevo.'; }
+    iaOcupado = false;
+  });
 
   // ===== Días sin… (hábitos a evitar) =====
   // Cosas que quieres dejar (fumar, celular en cama…). Se cuenta cuántos días

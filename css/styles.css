@@ -966,3 +966,7 @@ body.font-serif .anio-hero .an-big{font-family:Georgia,"Times New Roman",serif}
 .idea.prio{border-color:color-mix(in srgb,var(--amber) 55%,var(--line));background:color-mix(in srgb,var(--amber) 7%,var(--card))}
 .i-star{flex:none;background:none;border:none;font-size:16px;cursor:pointer;padding:4px 6px;color:var(--line);line-height:1}
 .i-star.on{color:var(--amber)}
+
+/* botón ✨ (idea → plan con IA) en la Bandeja */
+.i-plan{flex:none;background:none;border:none;font-size:15px;cursor:pointer;padding:4px 5px;line-height:1;opacity:.8}
+.i-plan:hover{opacity:1}
