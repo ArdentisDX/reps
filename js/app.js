@@ -946,6 +946,28 @@
   $('ipClose').addEventListener('click', ()=>{ $('ideaPlanWrap').hidden = true; });
   $('ideaPlanWrap').addEventListener('click', (e)=>{ if(e.target === $('ideaPlanWrap')) $('ideaPlanWrap').hidden = true; });
 
+  // #30 Dictar por voz: rellena el input de la Bandeja con reconocimiento de
+  // voz del navegador (donde exista). Si no hay soporte, el botón queda oculto.
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(SR){
+    $('trayMic').hidden = false;
+    let rec = null, escuchando = false;
+    $('trayMic').addEventListener('click', ()=>{
+      if(escuchando){ try{ rec.stop(); }catch(e){} return; }
+      rec = new SR(); rec.lang = 'es-MX'; rec.interimResults = false; rec.maxAlternatives = 1;
+      rec.onstart = ()=>{ escuchando = true; $('trayMic').classList.add('rec'); };
+      rec.onresult = (ev)=>{
+        const t = ev.results[0][0].transcript;
+        const inp = $('trayInput');
+        inp.value = (inp.value.trim() ? inp.value.trim() + ' ' : '') + t;
+        inp.dispatchEvent(new Event('input')); // que crezca el textarea
+      };
+      rec.onerror = (ev)=>{ toast(ev.error === 'not-allowed' ? 'Da permiso al micrófono para dictar.' : 'No pude escuchar. Intenta de nuevo.'); };
+      rec.onend = ()=>{ escuchando = false; $('trayMic').classList.remove('rec'); $('trayInput').focus(); };
+      try{ rec.start(); }catch(e){}
+    });
+  }
+
   // capturar: Enter o botón ＋ → muestra el selector de categoría
   $('trayForm').addEventListener('submit', (e)=>{
     e.preventDefault(); // que el formulario no recargue la página
@@ -2460,11 +2482,35 @@
     });
   });
 
+  // #41 ánimo detallado: emociones opcionales (una a la vez) en el cierre
+  const EMOCIONES = [
+    {id:'energico', emoji:'⚡', name:'Con energía'},
+    {id:'tranquilo',emoji:'😌', name:'Tranquilo'},
+    {id:'motivado', emoji:'🚀', name:'Motivado'},
+    {id:'contento', emoji:'😊', name:'Contento'},
+    {id:'cansado',  emoji:'😮‍💨', name:'Cansado'},
+    {id:'estresado',emoji:'😰', name:'Estresado'},
+    {id:'triste',   emoji:'😔', name:'Triste'},
+    {id:'enojado',  emoji:'😤', name:'Enojado'},
+  ];
+  let emoSel = null;
+  function renderEmociones(){
+    const wrap = $('emoRow'); wrap.innerHTML = '';
+    EMOCIONES.forEach(e => {
+      const b = document.createElement('button'); b.type = 'button';
+      b.className = 'emo-chip' + (emoSel === e.id ? ' on' : '');
+      b.textContent = e.emoji + ' ' + e.name;
+      b.addEventListener('click', ()=>{ emoSel = (emoSel === e.id) ? null : e.id; renderEmociones(); });
+      wrap.appendChild(b);
+    });
+  }
+
   $('cierreBtn').addEventListener('click', ()=>{
     const notas = $('notasHoy').value.trim();
     const plan = $('planManana').value.trim();
-    if(!moodSel && !notas && !plan){ toast('El cierre está vacío.'); return; }
-    cierres[today()] = { animo: moodSel, notas, plan, guardado: new Date().toISOString() };
+    if(!moodSel && !emoSel && !notas && !plan){ toast('El cierre está vacío.'); return; }
+    // merge: preserva otros campos del día (despierta, despiertaCuenta…)
+    cierres[today()] = Object.assign({}, cierres[today()] || {}, { animo: moodSel, emocion: emoSel, notas, plan, guardado: new Date().toISOString() });
     saveCierres();
     renderCal(); // para que aparezca el puntito de hoy en el calendario
     toast('Cierre guardado. A dormir tranquilo. 🌙');
@@ -2477,6 +2523,8 @@
     moodSel = c.animo || null;
     document.querySelectorAll('.mood').forEach(x =>
       x.classList.toggle('active', x.dataset.mood === moodSel));
+    emoSel = EMOCIONES.some(e => e.id === c.emocion) ? c.emocion : null;
+    renderEmociones();
     $('notasHoy').value = c.notas || '';
     $('planManana').value = c.plan || '';
   }

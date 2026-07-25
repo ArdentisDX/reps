@@ -112,6 +112,8 @@
           <button class="mood" data-mood="regular">😐 Regular</button>
           <button class="mood" data-mood="mal">💀 Mal</button>
         </div>
+        <div class="c-emo-lbl">¿Cómo te sentiste? (opcional)</div>
+        <div class="emo-row" id="emoRow"></div>
         <label class="c-lbl" for="notasHoy">Notas / errores de hoy</label>
         <textarea id="notasHoy" rows="2" placeholder="¿Qué funcionó? ¿Qué no?"></textarea>
         <label class="c-lbl" for="planManana">Plan de mañana</label>
@@ -380,6 +382,7 @@
       </div>
       <form id="trayForm">
         <textarea id="trayInput" rows="1" placeholder="Captura una idea…" autocomplete="off"></textarea>
+        <button class="mic" type="button" id="trayMic" aria-label="Dictar por voz" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v3"/></svg></button>
         <button class="send" type="submit" aria-label="Guardar idea">＋</button>
       </form>
     </div>
