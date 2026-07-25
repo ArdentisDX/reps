@@ -405,6 +405,7 @@
       <button class="mas-item" id="masHabitos"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11M4 12h11M4 17h7"/><path d="m17.5 6.5 1.5 1.5 3-3"/></svg></span><span class="mas-tx"><b>Hábitos</b><i>Editar tus hábitos y core</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
       <button class="mas-item" id="masRutina"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg></span><span class="mas-tx"><b>Rutina del día</b><i>Editar los bloques de tu día</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
       <button class="mas-item" id="masEvitar"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m6 6 12 12"/></svg></span><span class="mas-tx"><b>Días sin…</b><i>Deja un vicio: cuenta tus días limpios</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
+      <button class="mas-item" id="masKanban"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="9.5" y="4" width="5" height="11" rx="1.5"/><rect x="16" y="4" width="5" height="7" rx="1.5"/></svg></span><span class="mas-tx"><b>Tablero</b><i>Kanban para tus proyectos</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
       <button class="mas-item" id="masCarta"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7 8.5 6 8.5-6"/></svg></span><span class="mas-tx"><b>Carta a tu yo</b><i>Un mensaje para tus días difíciles</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
       <button class="mas-item" id="masPerfil"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg></span><span class="mas-tx"><b>Rehacer la bienvenida</b><i>Volver a armar tus hábitos</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
 
@@ -605,6 +606,17 @@
     </div>
   </div>
 
+  <div class="theme-wrap" id="kanbanWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Tablero</h2><button id="kbClose" aria-label="Cerrar">✕</button></div>
+      <div class="kb-add">
+        <input id="kbInput" type="text" maxlength="80" placeholder="Nueva tarjeta…">
+        <button id="kbAddBtn">＋</button>
+      </div>
+      <div id="kbBoard"></div>
+    </div>
+  </div>
+
   <div class="theme-wrap" id="evitarWrap" hidden>
     <div class="theme-sheet">
       <div class="t-head"><h2>Días sin…</h2><button id="evitarClose" aria-label="Cerrar">✕</button></div>
@@ -799,11 +811,13 @@
           <input id="focoCustom" type="number" min="1" max="240" inputmode="numeric" placeholder="min">
           <span>min</span>
         </div>
+        <button class="foco-pomo" id="focoPomo" type="button">🍅 Modo Pomodoro: descansos automáticos</button>
         <button class="foco-start" id="focoStart" type="button">Empezar ▶</button>
         <button class="foco-sonido" id="focoSonidoBtn" type="button" aria-label="Sonido al terminar">🔊 Sonido al terminar</button>
         <button class="foco-x" id="focoCancelSetup" type="button">Cancelar</button>
       </div>
       <div class="foco-run" id="focoRun" hidden>
+        <div class="foco-fase" id="focoFase" hidden></div>
         <div class="foco-ring" id="focoRing"><div class="foco-time" id="focoTime">25:00</div></div>
         <div class="foco-tip">Deja el celular. Vuelve cuando suene.</div>
         <button class="foco-sonido" id="focoAmb" type="button">🌧️ Ruido de fondo</button>

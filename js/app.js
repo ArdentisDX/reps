@@ -4002,7 +4002,8 @@
   // ===== Temporizador de foco (estilo Forest) =====
   const FOCO_KEY = 'reps-foco';
   let focoTotal = 0; // minutos enfocados acumulados (solo crecen)
-  let foco = { habitId:null, habitName:'', min:25, endTime:0, totalSec:0, timer:null, wakeLock:null };
+  let foco = { habitId:null, habitName:'', min:25, endTime:0, totalSec:0, timer:null, wakeLock:null, modo:'simple', fase:'', ciclos:0 };
+  const BREAK_MIN = 5; // descanso del Pomodoro
 
   function loadFoco(){
     try{ const v = parseInt(localStorage.getItem(FOCO_KEY), 10); if(v >= 0) focoTotal = v; }
@@ -4122,6 +4123,8 @@
   }
   function abrirFoco(habitId, habitName){
     foco.habitId = habitId; foco.habitName = habitName; foco.min = 25;
+    foco.modo = 'simple'; foco.fase = ''; foco.ciclos = 0;
+    $('focoPomo').classList.remove('on'); $('focoFase').hidden = true;
     $('focoHab').textContent = '🎯 ' + habitName;
     document.querySelectorAll('.foco-dur').forEach(b => b.classList.toggle('on', b.dataset.min === '25'));
     const ci = $('focoCustom'); ci.value = ''; ci.classList.remove('on'); // arranca en el preset 25
@@ -4142,16 +4145,48 @@
     $('focoTime').textContent = mm + ':' + ss;
     const pct = foco.totalSec ? (foco.totalSec - left) / foco.totalSec * 100 : 0;
     $('focoRing').style.setProperty('--p', pct.toFixed(1) + '%');
-    if(left <= 0){ completarFoco(true); }
+    if(left <= 0){
+      if(foco.modo === 'pomo') finFase();   // Pomodoro: encadena trabajo/descanso
+      else completarFoco(true);              // simple: cuenta y cierra
+    }
+  }
+  // arranca una fase (Pomodoro) o el conteo simple; reusa el mismo intervalo
+  function iniciarFase(min, fase){
+    foco.totalSec = min * 60;
+    foco.endTime = Date.now() + foco.totalSec * 1000; // reloj real: sobrevive al throttle
+    foco.fase = fase;
+    const fl = $('focoFase');
+    if(foco.modo === 'pomo'){
+      fl.hidden = false; fl.className = 'foco-fase ' + fase;
+      fl.textContent = fase === 'trabajo' ? ('Enfoque · ciclo ' + (foco.ciclos + 1)) : 'Descanso';
+    } else fl.hidden = true;
+    pintarFoco();
+    if(!foco.timer) foco.timer = setInterval(pintarFoco, 1000);
   }
   function empezarFoco(){
     unlockAudio(); // gesto del usuario: deja el audio listo para sonar al final
-    foco.totalSec = foco.min * 60;
-    foco.endTime = Date.now() + foco.totalSec * 1000; // por reloj real: sobrevive al throttle en segundo plano
     $('focoSetup').hidden = true; $('focoRun').hidden = false;
-    pintarFoco();
-    foco.timer = setInterval(pintarFoco, 1000);
+    foco.ciclos = 0;
+    iniciarFase(foco.min, foco.modo === 'pomo' ? 'trabajo' : 'simple');
     pedirWakeLock();
+  }
+  // marca el hábito hecho hoy sin cerrar la sesión (para el Pomodoro)
+  function marcarFocoHecho(){
+    const k = today(); const cur = dias[k] || {};
+    cur[foco.habitId] = true; dias[k] = cur; save();
+  }
+  // fin de una fase del Pomodoro: trabajo → descanso → trabajo…
+  function finFase(){
+    sonarFin();
+    if(foco.fase === 'trabajo'){
+      focoTotal += foco.min; saveFoco(); marcarFocoHecho(); foco.ciclos++;
+      render();
+      iniciarFase(BREAK_MIN, 'descanso');
+      toast('Ciclo ' + foco.ciclos + ' hecho. Descansa ' + BREAK_MIN + ' min. ☕');
+    } else {
+      iniciarFase(foco.min, 'trabajo');
+      toast('De vuelta al foco. 🍅');
+    }
   }
   // completar: full = llegó a 0; si no, cuenta los minutos transcurridos
   function completarFoco(full){
@@ -4187,10 +4222,24 @@
     focoSonido = !focoSonido; saveSonido(); pintarSonidoBtn();
     if(focoSonido){ unlockAudio(); sonarFin(); } // preescucha al encender
   });
+  $('focoPomo').addEventListener('click', ()=>{
+    foco.modo = foco.modo === 'pomo' ? 'simple' : 'pomo';
+    $('focoPomo').classList.toggle('on', foco.modo === 'pomo');
+  });
   $('focoStart').addEventListener('click', empezarFoco);
   $('focoCancelSetup').addEventListener('click', cerrarFoco);
   $('focoCancel').addEventListener('click', cerrarFoco);
-  $('focoDone').addEventListener('click', ()=> completarFoco(false));
+  $('focoDone').addEventListener('click', ()=>{
+    if(foco.modo !== 'pomo'){ completarFoco(false); return; }
+    // Pomodoro: si estás enfocando, cuenta el rato hecho y marca el hábito
+    if(foco.fase === 'trabajo'){
+      const mins = Math.max(1, Math.round((foco.totalSec - Math.max(0, (foco.endTime - Date.now())/1000)) / 60));
+      focoTotal += mins; saveFoco(); marcarFocoHecho();
+    }
+    const c = foco.ciclos;
+    cerrarFoco(); render();
+    toast('Pomodoro terminado. ' + c + ' ciclo' + (c === 1 ? '' : 's') + ' completo' + (c === 1 ? '' : 's') + '. 🍅');
+  });
 
   // ===== Notificaciones push (Capa 3) =====
   // El Worker (reps-push) solo conoce: la suscripción del navegador y las
@@ -4890,6 +4939,7 @@
       $('ideaPlanWrap').hidden = true;
       $('armaDiaWrap').hidden = true;
       $('reflexWrap').hidden = true;
+      $('kanbanWrap').hidden = true;
       $('habWrap').hidden = true;
     }
   });
@@ -4901,7 +4951,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-diario', 'reps-sueno', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-diario', 'reps-sueno', 'reps-kanban', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -5696,13 +5746,60 @@
   $('anioClose').addEventListener('click', ()=>{ $('anioWrap').hidden = true; });
   $('anioWrap').addEventListener('click', (e)=>{ if(e.target === $('anioWrap')) $('anioWrap').hidden = true; });
 
+  // ===== Kanban (tablero de proyectos) =====
+  const KANBAN_KEY = 'reps-kanban';
+  const KB_COLS = [{id:'todo', name:'Por hacer'}, {id:'doing', name:'Haciendo'}, {id:'done', name:'Hecho'}];
+  let kanban = [];
+  function loadKanban(){
+    kanban = [];
+    try{ const v = JSON.parse(localStorage.getItem(KANBAN_KEY));
+      if(Array.isArray(v)) kanban = v.filter(c => c && typeof c.id === 'string' && typeof c.texto === 'string' && c.texto.trim())
+        .map(c => ({ id: c.id, texto: c.texto.trim().slice(0,80), col: ['todo','doing','done'].includes(c.col) ? c.col : 'todo' }));
+    }catch(e){ kanban = []; }
+  }
+  function saveKanban(){ try{ localStorage.setItem(KANBAN_KEY, JSON.stringify(kanban)); }catch(e){} }
+  function renderKanban(){
+    const board = $('kbBoard'); board.innerHTML = '';
+    KB_COLS.forEach((col, ci) => {
+      const wrap = document.createElement('div'); wrap.className = 'kb-col ' + col.id;
+      const cards = kanban.filter(c => c.col === col.id);
+      const h = document.createElement('div'); h.className = 'kb-col-head'; h.textContent = col.name + ' · ' + cards.length; wrap.appendChild(h);
+      if(!cards.length){ const e = document.createElement('div'); e.className = 'kb-empty'; e.textContent = '—'; wrap.appendChild(e); }
+      cards.forEach(c => {
+        const card = document.createElement('div'); card.className = 'kb-card';
+        const left = document.createElement('button'); left.className = 'kb-mv'; left.textContent = '‹'; left.disabled = ci === 0;
+        left.setAttribute('aria-label', 'Mover a la izquierda');
+        left.addEventListener('click', ()=>{ c.col = KB_COLS[Math.max(0, ci-1)].id; saveKanban(); renderKanban(); });
+        const tx = document.createElement('span'); tx.className = 'kb-tx'; tx.textContent = c.texto;
+        const right = document.createElement('button'); right.className = 'kb-mv'; right.textContent = '›'; right.disabled = ci === KB_COLS.length-1;
+        right.setAttribute('aria-label', 'Mover a la derecha');
+        right.addEventListener('click', ()=>{ c.col = KB_COLS[Math.min(KB_COLS.length-1, ci+1)].id; saveKanban(); renderKanban(); if(c.col === 'done') sonarCheck(); });
+        const del = document.createElement('button'); del.className = 'kb-del'; del.textContent = '✕';
+        del.setAttribute('aria-label', 'Borrar tarjeta');
+        del.addEventListener('click', ()=>{ kanban = kanban.filter(x => x.id !== c.id); saveKanban(); renderKanban(); });
+        card.append(left, tx, right, del); wrap.appendChild(card);
+      });
+      board.appendChild(wrap);
+    });
+  }
+  $('kbAddBtn').addEventListener('click', ()=>{
+    const t = $('kbInput').value.trim().slice(0,80);
+    if(!t) return;
+    kanban.unshift({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), texto: t, col: 'todo' });
+    saveKanban(); $('kbInput').value = ''; renderKanban();
+  });
+  $('kbInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); $('kbAddBtn').click(); } });
+  $('masKanban').addEventListener('click', ()=>{ cerrarMas(); renderKanban(); $('kanbanWrap').hidden = false; });
+  $('kbClose').addEventListener('click', ()=>{ $('kanbanWrap').hidden = true; });
+  $('kanbanWrap').addEventListener('click', (e)=>{ if(e.target === $('kanbanWrap')) $('kanbanWrap').hidden = true; });
+
   // ===== Respaldo: exportar / importar =====
   function exportBackup(){
     const backup = {
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-diario': diario, 'reps-sueno': sueno, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-diario': diario, 'reps-sueno': sueno, 'reps-kanban': kanban, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -5832,6 +5929,9 @@
         const slp = b.data['reps-sueno'];
         if(esMapa(slp)) localStorage.setItem(SUENO_KEY, JSON.stringify(slp));
         else localStorage.removeItem(SUENO_KEY);
+        const kbn = b.data['reps-kanban'];
+        if(Array.isArray(kbn)) localStorage.setItem(KANBAN_KEY, JSON.stringify(kbn));
+        else localStorage.removeItem(KANBAN_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -5865,6 +5965,7 @@
       evitares = []; loadEvitar(); renderEvitar();
       diario = {}; loadDiario(); renderDiario();
       sueno = {}; loadSueno();
+      kanban = []; loadKanban();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -5920,6 +6021,7 @@
   loadEvitar(); // "días sin…" (hábitos a evitar)
   loadDiario(); renderDiario(); // diario del día
   loadSueno(); // registro de sueño (pantalla propia)
+  loadKanban(); // tablero de proyectos (se renderiza al abrir)
   loadRecordatorios(); // antes de render(): suman al puntaje del día
   loadCapas(); renderCapas(); // mi ruta editable
   loadRutina();
