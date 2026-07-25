@@ -194,9 +194,9 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 **IA avanzada**
 29. 🌐🧠 Asistente proactivo (push con el consejo del día).
 30. 🌐 Dictar ideas/gastos por voz (speech-to-text).
-31. 🌐🧠 La IA arma tu día con horas a partir de tus pendientes.
+31. ✅ (v88) "Arma mi día": la IA organiza el día y acomoda si no da tiempo.
 32. 🌐🧠 "Modo entrevista": la IA te hace preguntas para reflexionar.
-33. 🌐🧠 Tu mes narrado por la IA en un párrafo.
+33. ❌ descartada (a petición del usuario).
 34. 🌐🧠 Detecta cuándo vas a fallar y te manda un empujón.
 
 **Hábitos / estructura**
