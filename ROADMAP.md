@@ -255,7 +255,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 
 **Hábitos y sistema**
 71. Hábitos semanales/mensuales (no solo diarios): "3× por semana".
-72. Cadena visual del hábito (calendario "no rompas la cadena" por hábito).
+72. ✅ Cadena visual del hábito (calendario "no rompas la cadena" por hábito). (v93)
 73. Hábitos ancla + apilados (después de X, hago Y) con recordatorio.
 74. Modo "un solo hábito" (foco absoluto en uno hasta consolidarlo).
 75. Reto personal con fecha límite y barra de avance.
