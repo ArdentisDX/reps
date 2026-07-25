@@ -1275,3 +1275,8 @@ body.font-serif .anio-hero .an-big{font-family:Georgia,"Times New Roman",serif}
 .viaje-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;background:color-mix(in srgb,var(--teal) 14%,var(--card));border:1px solid color-mix(in srgb,var(--teal) 40%,var(--line));border-radius:14px;padding:11px 14px;margin:6px 0 12px;font-size:13px;line-height:1.4;font-weight:600}
 .viaje-banner button{background:var(--card-2);border:1px solid var(--line);color:var(--text);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
 #masViajeState{font-size:12px;color:var(--teal);font-weight:700}
+
+/* ===== FIX v103: respetar el atributo hidden en tarjetas con display propio =====
+   display:flex/block anula el display:none del atributo [hidden]; hay que
+   reponerlo explícitamente (mismo patrón que .celebra[hidden], .foco[hidden]…). */
+.viaje-banner[hidden], .cuenta-card[hidden], .checkin[hidden], .solo-banner[hidden]{display:none}

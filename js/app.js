@@ -6923,11 +6923,16 @@
       delete viaje.dias[today()];
     }
     saveViaje();
-    procesarRacha(); render();
+    // el banner refleja el estado YA, antes de cualquier cosa que pudiera
+    // fallar (así "Terminar" siempre lo apaga a la vista, pase lo que pase)
+    renderViajeBanner();
+    try{ procesarRacha(); }catch(e){}
+    try{ render(); }catch(e){}
+    renderViajeBanner(); // por si render() falló, reafirma el estado del banner
     toast(on ? '✈️ Modo viaje activado. Descansa sin culpa.' : 'Modo viaje terminado. ¡Bienvenido de vuelta!');
   }
   $('masViaje').addEventListener('click', ()=>{ cerrarMas(); setViaje(!viaje.activo); });
-  { const vo = $('viajeOff'); if(vo) vo.addEventListener('click', ()=> setViaje(false)); }
+  { const vo = $('viajeOff'); if(vo) vo.addEventListener('click', ()=>{ $('viajeBanner').hidden = true; setViaje(false); }); }
 
   // ===== Experiencia / personalización (ideas #106–#111) =====
 
