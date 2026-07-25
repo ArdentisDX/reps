@@ -232,14 +232,14 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 56. Un mundo que crece con tus días (isla/ciudad estilo Habitica).
 57. ✅ (v86) Mascota animada (el compañero flota).
 58. Tienda: gastar "puntos ganados" en temas/cosméticos.
-59. Temporadas/eventos con recompensa.
-60. Cofres/sorpresas al cumplir hitos.
+59. ⏸️ aplazada (recompensas: "aún no").
+60. ⏸️ aplazada (recompensas: "aún no").
 
 **Productividad**
-61. Pomodoro avanzado (ciclos, descansos, stats de foco).
+61. ✅ (v92) Pomodoro (ciclos de trabajo/descanso automáticos).
 62. Bloqueo de distracciones durante el foco.
 63. ✅ (v86) Prioridad en la Bandeja (estrella importante, sube al tope).
-64. Kanban simple para proyectos.
+64. ✅ (v92) Kanban (tablero de proyectos, pantalla propia).
 
 **Datos / inteligencia**
 65. Dashboard de correlaciones (sueño↔ánimo↔productividad).
@@ -250,6 +250,70 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 **Estética / experiencia**
 69. ✅ (v82) Animaciones y transiciones (fade de pestañas, slide de hojas).
 70. Pantalla de inicio configurable (elige tus widgets).
+
+### Tanda 3 (ideas 71–116) — jul 2026
+
+**Hábitos y sistema**
+71. Hábitos semanales/mensuales (no solo diarios): "3× por semana".
+72. Cadena visual del hábito (calendario "no rompas la cadena" por hábito).
+73. Hábitos ancla + apilados (después de X, hago Y) con recordatorio.
+74. Modo "un solo hábito" (foco absoluto en uno hasta consolidarlo).
+75. Reto personal con fecha límite y barra de avance.
+76. Micro-hábitos de 2 minutos (biblioteca de arranques ridículamente fáciles).
+77. "Semáforo de energía": marcas tu energía y la app sugiere qué toca.
+
+**Finanzas**
+78. Reporte semanal de gastos (resumen automático cada domingo).
+79. Redondeo al ahorro ("redondea cada gasto y guarda la diferencia").
+80. Sobres/presupuesto por sobres (envelope budgeting).
+81. Recordatorio de pago de deudas/suscripciones con fecha.
+82. 🧠 Detectar gastos hormiga (la IA marca fugas pequeñas repetidas).
+83. Meta "no gastar" (días sin gastar en X categoría).
+
+**IA / asistente**
+84. 🧠 Chat con memoria persistente (recuerda tus charlas, no solo la sesión).
+85. 🧠 Resumen de tu semana narrado + 1 foco para la próxima.
+86. 🧠 "Desatóralo": describe un bloqueo y la IA te da el primer paso.
+87. 🧠 Reencuadre de pensamientos (mini-TCC guiada al sentirte mal).
+88. 🧠 La IA aprende tus patrones y te avisa antes de una posible caída.
+89. 🧠 Preguntas de journaling generadas a tu momento.
+
+**Bienestar y salud**
+90. Respiración guiada con animación (4-7-8, caja, etc.).
+91. Chequeo de ánimo rápido a media jornada (1 tap).
+92. Registro de agua con recordatorios inteligentes.
+93. Gratitud diaria (3 cosas) con historial y "recuerdo del año pasado".
+94. Estiramientos/pausas activas cada X tiempo sentado.
+95. Higiene del sueño: rutina de bajada nocturna con checklist.
+
+**Motivación / identidad**
+96. "Carta desde tu futuro yo" (a 1 año) que se abre en la fecha.
+97. Frase/mantra personal fijado arriba de Hoy.
+98. Muro de victorias (captura momentos de orgullo).
+99. Contador de identidad ampliado ("ya eres alguien que…").
+100. Modo espejo brutal (opcional): datos duros sin adornos.
+
+**Datos / visualización**
+101. Mapa de calor por hábito (no solo global).
+102. Línea de tiempo de tu vida en REPS (scroll por meses).
+103. Comparador "tú vs tú" (este trimestre vs el pasado).
+104. Exportar una imagen bonita de cualquier pantalla (compartir).
+105. Insights proactivos: la app te muestra 1 dato sorprendente al abrir Stats.
+
+**Experiencia / personalización**
+106. Reordenar y ocultar secciones de Hoy (pantalla a tu gusto).
+107. Modo "solo esenciales" configurable (elige qué tarjetas ver).
+108. Más temas y un editor de degradados.
+109. Sonidos/hápticos configurables por acción.
+110. Modo enfoque de la app (esconde todo menos el hábito actual).
+111. Atajos de captura más rápidos (widget-shortcut a "Arma mi día").
+
+**Estructura / tiempo**
+112. Agenda visual del día (timeline con tus bloques + progreso en vivo).
+113. Bloques de tiempo arrastrables (planear el día visualmente).
+114. Repetir plantillas de día por tipo (lun-vie vs finde).
+115. Cuenta regresiva a un evento importante (examen, viaje).
+116. "Modo viaje/vacaciones" temporal que ajusta expectativas y racha.
 
 ## Reglas del proyecto
 
