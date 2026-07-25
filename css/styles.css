@@ -1140,3 +1140,48 @@ body.font-serif .anio-hero .an-big{font-family:Georgia,"Times New Roman",serif}
 .diario-prompt{background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.4;margin-bottom:8px;font-style:italic}
 /* aviso de riesgo (#88) */
 .riesgo{background:color-mix(in srgb,var(--red,#e5484d) 12%,var(--card));border:1px solid color-mix(in srgb,var(--red,#e5484d) 40%,var(--line));border-radius:14px;padding:11px 14px;margin:10px 0;font-size:13px;line-height:1.4;font-weight:600}
+
+/* ===== Bloque Bienestar v97 (#90-#95) ===== */
+/* #90 respiración */
+.resp-tecnicas{display:flex;gap:8px;margin-bottom:16px}
+.resp-tec{flex:1;background:var(--card-2);border:1.5px solid var(--line);color:var(--text);border-radius:12px;padding:9px;font-size:13px;font-weight:700;cursor:pointer}
+.resp-tec.on{border-color:var(--amber);background:color-mix(in srgb,var(--amber) 12%,var(--card-2))}
+.resp-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 0 8px;min-height:230px}
+.resp-circle{width:120px;height:120px;border-radius:50%;background:color-mix(in srgb,var(--amber) 22%,var(--card-2));border:2px solid var(--amber);display:flex;align-items:center;justify-content:center;transform:scale(1);transition:transform linear;color:var(--text);font-size:15px;font-weight:700}
+.resp-circle.in{transform:scale(1.7)}
+.resp-circle.out{transform:scale(1)}
+.resp-circle.hold{}
+.resp-count{margin-top:26px;font-size:30px;font-weight:800;color:var(--amber);min-height:36px}
+/* #93 gratitud */
+.gr-in{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:11px 12px;color:var(--text);font-size:14px;margin-bottom:8px}
+.gr-recuerdo{background:color-mix(in srgb,var(--teal) 12%,var(--card));border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.4;margin:12px 0}
+.gr-empty{font-size:13px;color:var(--muted);padding:8px 0}
+.gr-h-row{padding:10px 0;border-top:1px solid var(--line)}
+.gr-h-fecha{font-size:11px;color:var(--muted);margin-bottom:2px}
+.gr-h-items{font-size:14px;line-height:1.4}
+/* #92 agua */
+.agua-hero{text-align:center;padding:12px 0 16px}
+.ag-big{font-size:34px;font-weight:800}
+.ag-unit{font-size:15px;color:var(--muted);font-weight:600}
+.ag-drops{margin-top:12px;font-size:20px;line-height:1.6;letter-spacing:2px}
+.ag-drop{opacity:.25}
+.ag-drop.on{opacity:1}
+.agua-ops{display:flex;gap:10px}
+.ag-op{background:var(--card-2);border:1px solid var(--line);color:var(--text);border-radius:12px;padding:14px;font-size:16px;font-weight:800;cursor:pointer}
+.ag-op.ag-plus{flex:1;background:var(--amber);color:var(--on-accent);border-color:var(--amber)}
+/* #94 pausas */
+.pa-opts{display:flex;gap:8px;margin-top:10px}
+.pa-sug{margin-top:12px;background:var(--card-2);border-radius:12px;padding:11px 12px;font-size:14px;line-height:1.4}
+/* #95 higiene del sueño */
+.sr-item{display:flex;align-items:center;gap:10px;width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;color:var(--text);cursor:pointer;text-align:left}
+.sr-item.on{border-color:var(--amber);background:color-mix(in srgb,var(--amber) 10%,var(--card-2))}
+.sr-ck{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--on-accent);flex:none}
+.sr-item.on .sr-ck{background:var(--amber);border-color:var(--amber)}
+.sr-tx{font-size:14px}
+.sr-done{margin-top:6px;background:color-mix(in srgb,var(--teal) 14%,var(--card));border-radius:12px;padding:11px;font-size:13px;text-align:center;font-weight:700}
+/* #91 chequeo de ánimo */
+.checkin{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin:6px 0 14px}
+.ci-q{font-size:13px;font-weight:700}
+.ci-opts{display:flex;gap:6px}
+.ci-opt{background:var(--card-2);border:1.5px solid var(--line);border-radius:12px;padding:6px 10px;font-size:20px;cursor:pointer;line-height:1}
+.ci-opt.on{border-color:var(--amber)}

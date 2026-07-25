@@ -279,12 +279,14 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 89. ✅ Preguntas de journaling generadas a tu momento (en el Diario, con banco offline). (v96)
 
 **Bienestar y salud**
-90. Respiración guiada con animación (4-7-8, caja, etc.).
-91. Chequeo de ánimo rápido a media jornada (1 tap).
-92. Registro de agua con recordatorios inteligentes.
-93. Gratitud diaria (3 cosas) con historial y "recuerdo del año pasado".
-94. Estiramientos/pausas activas cada X tiempo sentado.
-95. Higiene del sueño: rutina de bajada nocturna con checklist.
+90. ✅ Respiración guiada con animación (4-7-8, caja, calma). (v97)
+91. ✅ Chequeo de ánimo a media jornada, 1 tap (tarjeta en Hoy 11–17h). (v97)
+92. ✅ Registro de agua con vasos y aviso según la hora. (v97)
+93. ✅ Gratitud diaria (3 cosas) con historial y "hace un año". (v97)
+94. ✅ Pausas activas cada X min (mientras la app está abierta). (v97)
+95. ✅ Higiene del sueño: checklist de bajada nocturna por noche. (v97)
+
+(Todo agrupado en el hub «Bienestar» del menú Más; el chequeo #91 vive en Hoy.)
 
 **Motivación / identidad**
 96. "Carta desde tu futuro yo" (a 1 año) que se abre en la fecha.

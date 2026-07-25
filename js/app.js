@@ -876,6 +876,7 @@
     renderAhora(); // HUD del bloque en curso (El Ahora)
     const dw = $('despWrap'); if(dw){ dw.innerHTML = ''; dw.appendChild(buildDespertarUI(hoyKey)); }
     renderEnergia(); // semáforo de energía del día (idea #77)
+    renderCheckin(); // chequeo de ánimo a media jornada (idea #91)
     renderStats(); // mantiene la pestaña Stats al día con cada cambio
     updateBadge(); // la insignia del ícono refleja los core pendientes
   }
@@ -5293,7 +5294,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-diario', 'reps-sueno', 'reps-kanban', 'reps-retos', 'reps-energia', 'reps-solo', 'reps-ia-chat', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-diario', 'reps-sueno', 'reps-kanban', 'reps-retos', 'reps-energia', 'reps-solo', 'reps-ia-chat', 'reps-gratitud', 'reps-agua', 'reps-pausas', 'reps-sueno-rutina', 'reps-checkin', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -6376,13 +6377,221 @@
   $('retosClose').addEventListener('click', ()=>{ $('retosWrap').hidden = true; });
   $('retosWrap').addEventListener('click', (e)=>{ if(e.target === $('retosWrap')) $('retosWrap').hidden = true; });
 
+  // ===== Bienestar (ideas #90–#95) =====
+  $('masBienestar').addEventListener('click', ()=>{ cerrarMas(); $('bienestarWrap').hidden = false; });
+  $('bienClose').addEventListener('click', ()=>{ $('bienestarWrap').hidden = true; });
+  $('bienestarWrap').addEventListener('click', (e)=>{ if(e.target === $('bienestarWrap')) $('bienestarWrap').hidden = true; });
+
+  // ---- #90 Respiración guiada ----
+  const RESP_TECNICAS = [
+    { id:'478', name:'4-7-8', fases:[{lbl:'Inhala',s:4,c:'in'},{lbl:'Retén',s:7,c:'hold'},{lbl:'Exhala',s:8,c:'out'}], nota:'Relaja y ayuda a dormir. Exhala largo por la boca.' },
+    { id:'caja', name:'Caja', fases:[{lbl:'Inhala',s:4,c:'in'},{lbl:'Retén',s:4,c:'hold'},{lbl:'Exhala',s:4,c:'out'},{lbl:'Retén',s:4,c:'hold'}], nota:'Equilibra y enfoca. La usan hasta los marines.' },
+    { id:'calma', name:'Calma', fases:[{lbl:'Inhala',s:4,c:'in'},{lbl:'Exhala',s:6,c:'out'}], nota:'Exhalar más largo que inhalar baja el pulso.' },
+  ];
+  let respTec = RESP_TECNICAS[0], respOn = false, respTimer = null, respFaseIdx = 0, respRestante = 0;
+  function renderRespTecnicas(){
+    const cont = $('respTecnicas'); cont.innerHTML = '';
+    RESP_TECNICAS.forEach(t => {
+      const b = document.createElement('button'); b.type = 'button';
+      b.className = 'resp-tec' + (t.id === respTec.id ? ' on' : ''); b.textContent = t.name;
+      b.addEventListener('click', ()=>{ if(respOn) pararRespira(); respTec = t; renderRespTecnicas(); $('respNota').textContent = t.nota; });
+      cont.appendChild(b);
+    });
+    $('respNota').textContent = respTec.nota;
+  }
+  function pasoRespira(){
+    const fase = respTec.fases[respFaseIdx];
+    const circle = $('respCircle');
+    circle.className = 'resp-circle ' + fase.c;
+    circle.style.transitionDuration = fase.s + 's';
+    $('respFase').textContent = fase.lbl;
+    respRestante = fase.s;
+    $('respCount').textContent = respRestante;
+    clearInterval(respTimer);
+    respTimer = setInterval(()=>{
+      respRestante--;
+      $('respCount').textContent = respRestante > 0 ? respRestante : '';
+      if(respRestante <= 0){
+        clearInterval(respTimer);
+        respFaseIdx = (respFaseIdx + 1) % respTec.fases.length;
+        if(respOn) pasoRespira();
+      }
+    }, 1000);
+  }
+  function pararRespira(){
+    respOn = false; clearInterval(respTimer);
+    const circle = $('respCircle'); circle.className = 'resp-circle'; circle.style.transitionDuration = '';
+    $('respFase').textContent = 'Listo'; $('respCount').textContent = '';
+    $('respToggle').textContent = 'Empezar';
+  }
+  $('respToggle').addEventListener('click', ()=>{
+    if(respOn){ pararRespira(); return; }
+    respOn = true; respFaseIdx = 0; $('respToggle').textContent = 'Detener'; pasoRespira();
+  });
+  function abrirRespira(){ pararRespira(); renderRespTecnicas(); $('respiraWrap').hidden = false; }
+  $('biRespira').addEventListener('click', abrirRespira);
+  $('respClose').addEventListener('click', ()=>{ pararRespira(); $('respiraWrap').hidden = true; });
+  $('respiraWrap').addEventListener('click', (e)=>{ if(e.target === $('respiraWrap')){ pararRespira(); $('respiraWrap').hidden = true; } });
+
+  // ---- #93 Gratitud ----
+  const GRAT_KEY = 'reps-gratitud';
+  let gratitud = {}; // {fecha:[s1,s2,s3]}
+  function loadGratitud(){ gratitud = {}; try{ const v = JSON.parse(localStorage.getItem(GRAT_KEY)); if(esMapa(v)) Object.keys(v).forEach(k => { if(Array.isArray(v[k])) gratitud[k] = v[k].filter(s => typeof s === 'string').slice(0,3); }); }catch(e){ gratitud = {}; } }
+  function saveGratitud(){ try{ localStorage.setItem(GRAT_KEY, JSON.stringify(gratitud)); }catch(e){} }
+  function renderGratitud(){
+    const hoy = today();
+    const g = gratitud[hoy] || [];
+    $('grIn1').value = g[0] || ''; $('grIn2').value = g[1] || ''; $('grIn3').value = g[2] || '';
+    // recuerdo de hace un año (misma fecha)
+    const d = new Date(hoy + 'T12:00:00'); d.setFullYear(d.getFullYear() - 1);
+    const hace1 = gratitud[localISO(d)];
+    const rec = $('grRecuerdo');
+    if(hace1 && hace1.some(s => s && s.trim())){
+      rec.hidden = false; rec.textContent = '🗓️ Hace un año agradecías: ' + hace1.filter(s => s && s.trim()).join(' · ');
+    } else rec.hidden = true;
+    // historial (últimos 14, menos hoy)
+    const hist = $('grHist'); hist.innerHTML = '';
+    const keys = Object.keys(gratitud).filter(k => k !== hoy && gratitud[k].some(s => s && s.trim())).sort().reverse().slice(0,14);
+    if(!keys.length){ const e = document.createElement('div'); e.className = 'gr-empty'; e.textContent = 'Aún no hay historial.'; hist.appendChild(e); }
+    keys.forEach(k => {
+      const row = document.createElement('div'); row.className = 'gr-h-row';
+      const dt = document.createElement('div'); dt.className = 'gr-h-fecha'; dt.textContent = new Date(k+'T12:00:00').toLocaleDateString('es-MX', {day:'numeric', month:'short', year:'numeric'});
+      const li = document.createElement('div'); li.className = 'gr-h-items'; li.textContent = gratitud[k].filter(s => s && s.trim()).join(' · ');
+      row.append(dt, li); hist.appendChild(row);
+    });
+  }
+  $('grSave').addEventListener('click', ()=>{
+    const arr = [$('grIn1').value.trim(), $('grIn2').value.trim(), $('grIn3').value.trim()];
+    const hoy = today();
+    if(arr.every(s => !s)){ delete gratitud[hoy]; } else { gratitud[hoy] = arr.map(s => s.slice(0,120)); }
+    saveGratitud(); renderGratitud(); sonarCheck(); toast('Gratitud guardada. 🙏');
+  });
+  $('biGratitud').addEventListener('click', ()=>{ renderGratitud(); $('gratitudWrap').hidden = false; });
+  $('grClose').addEventListener('click', ()=>{ $('gratitudWrap').hidden = true; });
+  $('gratitudWrap').addEventListener('click', (e)=>{ if(e.target === $('gratitudWrap')) $('gratitudWrap').hidden = true; });
+
+  // ---- #92 Agua ----
+  const AGUA_KEY = 'reps-agua';
+  let agua = { meta:8, dias:{} };
+  function loadAgua(){ agua = { meta:8, dias:{} }; try{ const v = JSON.parse(localStorage.getItem(AGUA_KEY)); if(esMapa(v)){ if(Number.isFinite(+v.meta) && +v.meta > 0) agua.meta = Math.min(20, +v.meta); if(esMapa(v.dias)) Object.keys(v.dias).forEach(k => { if(Number.isFinite(+v.dias[k])) agua.dias[k] = Math.max(0, +v.dias[k]); }); } }catch(e){ agua = { meta:8, dias:{} }; } }
+  function saveAgua(){ try{ localStorage.setItem(AGUA_KEY, JSON.stringify(agua)); }catch(e){} }
+  function renderAgua(){
+    const hoy = today();
+    const n = agua.dias[hoy] || 0;
+    $('agCount').textContent = n; $('agMeta').textContent = agua.meta; $('agMetaIn').value = agua.meta;
+    const drops = $('agDrops'); drops.innerHTML = '';
+    for(let i = 0; i < agua.meta; i++){ const s = document.createElement('span'); s.className = 'ag-drop' + (i < n ? ' on' : ''); s.textContent = '💧'; drops.appendChild(s); }
+    const nota = $('agNota');
+    const hora = new Date().getHours();
+    if(n >= agua.meta) nota.textContent = '¡Meta cumplida! Bien hidratado. 💪';
+    else if(hora >= 18 && n < agua.meta * 0.6) nota.textContent = 'Vas ' + n + ' y ya es tarde. Un par de vasos más te caen bien.';
+    else if(hora >= 12 && n === 0) nota.textContent = 'Aún no registras agua hoy. Arranca con un vaso.';
+    else nota.textContent = 'Toca ＋ cada vez que tomes un vaso.';
+  }
+  function setAgua(delta){ const hoy = today(); agua.dias[hoy] = Math.max(0, (agua.dias[hoy] || 0) + delta); saveAgua(); renderAgua(); if(delta > 0) sonarCheck(); }
+  $('agPlus').addEventListener('click', ()=> setAgua(1));
+  $('agMinus').addEventListener('click', ()=> setAgua(-1));
+  $('agMetaIn').addEventListener('change', ()=>{ const m = parseInt($('agMetaIn').value,10); if(m >= 1 && m <= 20){ agua.meta = m; saveAgua(); renderAgua(); } });
+  $('biAgua').addEventListener('click', ()=>{ renderAgua(); $('aguaWrap').hidden = false; });
+  $('agClose').addEventListener('click', ()=>{ $('aguaWrap').hidden = true; });
+  $('aguaWrap').addEventListener('click', (e)=>{ if(e.target === $('aguaWrap')) $('aguaWrap').hidden = true; });
+
+  // ---- #94 Pausas activas ----
+  const PAUSAS_KEY = 'reps-pausas';
+  const PAUSAS_SUG = ['Ponte de pie y estira los brazos al techo 10 seg.','Rueda los hombros hacia atrás 10 veces.','Gira el cuello despacio a cada lado.','Camina 20 pasos y vuelve.','Estira el cuello llevando la oreja al hombro.','Ponte de puntas 15 veces.','Abre y cierra las manos, sacude las muñecas.','Mira lejos por la ventana 20 seg (descansa la vista).'];
+  let pausas = { intervalo:60, activo:false };
+  let pausasTimer = null;
+  function loadPausas(){ pausas = { intervalo:60, activo:false }; try{ const v = JSON.parse(localStorage.getItem(PAUSAS_KEY)); if(esMapa(v)){ if([30,45,60,90].includes(+v.intervalo)) pausas.intervalo = +v.intervalo; pausas.activo = !!v.activo; } }catch(e){} }
+  function savePausas(){ try{ localStorage.setItem(PAUSAS_KEY, JSON.stringify(pausas)); }catch(e){} }
+  function sugPausa(){ return PAUSAS_SUG[Math.floor(Math.random()*PAUSAS_SUG.length)]; }
+  function armarPausas(){
+    clearInterval(pausasTimer); pausasTimer = null;
+    if(pausas.activo){ pausasTimer = setInterval(()=>{ toast('🤸 Pausa: ' + sugPausa()); try{ sonarCheck(); }catch(e){} }, pausas.intervalo * 60000); }
+  }
+  function renderPausas(){
+    $('paInt').value = String(pausas.intervalo);
+    document.querySelectorAll('#pausasWrap .pa-opts .dist-opt').forEach(b => b.classList.toggle('on', (b.dataset.pa === 'on') === pausas.activo));
+  }
+  $('paInt').addEventListener('change', ()=>{ pausas.intervalo = parseInt($('paInt').value,10) || 60; savePausas(); armarPausas(); });
+  document.querySelectorAll('#pausasWrap .pa-opts .dist-opt').forEach(b => b.addEventListener('click', ()=>{ pausas.activo = b.dataset.pa === 'on'; savePausas(); renderPausas(); armarPausas(); toast(pausas.activo ? 'Pausas activadas.' : 'Pausas apagadas.'); }));
+  $('paNow').addEventListener('click', ()=>{ const s = $('paSug'); s.hidden = false; s.textContent = '🤸 ' + sugPausa(); });
+  $('biPausas').addEventListener('click', ()=>{ renderPausas(); $('paSug').hidden = true; $('pausasWrap').hidden = false; });
+  $('paClose').addEventListener('click', ()=>{ $('pausasWrap').hidden = true; });
+  $('pausasWrap').addEventListener('click', (e)=>{ if(e.target === $('pausasWrap')) $('pausasWrap').hidden = true; });
+
+  // ---- #95 Higiene del sueño ----
+  const SUENO_RUT_KEY = 'reps-sueno-rutina';
+  const SR_PASOS = [
+    {id:'pantallas', txt:'Sin pantallas 30 min antes'},
+    {id:'luz', txt:'Baja las luces'},
+    {id:'cafe', txt:'Nada de cafeína en la tarde'},
+    {id:'prepara', txt:'Deja listo lo de mañana'},
+    {id:'agradece', txt:'Piensa algo bueno del día'},
+    {id:'respira', txt:'Respira lento un minuto'},
+  ];
+  let suenoRut = {}; // {fecha:{id:true}}
+  function loadSuenoRut(){ suenoRut = {}; try{ const v = JSON.parse(localStorage.getItem(SUENO_RUT_KEY)); if(esMapa(v)) Object.keys(v).forEach(k => { if(esMapa(v[k])) suenoRut[k] = v[k]; }); }catch(e){ suenoRut = {}; } }
+  function saveSuenoRut(){ try{ localStorage.setItem(SUENO_RUT_KEY, JSON.stringify(suenoRut)); }catch(e){} }
+  function renderSuenoRut(){
+    const hoy = today();
+    const est = suenoRut[hoy] || {};
+    const list = $('srList'); list.innerHTML = '';
+    SR_PASOS.forEach(p => {
+      const b = document.createElement('button'); b.type = 'button';
+      b.className = 'sr-item' + (est[p.id] ? ' on' : '');
+      const ck = document.createElement('span'); ck.className = 'sr-ck'; ck.textContent = est[p.id] ? '✓' : '';
+      const tx = document.createElement('span'); tx.className = 'sr-tx'; tx.textContent = p.txt;
+      b.append(ck, tx);
+      b.addEventListener('click', ()=>{
+        const cur = suenoRut[hoy] || {};
+        if(cur[p.id]) delete cur[p.id]; else cur[p.id] = true;
+        if(Object.keys(cur).length) suenoRut[hoy] = cur; else delete suenoRut[hoy];
+        saveSuenoRut(); renderSuenoRut(); sonarCheck();
+      });
+      list.appendChild(b);
+    });
+    const hechos = Object.keys(est).length;
+    const done = $('srDone');
+    if(hechos >= SR_PASOS.length){ done.hidden = false; done.textContent = '🌙 Rutina completa. Dulces sueños.'; }
+    else done.hidden = true;
+  }
+  $('biSueno').addEventListener('click', ()=>{ renderSuenoRut(); $('suenoRutinaWrap').hidden = false; });
+  $('srClose').addEventListener('click', ()=>{ $('suenoRutinaWrap').hidden = true; });
+  $('suenoRutinaWrap').addEventListener('click', (e)=>{ if(e.target === $('suenoRutinaWrap')) $('suenoRutinaWrap').hidden = true; });
+
+  // ---- #91 Chequeo de ánimo a media jornada (tarjeta en Hoy) ----
+  const CHECKIN_KEY = 'reps-checkin';
+  let checkin = {}; // {fecha:{mid}}
+  function loadCheckin(){ checkin = {}; try{ const v = JSON.parse(localStorage.getItem(CHECKIN_KEY)); if(esMapa(v)) checkin = v; }catch(e){ checkin = {}; } }
+  function saveCheckin(){ try{ localStorage.setItem(CHECKIN_KEY, JSON.stringify(checkin)); }catch(e){} }
+  function renderCheckin(){
+    const card = $('checkinCard'); if(!card) return;
+    const hoy = today();
+    const hora = new Date().getHours();
+    const yaHoy = checkin[hoy] && checkin[hoy].mid;
+    // se muestra en la franja de media jornada (11–17h) si aún no lo hiciste
+    card.hidden = !(hora >= 11 && hora < 17 && !yaHoy);
+    card.querySelectorAll('.ci-opt').forEach(b => b.classList.toggle('on', yaHoy === b.dataset.ci));
+  }
+  (function initCheckin(){
+    const opts = document.getElementById('ciOpts'); if(!opts) return;
+    opts.addEventListener('click', (e)=>{
+      const b = e.target.closest('.ci-opt'); if(!b) return;
+      const hoy = today();
+      checkin[hoy] = Object.assign({}, checkin[hoy], { mid: b.dataset.ci });
+      saveCheckin(); sonarCheck();
+      $('checkinCard').hidden = true;
+      toast('Anotado. Gracias por chequearte. 💙');
+    });
+  })();
+
   // ===== Respaldo: exportar / importar =====
   function exportBackup(){
     const backup = {
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-diario': diario, 'reps-sueno': sueno, 'reps-kanban': kanban, 'reps-retos': retos, 'reps-energia': energia, 'reps-solo': solo, 'reps-ia-chat': iaChat, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-diario': diario, 'reps-sueno': sueno, 'reps-kanban': kanban, 'reps-retos': retos, 'reps-energia': energia, 'reps-solo': solo, 'reps-ia-chat': iaChat, 'reps-gratitud': gratitud, 'reps-agua': agua, 'reps-pausas': pausas, 'reps-sueno-rutina': suenoRut, 'reps-checkin': checkin, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -6527,6 +6736,21 @@
         const iac = b.data['reps-ia-chat'];
         if(Array.isArray(iac)) localStorage.setItem(IA_CHAT_KEY, JSON.stringify(iac));
         else localStorage.removeItem(IA_CHAT_KEY);
+        const grt = b.data['reps-gratitud'];
+        if(esMapa(grt)) localStorage.setItem(GRAT_KEY, JSON.stringify(grt));
+        else localStorage.removeItem(GRAT_KEY);
+        const agu = b.data['reps-agua'];
+        if(esMapa(agu)) localStorage.setItem(AGUA_KEY, JSON.stringify(agu));
+        else localStorage.removeItem(AGUA_KEY);
+        const pau = b.data['reps-pausas'];
+        if(esMapa(pau)) localStorage.setItem(PAUSAS_KEY, JSON.stringify(pau));
+        else localStorage.removeItem(PAUSAS_KEY);
+        const srt = b.data['reps-sueno-rutina'];
+        if(esMapa(srt)) localStorage.setItem(SUENO_RUT_KEY, JSON.stringify(srt));
+        else localStorage.removeItem(SUENO_RUT_KEY);
+        const chk = b.data['reps-checkin'];
+        if(esMapa(chk)) localStorage.setItem(CHECKIN_KEY, JSON.stringify(chk));
+        else localStorage.removeItem(CHECKIN_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -6565,6 +6789,11 @@
       energia = {}; loadEnergia();
       solo = ''; loadSolo();
       iaChat = []; loadIaChat();
+      gratitud = {}; loadGratitud();
+      agua = { meta:8, dias:{} }; loadAgua();
+      pausas = { intervalo:60, activo:false }; loadPausas(); armarPausas();
+      suenoRut = {}; loadSuenoRut();
+      checkin = {}; loadCheckin();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -6625,6 +6854,11 @@
   loadSolo(); // modo un solo hábito (idea #74)
   loadRetos(); // retos con fecha límite (idea #75); se renderiza al abrir
   loadIaChat(); // memoria del asistente (idea #84); se renderiza al abrir
+  loadGratitud(); // gratitud (idea #93)
+  loadAgua(); // agua (idea #92)
+  loadPausas(); armarPausas(); // pausas activas (idea #94)
+  loadSuenoRut(); // higiene del sueño (idea #95)
+  loadCheckin(); // chequeo de media jornada (idea #91)
   loadRecordatorios(); // antes de render(): suman al puntaje del día
   loadCapas(); renderCapas(); // mi ruta editable
   loadRutina();

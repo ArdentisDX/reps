@@ -99,6 +99,14 @@
       <span id="soloTxt">🎯 Modo un solo hábito</span>
       <button type="button" id="soloExit">Ver todos</button>
     </div>
+    <div class="checkin" id="checkinCard" hidden>
+      <span class="ci-q">¿Cómo va tu ánimo ahora?</span>
+      <div class="ci-opts" id="ciOpts">
+        <button type="button" class="ci-opt" data-ci="bien">😊</button>
+        <button type="button" class="ci-opt" data-ci="regular">😐</button>
+        <button type="button" class="ci-opt" data-ci="mal">😔</button>
+      </div>
+    </div>
     <div class="sec" id="secCore">
       <div class="sec-head"><h2>Innegociables</h2><div class="tag" id="coreTag">3/3 = día ganado</div></div>
       <div id="coreList"></div>
@@ -431,6 +439,9 @@
       <div class="mas-sec">Recordatorios</div>
       <button class="mas-item" id="masNotif"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 6-2.5 8-2.5 8h17S18 14 18 8Z"/><path d="M10.5 20.5a2 2 0 0 0 3 0"/></svg></span><span class="mas-tx"><b>Avisos y sonido</b><i>Notificaciones, sonidos, despertar a tiempo</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
 
+      <div class="mas-sec">Bienestar</div>
+      <button class="mas-item" id="masBienestar"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6C19 16.5 12 21 12 21z"/></svg></span><span class="mas-tx"><b>Bienestar</b><i>Respiración, gratitud, agua, pausas, sueño</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
+
       <div class="mas-sec">Tu sistema</div>
       <button class="mas-item" id="masHabitos"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11M4 12h11M4 17h7"/><path d="m17.5 6.5 1.5 1.5 3-3"/></svg></span><span class="mas-tx"><b>Hábitos</b><i>Editar tus hábitos y core</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
       <button class="mas-item" id="masRutina"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg></span><span class="mas-tx"><b>Rutina del día</b><i>Editar los bloques de tu día</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
@@ -444,6 +455,84 @@
       <button class="mas-item" id="masExport"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></span><span class="mas-tx"><b>Exportar respaldo</b><i>Guarda una copia de tus datos</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
       <button class="mas-item" id="masImport"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14V3m0 0 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></span><span class="mas-tx"><b>Importar respaldo</b><i>Restaura desde una copia</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
       <button class="mas-item mas-danger" id="masReset"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-9 0 1 13a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2l1-13"/></svg></span><span class="mas-tx"><b>Borrar todo el historial</b><i>No se puede deshacer</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="bienestarWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Bienestar</h2><button id="bienClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-note" style="margin-bottom:10px">Herramientas para cuidarte. Todo privado, en tu dispositivo.</div>
+      <button class="mas-item" id="biRespira" style="margin:0"><span class="mas-ic">🌬️</span><span class="mas-tx"><b>Respiración guiada</b><i>Calma en 1 minuto (4-7-8, caja…)</i></span><span class="mas-go">›</span></button>
+      <button class="mas-item" id="biGratitud" style="margin:8px 0 0"><span class="mas-ic">🙏</span><span class="mas-tx"><b>Gratitud</b><i>3 cosas buenas del día + recuerdos</i></span><span class="mas-go">›</span></button>
+      <button class="mas-item" id="biAgua" style="margin:8px 0 0"><span class="mas-ic">💧</span><span class="mas-tx"><b>Agua</b><i>Cuenta tus vasos del día</i></span><span class="mas-go">›</span></button>
+      <button class="mas-item" id="biPausas" style="margin:8px 0 0"><span class="mas-ic">🤸</span><span class="mas-tx"><b>Pausas activas</b><i>Estírate cada cierto tiempo sentado</i></span><span class="mas-go">›</span></button>
+      <button class="mas-item" id="biSueno" style="margin:8px 0 0"><span class="mas-ic">🌙</span><span class="mas-tx"><b>Higiene del sueño</b><i>Rutina de bajada antes de dormir</i></span><span class="mas-go">›</span></button>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="respiraWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Respiración</h2><button id="respClose" aria-label="Cerrar">✕</button></div>
+      <div class="resp-tecnicas" id="respTecnicas"></div>
+      <div class="resp-stage">
+        <div class="resp-circle" id="respCircle"><span id="respFase">Listo</span></div>
+        <div class="resp-count" id="respCount"></div>
+      </div>
+      <button class="cel-btn" id="respToggle" style="width:100%">Empezar</button>
+      <div class="t-note" id="respNota" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="gratitudWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Gratitud</h2><button id="grClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-note" style="margin-bottom:8px">Tres cosas buenas de hoy, por pequeñas que sean.</div>
+      <input type="text" class="gr-in" id="grIn1" maxlength="120" placeholder="1. Algo que agradeces…">
+      <input type="text" class="gr-in" id="grIn2" maxlength="120" placeholder="2. Otra cosa…">
+      <input type="text" class="gr-in" id="grIn3" maxlength="120" placeholder="3. Una más…">
+      <button class="cel-btn" id="grSave" style="width:100%;margin-top:6px">Guardar</button>
+      <div class="gr-recuerdo" id="grRecuerdo" hidden></div>
+      <div class="t-sub">Antes</div>
+      <div id="grHist"></div>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="aguaWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Agua</h2><button id="agClose" aria-label="Cerrar">✕</button></div>
+      <div class="agua-hero">
+        <div class="ag-big"><span id="agCount">0</span> <span class="ag-unit">/ <span id="agMeta">8</span> vasos</span></div>
+        <div class="ag-drops" id="agDrops"></div>
+      </div>
+      <div class="agua-ops">
+        <button class="ag-op" id="agMinus">−</button>
+        <button class="ag-op ag-plus" id="agPlus">＋ un vaso</button>
+      </div>
+      <div class="t-note" id="agNota" style="margin-top:10px"></div>
+      <div class="t-row" style="margin-top:8px"><label for="agMetaIn">Meta diaria</label><input type="number" id="agMetaIn" class="desp-meta" min="1" max="20"></div>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="pausasWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Pausas activas</h2><button id="paClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-note" style="margin-bottom:10px">Mientras la app esté abierta, te recuerda estirarte cada cierto tiempo. Un respiro para el cuerpo.</div>
+      <div class="t-row"><label for="paInt">Cada</label><select id="paInt" class="desp-meta"><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option><option value="90">90 min</option></select></div>
+      <div class="pa-opts">
+        <button class="dist-opt" data-pa="off">Apagado</button>
+        <button class="dist-opt" data-pa="on">Encendido</button>
+      </div>
+      <button class="cel-btn" id="paNow" style="width:100%;margin-top:10px">Dame una pausa ahora</button>
+      <div class="pa-sug" id="paSug" hidden></div>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="suenoRutinaWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Higiene del sueño</h2><button id="srClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-note" style="margin-bottom:10px">Una rutina de bajada para dormir mejor. Palomea lo que hagas esta noche.</div>
+      <div id="srList"></div>
+      <div class="sr-done" id="srDone" hidden></div>
     </div>
   </div>
 
