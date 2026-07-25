@@ -142,7 +142,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 2. ✅ (v73) Gráfica de gastos por categoría (barras "En qué se te va").
 3. ✅ (v74) Comparar mes vs mes.
 4. Aportar al ahorro cuenta como hábito del día.
-5. 🌐🧠 Coach financiero IA (analiza gastos → consejo).
+5. ✅ (v87) Coach financiero IA (analiza gastos → consejo).
 
 **Hábitos**
 6. ✅ (v75) Hábitos a evitar ("Días sin…", contador de días limpios).
@@ -153,7 +153,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 **Asistente IA**
 10. 🌐🧠 Chat con memoria del hilo (conversación real).
 11. 🌐🧠 Reflexión semanal (analiza semana → 1 consejo).
-12. 🌐🧠 Idea de la Bandeja → plan con pasos y fechas.
+12. ✅ (v87) Idea de la Bandeja → plan con pasos (botón ✨).
 
 **Motivación**
 13. ✅ (v76) Más medallas (200 días, racha 60, foco, ahorro, días sin).
