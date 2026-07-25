@@ -254,13 +254,13 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 ### Tanda 3 (ideas 71–116) — jul 2026
 
 **Hábitos y sistema**
-71. Hábitos semanales/mensuales (no solo diarios): "3× por semana".
+71. ✅ Hábitos "N× por semana" (campo frecSemanal; no core, cuenta aparte). (v94)
 72. ✅ Cadena visual del hábito (calendario "no rompas la cadena" por hábito). (v93)
-73. Hábitos ancla + apilados (después de X, hago Y) con recordatorio.
-74. Modo "un solo hábito" (foco absoluto en uno hasta consolidarlo).
-75. Reto personal con fecha límite y barra de avance.
-76. Micro-hábitos de 2 minutos (biblioteca de arranques ridículamente fáciles).
-77. "Semáforo de energía": marcas tu energía y la app sugiere qué toca.
+73. ✅ Hábitos ancla + apilados (campo "después de X" en la tarjeta). (v94)
+74. ✅ Modo "un solo hábito" (filtro de foco reps-solo + banner). (v94)
+75. ✅ Reto personal con fecha límite y barra de avance (reps-retos). (v94)
+76. ✅ Micro-hábitos de 2 minutos (categoría en la biblioteca). (v94)
+77. ✅ "Semáforo de energía" del día que sugiere cómo encarar lo que falta. (v94)
 
 **Finanzas**
 78. Reporte semanal de gastos (resumen automático cada domingo).

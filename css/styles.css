@@ -1046,3 +1046,46 @@ body.font-serif .anio-hero .an-big{font-family:Georgia,"Times New Roman",serif}
 .cl-dot.done{background:var(--amber)}
 .cl-dot.miss{background:color-mix(in srgb, var(--text) 14%, transparent)}
 .cl-dot.off{background:var(--card-2)}
+
+/* ===== Bloque Hábitos v94 (#71,#73,#74,#75,#77) ===== */
+/* frecuencia semanal en la tarjeta (#71) */
+.habit .h-frec{font-size:12px;color:var(--muted);margin-top:2px;font-weight:700}
+.habit .h-frec.full{color:var(--amber)}
+.hab-frec-txt{font-size:11px;color:var(--muted)}
+/* ancla / apilado (#73) */
+.habit .h-tras{font-size:12px;color:var(--muted);margin-top:3px;font-style:italic}
+/* botones del editor (#72 ⛓, #74 🎯) */
+.hab-solo{background:none;border:none;font-size:14px;cursor:pointer;padding:6px 6px;flex:none;opacity:.55}
+.hab-solo.on{opacity:1}
+.hab-solo:focus-visible{outline:2px solid var(--amber);outline-offset:2px;border-radius:6px}
+/* banner modo un solo hábito (#74) */
+.solo-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;background:color-mix(in srgb,var(--amber) 14%,var(--card));border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin:6px 0 14px;font-size:13px;font-weight:700}
+.solo-banner button{background:var(--card-2);border:1px solid var(--line);color:var(--text);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer}
+/* semáforo de energía (#77) */
+.energia{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:6px 0 14px}
+.en-head{margin-bottom:10px}
+.en-title{font-size:14px;font-weight:800}
+.en-opts{display:flex;gap:8px}
+.en-opt{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--card-2);border:1.5px solid var(--line);border-radius:14px;padding:10px 4px;font-size:20px;cursor:pointer;color:var(--text)}
+.en-opt span{font-size:11px;font-weight:700;color:var(--muted)}
+.en-opt.on{border-color:var(--amber);background:color-mix(in srgb,var(--amber) 12%,var(--card-2))}
+.en-opt.on span{color:var(--text)}
+.en-sug{margin-top:12px;font-size:13px;line-height:1.4;color:var(--text);background:var(--card-2);border-radius:12px;padding:10px 12px}
+/* retos (#75) */
+.reto-form{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.reto-form input{background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:11px 12px;color:var(--text);font-size:14px;width:100%}
+.reto-form-row{display:flex;gap:8px}
+.reto-form-row input{flex:1;min-width:0}
+.reto-empty{font-size:13px;color:var(--muted);text-align:center;padding:20px 0}
+.reto-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.reto-card.done{border-color:var(--amber)}
+.reto-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.reto-tx{font-size:15px;font-weight:800}
+.reto-del{background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:2px 6px}
+.reto-bar{height:8px;border-radius:999px;background:var(--card-2);overflow:hidden}
+.reto-bar i{display:block;height:100%;background:var(--amber);border-radius:999px;transition:width .3s}
+.reto-meta{font-size:12px;color:var(--muted);margin-top:8px}
+.reto-card.done .reto-meta{color:var(--amber);font-weight:700}
+.reto-ops{display:flex;gap:8px;margin-top:12px}
+.reto-op{flex:1;background:var(--card-2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:8px;font-size:15px;font-weight:800;cursor:pointer}
+.reto-op.mas{background:var(--amber);color:var(--on-accent);border-color:var(--amber)}

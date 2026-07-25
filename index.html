@@ -85,6 +85,19 @@
       </div>
     </div>
     <div id="despWrap"></div>
+    <div class="energia" id="energiaCard">
+      <div class="en-head"><span class="en-title">¿Cómo vienes de energía?</span></div>
+      <div class="en-opts" id="enOpts">
+        <button type="button" class="en-opt" data-en="verde">🟢<span>Con todo</span></button>
+        <button type="button" class="en-opt" data-en="ambar">🟡<span>Normal</span></button>
+        <button type="button" class="en-opt" data-en="rojo">🔴<span>Bajo</span></button>
+      </div>
+      <div class="en-sug" id="enSug" hidden></div>
+    </div>
+    <div class="solo-banner" id="soloBanner" hidden>
+      <span id="soloTxt">🎯 Modo un solo hábito</span>
+      <button type="button" id="soloExit">Ver todos</button>
+    </div>
     <div class="sec" id="secCore">
       <div class="sec-head"><h2>Innegociables</h2><div class="tag" id="coreTag">3/3 = día ganado</div></div>
       <div id="coreList"></div>
@@ -420,6 +433,7 @@
       <button class="mas-item" id="masRutina"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg></span><span class="mas-tx"><b>Rutina del día</b><i>Editar los bloques de tu día</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
       <button class="mas-item" id="masEvitar"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m6 6 12 12"/></svg></span><span class="mas-tx"><b>Días sin…</b><i>Deja un vicio: cuenta tus días limpios</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
       <button class="mas-item" id="masKanban"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="9.5" y="4" width="5" height="11" rx="1.5"/><rect x="16" y="4" width="5" height="7" rx="1.5"/></svg></span><span class="mas-tx"><b>Tablero</b><i>Kanban para tus proyectos</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
+      <button class="mas-item" id="masRetos"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v9a6 6 0 0 0 12 0V4z"/><path d="M6 8H3.5M18 8h2.5"/><path d="M9 20h6M12 19v-3"/></svg></span><span class="mas-tx"><b>Retos</b><i>Metas con fecha límite y barra de avance</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
       <button class="mas-item" id="masCarta"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7 8.5 6 8.5-6"/></svg></span><span class="mas-tx"><b>Carta a tu yo</b><i>Un mensaje para tus días difíciles</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
       <button class="mas-item" id="masPerfil"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg></span><span class="mas-tx"><b>Rehacer la bienvenida</b><i>Volver a armar tus hábitos</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
 
@@ -598,6 +612,22 @@
       <button class="hab-add" id="habBiblioteca" style="margin-top:8px">Elegir de la biblioteca</button>
       <button class="hab-add" id="iaHabBtn" style="margin-top:8px"><svg class="ai-spark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c.4 3.6 1.4 4.6 5 5-3.6.4-4.6 1.4-5 5-.4-3.6-1.4-4.6-5-5 3.6-.4 4.6-1.4 5-5z"/></svg>Diseñar mis hábitos con IA</button>
       <div class="t-note">La ⭐ marca los <b>core</b>: los que definen tu «día ganado» (entre 2 y 4). Máx. 8 hábitos. Renombrar nunca borra tu historial.</div>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="retosWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Retos</h2><button id="retosClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-note" style="margin-bottom:10px">Un objetivo con fecha límite y avance. Ej: «30 entrenos en 60 días», «leer 5 libros este trimestre».</div>
+      <div class="reto-form">
+        <input type="text" id="retoTexto" maxlength="60" placeholder="Nombre del reto (ej. 30 entrenos)">
+        <div class="reto-form-row">
+          <input type="number" id="retoMeta" min="1" max="9999" placeholder="Meta (nº)">
+          <input type="date" id="retoLimite" aria-label="Fecha límite">
+        </div>
+        <button class="cel-btn" id="retoAdd">Crear reto</button>
+      </div>
+      <div id="retosList"></div>
     </div>
   </div>
 

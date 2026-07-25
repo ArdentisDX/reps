@@ -85,6 +85,20 @@
     return n;
   }
 
+  // veces que un hábito de frecuencia semanal (idea #71) se hizo en la
+  // semana en curso (lunes..hoy). Cuenta días con registro "hecho".
+  function frecHechaSemana(h){
+    const mon = mondayOf(new Date());
+    let n = 0;
+    for(let i = 0; i < 7; i++){
+      const d = new Date(mon); d.setDate(d.getDate() + i);
+      const k = localISO(d);
+      if(k > today()) break;
+      if(hecho(dias[k], h.id)) n++;
+    }
+    return n;
+  }
+
   document.querySelectorAll('.tab').forEach(t=>{
     t.addEventListener('click', ()=>{
       document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
@@ -127,13 +141,20 @@
     const n = parseInt(v, 10);
     return (Number.isFinite(n) && n > 0) ? Math.min(999, n) : 0;
   }
+  // frecuencia semanal (idea #71): entero 1..7 = "N veces por semana" (sin
+  // fijar qué días). 0/ausente = hábito diario normal. Un hábito con
+  // frecSemanal NUNCA es core (no gana/pierde el día): se cuenta aparte.
+  function sanearFrec(v){
+    const n = parseInt(v, 10);
+    return (Number.isFinite(n) && n >= 1 && n <= 7) ? n : 0;
+  }
   function sanearHabitos(v){
     if(!Array.isArray(v)) return null;
     const vistos = {};
     const limpio = v
       .filter(h => h && typeof h.id === 'string' && h.id && typeof h.name === 'string' && h.name.trim())
       .filter(h => vistos[h.id] ? false : (vistos[h.id] = true)) // ids únicos
-      .map(h => ({ id: h.id, name: h.name.trim(), hint: typeof h.hint === 'string' ? h.hint.trim() : '', core: !!h.core, days: sanearDays(h.days), planB: typeof h.planB === 'string' ? h.planB.trim() : '', emoji: sanearEmoji(h.emoji), porQue: typeof h.porQue === 'string' ? h.porQue.trim() : '', meta: sanearMeta(h.meta), unidad: typeof h.unidad === 'string' ? h.unidad.trim().slice(0, 16) : '' }))
+      .map(h => { const frec = sanearFrec(h.frecSemanal); return { id: h.id, name: h.name.trim(), hint: typeof h.hint === 'string' ? h.hint.trim() : '', core: frec ? false : !!h.core, days: sanearDays(h.days), planB: typeof h.planB === 'string' ? h.planB.trim() : '', emoji: sanearEmoji(h.emoji), porQue: typeof h.porQue === 'string' ? h.porQue.trim() : '', meta: sanearMeta(h.meta), unidad: typeof h.unidad === 'string' ? h.unidad.trim().slice(0, 16) : '', tras: typeof h.tras === 'string' ? h.tras.trim().slice(0, 60) : '', frecSemanal: frec }; })
       .slice(0, MAX_HABITS);
     return limpio.length ? limpio : null;
   }
@@ -524,9 +545,22 @@
       cd.textContent = cnt + ' / ' + h.meta + (h.unidad ? ' ' + h.unidad : '');
       body.appendChild(cd);
     }
+    // frecuencia semanal (idea #71): "2 / 3 esta semana"
+    if(h.frecSemanal > 0){
+      const fh = frecHechaSemana(h);
+      const fd = document.createElement('div'); fd.className = 'h-frec' + (fh >= h.frecSemanal ? ' full' : '');
+      fd.textContent = fh + ' / ' + h.frecSemanal + ' esta semana' + (fh >= h.frecSemanal ? ' ✓' : '');
+      body.appendChild(fd);
+    }
     if(h.hint){
       const hint = document.createElement('div'); hint.className = 'h-hint'; hint.textContent = h.hint;
       body.appendChild(hint);
+    }
+    // ancla / hábito apilado (idea #73): "después de X, hago esto"
+    if(h.tras && !done){
+      const tr = document.createElement('div'); tr.className = 'h-tras';
+      tr.textContent = '⛓ después de ' + h.tras;
+      body.appendChild(tr);
     }
     // Plan B: el mínimo aceptable, como permiso para el día difícil.
     // Solo se muestra si el hábito aún no está hecho.
@@ -653,6 +687,54 @@
     setCount(h, (Number(cur[h.id]) || 0) + delta);
   }
 
+  // ===== Semáforo de energía (idea #77) =====
+  // Marcas tu energía del día (verde/ámbar/rojo) y la app sugiere cómo
+  // encarar lo que falta: con todo, a ritmo, o bajando el listón (plan B).
+  const ENERGIA_KEY = 'reps-energia';
+  let energia = {}; // {fecha: 'verde'|'ambar'|'rojo'}
+  function loadEnergia(){
+    try{ const v = JSON.parse(localStorage.getItem(ENERGIA_KEY)); if(esMapa(v)) energia = v; }catch(e){ energia = {}; }
+  }
+  function saveEnergia(){ try{ localStorage.setItem(ENERGIA_KEY, JSON.stringify(energia)); }catch(e){} }
+  function sugEnergia(nivel, pendientes){
+    const p = pendientes[0]; // un core pendiente concreto, si hay
+    if(nivel === 'verde') return '🟢 Vienes con todo. Ataca lo más pesado ahora' + (p ? ': «' + p.name + '».' : '.');
+    if(nivel === 'rojo') return '🔴 Día bajo. Baja el listón: haz solo el mínimo' + (p && p.planB ? ' («' + p.planB + '»)' : '') + '. Presentarte ya es ganar.';
+    return '🟡 Ritmo estable. Cierra un core y sigue' + (p ? ': «' + p.name + '».' : '.');
+  }
+  function renderEnergia(){
+    const card = $('energiaCard'); if(!card) return;
+    const hoy = today();
+    const nivel = energia[hoy] || null;
+    // marca la opción elegida
+    card.querySelectorAll('.en-opt').forEach(b => b.classList.toggle('on', b.dataset.en === nivel));
+    const sug = $('enSug');
+    if(nivel){
+      const pend = coreDelDia(hoy).map(id => habById(id)).filter(h => h && !hecho(dias[hoy], h.id));
+      sug.hidden = false; sug.textContent = sugEnergia(nivel, pend);
+    } else { sug.hidden = true; sug.textContent = ''; }
+  }
+  // wiring de los botones (una vez)
+  (function initEnergia(){
+    const opts = document.getElementById('enOpts'); if(!opts) return;
+    opts.addEventListener('click', (e)=>{
+      const b = e.target.closest('.en-opt'); if(!b) return;
+      const hoy = today();
+      if(energia[hoy] === b.dataset.en) delete energia[hoy]; // segundo toque = quitar
+      else energia[hoy] = b.dataset.en;
+      saveEnergia(); renderEnergia(); sonarCheck();
+    });
+  })();
+
+  // ===== Modo "un solo hábito" (idea #74) =====
+  // Foco absoluto en un hábito hasta consolidarlo: oculta el resto y deja
+  // solo su tarjeta. Es un FILTRO visual; el puntaje/racha no se tocan.
+  const SOLO_KEY = 'reps-solo';
+  let solo = ''; // id del hábito en foco, o '' (ver todos)
+  function loadSolo(){ try{ const v = localStorage.getItem(SOLO_KEY); solo = (typeof v === 'string' && v) ? v : ''; }catch(e){ solo = ''; } }
+  function saveSolo(){ try{ if(solo) localStorage.setItem(SOLO_KEY, solo); else localStorage.removeItem(SOLO_KEY); }catch(e){} }
+  function setSolo(id){ solo = (solo === id) ? '' : id; saveSolo(); render(); if(typeof renderHabEditor === 'function') renderHabEditor(); }
+
   function render(){
     $('fecha').textContent = new Date().toLocaleDateString('es-MX',{weekday:'long', day:'numeric', month:'long'});
     const rec = dias[today()] || {};
@@ -664,14 +746,24 @@
     const coreHoy = coreDelDia(hoyKey); // ids de core programados hoy
     const desc = coreHoy.length === 0;  // hoy es día de descanso
 
+    // modo "un solo hábito" (idea #74): filtro visual. Solo aplica si el
+    // hábito elegido existe y toca hoy; si no, se muestra todo (sin sorpresas).
+    const soloHab = solo ? hoyHabs.find(h => h.id === solo) : null;
+    const visibles = soloHab ? [soloHab] : hoyHabs;
+    const sb = $('soloBanner');
+    if(sb){
+      sb.hidden = !soloHab;
+      if(soloHab) $('soloTxt').textContent = '🎯 Foco en: ' + soloHab.name;
+    }
+
     const coreL = $('coreList'), extraL = $('extraList');
     coreL.innerHTML=''; extraL.innerHTML='';
-    hoyHabs.forEach(h=> (h.core?coreL:extraL).appendChild(habitBtn(h,rec)) );
+    visibles.forEach(h=> (h.core?coreL:extraL).appendChild(habitBtn(h,rec)) );
     // secciones vacías se ocultan (según lo que toca hoy)
     const secExtra = $('secExtra');
-    if(secExtra) secExtra.hidden = !hoyHabs.some(h => !h.core);
+    if(secExtra) secExtra.hidden = !visibles.some(h => !h.core);
     const secCore = $('secCore');
-    if(secCore) secCore.hidden = !hoyHabs.some(h => h.core);
+    if(secCore) secCore.hidden = !visibles.some(h => h.core);
 
     const coreDone = coreHoy.filter(id => hecho(rec, id)).length;
     $('coreTag').textContent = desc ? 'descanso' : (coreDone + '/' + coreHoy.length + ' = día ganado');
@@ -753,6 +845,7 @@
 
     renderAhora(); // HUD del bloque en curso (El Ahora)
     const dw = $('despWrap'); if(dw){ dw.innerHTML = ''; dw.appendChild(buildDespertarUI(hoyKey)); }
+    renderEnergia(); // semáforo de energía del día (idea #77)
     renderStats(); // mantiene la pestaña Stats al día con cada cambio
     updateBadge(); // la insignia del ícono refleja los core pendientes
   }
@@ -3240,6 +3333,7 @@
       star.textContent = h.core ? '⭐' : '☆';
       star.setAttribute('aria-label', h.core ? 'Quitar de core' : 'Marcar como core');
       star.addEventListener('click', ()=>{
+        if(!h.core && h.frecSemanal > 0){ toast('Un hábito «N× por semana» no puede ser core.'); return; }
         if(h.core && coreCount <= MIN_CORE){ toast('Necesitas al menos ' + MIN_CORE + ' core.'); return; }
         if(!h.core && coreCount >= MAX_CORE){ toast('Máximo ' + MAX_CORE + ' core.'); return; }
         h.core = !h.core;
@@ -3298,6 +3392,29 @@
       const cLbl = document.createElement('span'); cLbl.className = 'hab-count-lbl'; cLbl.textContent = '🔢';
       cnt.append(cLbl, meta, uni);
 
+      // ancla (idea #73): "después de X" (hábito apilado)
+      const tras = document.createElement('input');
+      tras.type = 'text'; tras.className = 'hab-hint'; tras.value = h.tras || ''; tras.maxLength = 60;
+      tras.placeholder = '⛓ Después de… (ej. "el café", "lavarme los dientes")';
+      tras.setAttribute('aria-label', 'Después de qué hábito o momento');
+      tras.addEventListener('input', ()=>{ h.tras = tras.value; saveHabitos(); render(); });
+
+      // frecuencia semanal (idea #71): N veces por semana (sin fijar días).
+      // Al ponerla, el hábito deja de ser core (no gana/pierde el día).
+      const frecW = document.createElement('div'); frecW.className = 'hab-count-edit';
+      const frecLbl = document.createElement('span'); frecLbl.className = 'hab-count-lbl'; frecLbl.textContent = '📅';
+      const frec = document.createElement('input');
+      frec.type = 'number'; frec.className = 'hab-meta'; frec.min = '0'; frec.max = '7';
+      frec.value = h.frecSemanal > 0 ? String(h.frecSemanal) : ''; frec.placeholder = '#';
+      frec.setAttribute('aria-label', 'Veces por semana');
+      const frecTxt = document.createElement('span'); frecTxt.className = 'hab-frec-txt'; frecTxt.textContent = '× por semana (en vez de diario)';
+      frec.addEventListener('input', ()=>{
+        h.frecSemanal = sanearFrec(frec.value);
+        if(h.frecSemanal) h.core = false; // frecuencia semanal ⇒ no core
+        rebuildCore(); saveHabitos(); render(); renderHabEditor();
+      });
+      frecW.append(frecLbl, frec, frecTxt);
+
       // borrar (confirma; el historial de ese id se conserva en reps-dias)
       const del = document.createElement('button');
       del.className = 'hab-del'; del.textContent = '✕'; del.setAttribute('aria-label', 'Borrar hábito');
@@ -3349,8 +3466,14 @@
       cad.className = 'hab-cad'; cad.textContent = '⛓'; cad.setAttribute('aria-label', 'Ver la cadena de ' + h.name);
       cad.addEventListener('click', ()=> abrirCadena(h.id));
 
+      // 🎯 modo un solo hábito (idea #74): foco en este
+      const foco1 = document.createElement('button');
+      foco1.className = 'hab-solo' + (solo === h.id ? ' on' : '');
+      foco1.textContent = '🎯'; foco1.setAttribute('aria-label', solo === h.id ? 'Salir del foco' : 'Foco solo en ' + h.name);
+      foco1.addEventListener('click', ()=>{ setSolo(h.id); toast(solo === h.id ? 'Foco en «' + h.name + '».' : 'Mostrando todos.'); });
+
       const top = document.createElement('div'); top.className = 'hab-top';
-      top.append(grip, star, emoji, name, cad, del);
+      top.append(grip, star, emoji, name, foco1, cad, del);
 
       // selector de días: 7 chips (L M M J V S D). Todos activos = 'all'.
       const daysRow = document.createElement('div'); daysRow.className = 'hab-days';
@@ -3375,7 +3498,7 @@
         daysRow.appendChild(chip);
       });
 
-      row.append(top, hint, planb, porque, cnt, daysRow);
+      row.append(top, hint, planb, porque, tras, cnt, frecW, daysRow);
       list.appendChild(row);
     });
   }
@@ -3429,6 +3552,16 @@
       {name:'Sin celular en cama',emoji:'📵', hint:'Cargar lejos de la almohada'},
       {name:'Respirar',      emoji:'🌬️', hint:'3 min de respiración'},
     ]},
+    { cat:'Micro-hábitos (2 min) · arranques fáciles', items:[
+      {name:'Una flexión',       emoji:'💪', hint:'Solo una. Casi siempre siguen más.'},
+      {name:'2 min de lectura',  emoji:'📖', hint:'Abre el libro, lee un párrafo.'},
+      {name:'Tender la cama',    emoji:'🛏️', hint:'La primera victoria del día.'},
+      {name:'Un vaso de agua',   emoji:'💧', hint:'Nada más despertar.'},
+      {name:'3 respiraciones',   emoji:'🌬️', hint:'Lento. Reinicia el sistema.'},
+      {name:'Escribir 1 línea',  emoji:'✍️', hint:'Una frase en el diario basta.'},
+      {name:'Estirar 2 min',     emoji:'🤸', hint:'Suelta el cuello y la espalda.'},
+      {name:'Ordenar 1 cosa',    emoji:'🧹', hint:'Un objeto a su lugar.'},
+    ]},
     { cat:'Vida y vínculos', items:[
       {name:'Llamar a familia',emoji:'📞', hint:'Un mensaje o llamada'},
       {name:'Tiempo en pareja',emoji:'❤️', hint:'Presencia de verdad'},
@@ -3474,6 +3607,9 @@
       cont.appendChild(grid);
     });
   }
+  // modo un solo hábito (idea #74): salir
+  { const se = $('soloExit'); if(se) se.addEventListener('click', ()=> setSolo('')); }
+
   // cadena del hábito (idea #72)
   $('cadClose').addEventListener('click', ()=>{ $('cadenaWrap').hidden = true; });
   $('cadenaWrap').addEventListener('click', (e)=>{ if(e.target === $('cadenaWrap')) $('cadenaWrap').hidden = true; });
@@ -5033,7 +5169,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-diario', 'reps-sueno', 'reps-kanban', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-diario', 'reps-sueno', 'reps-kanban', 'reps-retos', 'reps-energia', 'reps-solo', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -5875,13 +6011,80 @@
   $('kbClose').addEventListener('click', ()=>{ $('kanbanWrap').hidden = true; });
   $('kanbanWrap').addEventListener('click', (e)=>{ if(e.target === $('kanbanWrap')) $('kanbanWrap').hidden = true; });
 
+  // ===== Retos (idea #75: objetivo con fecha límite y barra) =====
+  const RETOS_KEY = 'reps-retos';
+  let retos = []; // [{id, texto, meta, hechos, limite, creado}]
+  function loadRetos(){
+    retos = [];
+    try{ const v = JSON.parse(localStorage.getItem(RETOS_KEY));
+      if(Array.isArray(v)) retos = v.filter(r => r && typeof r.id === 'string' && typeof r.texto === 'string' && r.texto.trim())
+        .map(r => ({ id: r.id, texto: r.texto.trim().slice(0,60),
+          meta: Math.max(1, Math.min(9999, parseInt(r.meta,10) || 1)),
+          hechos: Math.max(0, parseInt(r.hechos,10) || 0),
+          limite: /^\d{4}-\d{2}-\d{2}$/.test(r.limite) ? r.limite : '',
+          creado: r.creado || today() }));
+    }catch(e){ retos = []; }
+  }
+  function saveRetos(){ try{ localStorage.setItem(RETOS_KEY, JSON.stringify(retos)); }catch(e){} }
+  // días que faltan para la fecha límite (negativo = vencido)
+  function diasRestantes(limite){
+    if(!limite) return null;
+    const a = new Date(today() + 'T12:00:00'), b = new Date(limite + 'T12:00:00');
+    return Math.round((b - a) / 86400000);
+  }
+  function renderRetos(){
+    const cont = $('retosList'); if(!cont) return; cont.innerHTML = '';
+    if(!retos.length){ const e = document.createElement('div'); e.className = 'reto-empty'; e.textContent = 'Aún no tienes retos. Crea el primero arriba.'; cont.appendChild(e); return; }
+    retos.forEach(r => {
+      const done = r.hechos >= r.meta;
+      const card = document.createElement('div'); card.className = 'reto-card' + (done ? ' done' : '');
+      const head = document.createElement('div'); head.className = 'reto-head';
+      const tx = document.createElement('div'); tx.className = 'reto-tx'; tx.textContent = r.texto;
+      const del = document.createElement('button'); del.className = 'reto-del'; del.textContent = '✕'; del.setAttribute('aria-label', 'Borrar reto');
+      del.addEventListener('click', ()=>{ if(!confirm('¿Borrar el reto «' + r.texto + '»?')) return; retos = retos.filter(x => x.id !== r.id); saveRetos(); renderRetos(); });
+      head.append(tx, del);
+      // barra de avance
+      const barW = document.createElement('div'); barW.className = 'reto-bar';
+      const bar = document.createElement('i'); bar.style.width = Math.min(100, Math.round(r.hechos / r.meta * 100)) + '%'; barW.appendChild(bar);
+      // meta + días restantes
+      const meta = document.createElement('div'); meta.className = 'reto-meta';
+      const dr = diasRestantes(r.limite);
+      let plazo = '';
+      if(r.limite){ plazo = dr > 0 ? ' · faltan ' + dr + ' día' + (dr===1?'':'s') : dr === 0 ? ' · ¡hoy vence!' : ' · vencido hace ' + (-dr) + ' día' + (dr===-1?'':'s'); }
+      meta.textContent = r.hechos + ' / ' + r.meta + (done ? ' ✓ completado' : plazo);
+      // controles + / −
+      const ops = document.createElement('div'); ops.className = 'reto-ops';
+      const menos = document.createElement('button'); menos.className = 'reto-op'; menos.textContent = '−'; menos.setAttribute('aria-label', 'Restar uno');
+      menos.addEventListener('click', ()=>{ r.hechos = Math.max(0, r.hechos - 1); saveRetos(); renderRetos(); });
+      const mas = document.createElement('button'); mas.className = 'reto-op mas'; mas.textContent = '+1'; mas.setAttribute('aria-label', 'Sumar uno');
+      mas.addEventListener('click', ()=>{ const wasDone = r.hechos >= r.meta; r.hechos = Math.min(r.meta, r.hechos + 1); saveRetos(); renderRetos(); if(!wasDone && r.hechos >= r.meta){ sonarGanado(); toast('¡Reto «' + r.texto + '» completado! 🏆'); } else sonarCheck(); });
+      ops.append(menos, mas);
+      card.append(head, barW, meta, ops);
+      cont.appendChild(card);
+    });
+  }
+  $('retoAdd').addEventListener('click', ()=>{
+    const t = $('retoTexto').value.trim().slice(0,60);
+    const m = parseInt($('retoMeta').value, 10);
+    if(!t){ toast('Ponle nombre al reto.'); return; }
+    if(!(m >= 1)){ toast('Pon una meta numérica (ej. 30).'); return; }
+    const lim = $('retoLimite').value;
+    retos.unshift({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), texto: t, meta: Math.min(9999, m), hechos: 0, limite: /^\d{4}-\d{2}-\d{2}$/.test(lim) ? lim : '', creado: today() });
+    saveRetos();
+    $('retoTexto').value = ''; $('retoMeta').value = ''; $('retoLimite').value = '';
+    renderRetos(); sonarCheck(); toast('Reto creado. 🎯');
+  });
+  $('masRetos').addEventListener('click', ()=>{ cerrarMas(); renderRetos(); $('retosWrap').hidden = false; });
+  $('retosClose').addEventListener('click', ()=>{ $('retosWrap').hidden = true; });
+  $('retosWrap').addEventListener('click', (e)=>{ if(e.target === $('retosWrap')) $('retosWrap').hidden = true; });
+
   // ===== Respaldo: exportar / importar =====
   function exportBackup(){
     const backup = {
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-diario': diario, 'reps-sueno': sueno, 'reps-kanban': kanban, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-diario': diario, 'reps-sueno': sueno, 'reps-kanban': kanban, 'reps-retos': retos, 'reps-energia': energia, 'reps-solo': solo, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -6014,6 +6217,15 @@
         const kbn = b.data['reps-kanban'];
         if(Array.isArray(kbn)) localStorage.setItem(KANBAN_KEY, JSON.stringify(kbn));
         else localStorage.removeItem(KANBAN_KEY);
+        const rts = b.data['reps-retos'];
+        if(Array.isArray(rts)) localStorage.setItem(RETOS_KEY, JSON.stringify(rts));
+        else localStorage.removeItem(RETOS_KEY);
+        const eng = b.data['reps-energia'];
+        if(esMapa(eng)) localStorage.setItem(ENERGIA_KEY, JSON.stringify(eng));
+        else localStorage.removeItem(ENERGIA_KEY);
+        const slo = b.data['reps-solo'];
+        if(typeof slo === 'string' && slo) localStorage.setItem(SOLO_KEY, slo);
+        else localStorage.removeItem(SOLO_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -6048,6 +6260,9 @@
       diario = {}; loadDiario(); renderDiario();
       sueno = {}; loadSueno();
       kanban = []; loadKanban();
+      retos = []; loadRetos();
+      energia = {}; loadEnergia();
+      solo = ''; loadSolo();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -6104,6 +6319,9 @@
   loadDiario(); renderDiario(); // diario del día
   loadSueno(); // registro de sueño (pantalla propia)
   loadKanban(); // tablero de proyectos (se renderiza al abrir)
+  loadEnergia(); // semáforo de energía del día (idea #77)
+  loadSolo(); // modo un solo hábito (idea #74)
+  loadRetos(); // retos con fecha límite (idea #75); se renderiza al abrir
   loadRecordatorios(); // antes de render(): suman al puntaje del día
   loadCapas(); renderCapas(); // mi ruta editable
   loadRutina();
