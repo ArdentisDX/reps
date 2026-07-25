@@ -1280,3 +1280,8 @@ body.font-serif .anio-hero .an-big{font-family:Georgia,"Times New Roman",serif}
    display:flex/block anula el display:none del atributo [hidden]; hay que
    reponerlo explícitamente (mismo patrón que .celebra[hidden], .foco[hidden]…). */
 .viaje-banner[hidden], .cuenta-card[hidden], .checkin[hidden], .solo-banner[hidden]{display:none}
+
+/* ===== Buscador de la Bandeja (idea #19, v104) ===== */
+.tray-search{margin-bottom:10px}
+.tray-search input{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:11px 14px;color:var(--text);font-size:14px}
+.tray-search input::placeholder{color:var(--muted)}

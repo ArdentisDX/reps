@@ -933,6 +933,7 @@
   const TRAY_KEY = 'reps-bandeja';
   let ideas = [];
   let trayFilter = 'todas';
+  let trayQuery = ''; // #19 texto del buscador de la Bandeja
   let pendingText = null; // idea escrita que espera categoría
 
   function loadTray(){
@@ -1015,9 +1016,14 @@
 
     // lista de ideas: importantes (no hechas) arriba, luego el resto por fecha
     const list = $('trayList'); list.innerHTML = '';
-    const shown = ideas.filter(i => trayFilter === 'todas' || i.cat === trayFilter)
+    const q = trayQuery.trim().toLowerCase();
+    const shown = ideas.filter(i => (trayFilter === 'todas' || i.cat === trayFilter) &&
+        (!q || (i.text || '').toLowerCase().includes(q)))
       .slice().sort((a,b) => ((b.prio && !b.done) ? 1 : 0) - ((a.prio && !a.done) ? 1 : 0));
-    $('trayEmpty').hidden = shown.length > 0;
+    // mensaje de vacío: distinto si es por la búsqueda o porque no hay ideas
+    const empty = $('trayEmpty');
+    empty.hidden = shown.length > 0;
+    if(!shown.length) empty.textContent = q ? 'Nada coincide con «' + trayQuery.trim() + '».' : 'Nada por aquí. Escribe abajo tu primera idea 👇';
 
     shown.forEach(i => {
       const c = catOf(i.cat);
@@ -1145,6 +1151,8 @@
       $('trayForm').requestSubmit();
     }
   });
+  // #19 buscador de la Bandeja: filtra la lista al escribir
+  { const ts = $('traySearch'); if(ts) ts.addEventListener('input', ()=>{ trayQuery = ts.value; renderTray(); }); }
 
   // botones de categoría (se crean una sola vez)
   CATS.forEach(c => {

@@ -166,7 +166,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 18. Compartir el mes ampliado (hábitos + finanzas en la postal).
 
 **Pulido**
-19. Buscador en Bandeja y notas.
+19. ✅ Buscador en Bandeja (filtra ideas al escribir; mensaje claro sin match). (v104)
 20. ✅ (v73) Íconos de IA con estilo (chispa SVG en vez de 🤖).
 
 > **Rumbo acordado (jul 2026):** personalización por persona (1) + cuentas/sync (3).
