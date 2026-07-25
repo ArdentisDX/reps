@@ -264,7 +264,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 
 **Finanzas**
 78. Reporte semanal de gastos (resumen automático cada domingo).
-79. Redondeo al ahorro ("redondea cada gasto y guarda la diferencia").
+79. Ahorro sincero: al aportar a una meta, el saldo real baja (o marca de dónde salió), para saber EXACTO cuánto tienes ahorrado sin mentirte. (Reemplaza el "redondeo": aquí no hay banco real, redondear sería dinero falso.)
 80. Sobres/presupuesto por sobres (envelope budgeting).
 81. Recordatorio de pago de deudas/suscripciones con fecha.
 82. 🧠 Detectar gastos hormiga (la IA marca fugas pequeñas repetidas).
@@ -272,7 +272,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 
 **IA / asistente**
 84. 🧠 Chat con memoria persistente (recuerda tus charlas, no solo la sesión).
-85. 🧠 Resumen de tu semana narrado + 1 foco para la próxima.
+85. ❌ Descartada (era "resumen de tu semana narrado" — mismo espíritu que el mes narrado que ya quitamos).
 86. 🧠 "Desatóralo": describe un bloqueo y la IA te da el primer paso.
 87. 🧠 Reencuadre de pensamientos (mini-TCC guiada al sentirte mal).
 88. 🧠 La IA aprende tus patrones y te avisa antes de una posible caída.
@@ -297,7 +297,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 101. Mapa de calor por hábito (no solo global).
 102. Línea de tiempo de tu vida en REPS (scroll por meses).
 103. Comparador "tú vs tú" (este trimestre vs el pasado).
-104. Exportar una imagen bonita de cualquier pantalla (compartir).
+104. Botón "compartir" en cualquier pantalla (Stats, El Espejo, una meta…) que genere una imagen bonita de ESA vista para guardar/enviar, como ya hace "Compartir mi mes" pero para todo.
 105. Insights proactivos: la app te muestra 1 dato sorprendente al abrir Stats.
 
 **Experiencia / personalización**

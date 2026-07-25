@@ -1023,3 +1023,26 @@ body.font-serif .anio-hero .an-big{font-family:Georgia,"Times New Roman",serif}
 .kb-card .kb-mv[disabled]{opacity:.3;cursor:default}
 .kb-card .kb-del{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 4px;flex:none}
 .kb-empty{font-size:12px;color:var(--muted);padding:4px 2px}
+
+/* ===== Cadena del hábito (idea #72) ===== */
+.hab-cad{background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:6px 8px;flex:none}
+.hab-cad:focus-visible{outline:2px solid var(--amber);outline-offset:2px;border-radius:6px}
+.habit .h-streak{cursor:pointer}
+.cad-stats{display:flex;gap:10px;margin:4px 0 12px}
+.cad-stat{flex:1;background:var(--card-2);border:1px solid var(--line);border-radius:14px;padding:12px 6px;text-align:center}
+.cad-num{font-size:24px;font-weight:800;color:var(--amber);line-height:1}
+.cad-lbl{font-size:11px;color:var(--muted);margin-top:4px}
+.cad-frase{font-size:13px;color:var(--text);margin-bottom:14px}
+.cad-grid{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px}
+.cad-col{display:flex;flex-direction:column;gap:4px}
+.cad-cell{width:15px;height:15px;border-radius:3px;background:var(--card-2)}
+.cad-cell.done{background:var(--amber)}
+.cad-cell.miss{background:color-mix(in srgb, var(--text) 14%, transparent)}
+.cad-cell.hoy{background:none;border:1.5px dashed var(--amber)}
+.cad-cell.off,.cad-cell.fut{background:none}
+.cad-leyenda{display:flex;gap:14px;margin-top:12px;font-size:11px;color:var(--muted)}
+.cl-item{display:flex;align-items:center;gap:5px}
+.cl-dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+.cl-dot.done{background:var(--amber)}
+.cl-dot.miss{background:color-mix(in srgb, var(--text) 14%, transparent)}
+.cl-dot.off{background:var(--card-2)}

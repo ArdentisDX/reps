@@ -508,7 +508,15 @@
     name.appendChild(document.createTextNode(h.name));
     // racha individual del hábito (🔥N), visible desde 2 días seguidos
     const rh = rachaHabito(h);
-    if(rh >= 2){ const st = document.createElement('span'); st.className = 'h-streak'; st.textContent = '🔥' + rh; name.appendChild(st); }
+    if(rh >= 2){
+      const st = document.createElement('span'); st.className = 'h-streak'; st.textContent = '🔥' + rh;
+      st.setAttribute('role', 'button'); st.setAttribute('tabindex', '0');
+      st.setAttribute('aria-label', 'Ver la cadena de ' + h.name);
+      const verCad = (e)=>{ e.stopPropagation(); e.preventDefault(); abrirCadena(h.id); };
+      st.addEventListener('click', verCad);
+      st.addEventListener('keydown', (e)=>{ if(e.key === 'Enter' || e.key === ' ') verCad(e); });
+      name.appendChild(st);
+    }
     body.appendChild(name);
     // contador: "3 / 8 vasos" bajo el nombre
     if(num){
@@ -573,7 +581,7 @@
     let sx = 0, sy = 0, drag = false;
     const UMBRAL = 64;
     b.addEventListener('pointerdown', (e)=>{
-      if(e.target.closest('.h-foco') || e.target.closest('.h-minus')) return; // controles propios
+      if(e.target.closest('.h-foco') || e.target.closest('.h-minus') || e.target.closest('.h-streak')) return; // controles propios
       sx = e.clientX; sy = e.clientY; drag = false;
     });
     b.addEventListener('pointermove', (e)=>{
@@ -1288,6 +1296,71 @@
       heat.appendChild(col);
     }
     $('yearTag').textContent = ganados + ' días ganados';
+  }
+
+  // ===== Cadena del hábito (idea #72: "no rompas la cadena") =====
+  // Pantalla por hábito: cuadrícula de sus últimas ~12 semanas marcando
+  // los días PROGRAMADOS como hecho / fallado / no tocaba, más racha
+  // actual, mejor racha histórica y total de veces hecho.
+  let cadenaHabId = null;
+  // recorre el historial (fechas con registro) del hábito y devuelve
+  // {mejor, total}: mejor racha de días programados consecutivos hechos y
+  // cuántas veces en total se hizo.
+  function cadenaStats(h){
+    const keys = Object.keys(dias).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
+    if(keys.length === 0) return { mejor: 0, total: 0 };
+    let total = 0, mejor = 0, run = 0;
+    // desde el primer registro hasta hoy, día por día
+    const d = new Date(keys[0] + 'T12:00:00');
+    const fin = new Date(today() + 'T12:00:00');
+    while(d <= fin){
+      const k = localISO(d);
+      if(habAplica(h, dowDe(k))){
+        if(hecho(dias[k], h.id)){ run++; total++; if(run > mejor) mejor = run; }
+        else run = 0;
+      }
+      d.setDate(d.getDate() + 1);
+    }
+    return { mejor, total };
+  }
+  function abrirCadena(habId){
+    cadenaHabId = habId;
+    renderCadena();
+    $('cadenaWrap').hidden = false;
+  }
+  function renderCadena(){
+    const h = habById(cadenaHabId); if(!h) return;
+    $('cadTitle').textContent = (h.emoji ? h.emoji + ' ' : '') + h.name;
+    const racha = rachaHabito(h);
+    const { mejor, total } = cadenaStats(h);
+    $('cadRacha').textContent = racha;
+    $('cadMejor').textContent = mejor;
+    $('cadTotal').textContent = total;
+    $('cadFrase').textContent =
+      racha >= 2 ? '🔥 ' + racha + ' seguidos. No rompas la cadena.' :
+      total === 0 ? 'Aún sin marcas. Hoy empiezas la cadena.' :
+      'Retoma hoy y enciende la racha.';
+
+    const grid = $('cadGrid'); grid.innerHTML = '';
+    const SEMANAS = 12;
+    const start = mondayOf(new Date());
+    start.setDate(start.getDate() - (SEMANAS - 1) * 7);
+    const todayKey = today();
+    for(let w = 0; w < SEMANAS; w++){
+      const col = document.createElement('div'); col.className = 'cad-col';
+      for(let d = 0; d < 7; d++){
+        const day = new Date(start); day.setDate(day.getDate() + w*7 + d);
+        const k = localISO(day);
+        const cell = document.createElement('div'); cell.className = 'cad-cell';
+        if(k > todayKey) cell.classList.add('fut');
+        else if(!habAplica(h, dowDe(k))) cell.classList.add('off'); // no tocaba
+        else if(hecho(dias[k], h.id)) cell.classList.add('done');
+        else if(k === todayKey) cell.classList.add('hoy'); // hoy, aún pendiente
+        else cell.classList.add('miss');
+        col.appendChild(cell);
+      }
+      grid.appendChild(col);
+    }
   }
 
   // ===== El Pulso: cómo vienes, según ánimo + consistencia =====
@@ -3271,8 +3344,13 @@
         grip.addEventListener('pointerup', up);
       });
 
+      // ⛓ ver la cadena de este hábito (idea #72)
+      const cad = document.createElement('button');
+      cad.className = 'hab-cad'; cad.textContent = '⛓'; cad.setAttribute('aria-label', 'Ver la cadena de ' + h.name);
+      cad.addEventListener('click', ()=> abrirCadena(h.id));
+
       const top = document.createElement('div'); top.className = 'hab-top';
-      top.append(grip, star, emoji, name, del);
+      top.append(grip, star, emoji, name, cad, del);
 
       // selector de días: 7 chips (L M M J V S D). Todos activos = 'all'.
       const daysRow = document.createElement('div'); daysRow.className = 'hab-days';
@@ -3396,6 +3474,10 @@
       cont.appendChild(grid);
     });
   }
+  // cadena del hábito (idea #72)
+  $('cadClose').addEventListener('click', ()=>{ $('cadenaWrap').hidden = true; });
+  $('cadenaWrap').addEventListener('click', (e)=>{ if(e.target === $('cadenaWrap')) $('cadenaWrap').hidden = true; });
+
   $('habBiblioteca').addEventListener('click', ()=>{ renderBiblioteca(); $('bibWrap').hidden = false; });
   $('bibClose').addEventListener('click', ()=>{ $('bibWrap').hidden = true; });
   $('bibWrap').addEventListener('click', (e)=>{ if(e.target === $('bibWrap')) $('bibWrap').hidden = true; });
