@@ -2599,6 +2599,76 @@
     else { generarBrief(false); } // día nuevo (o primera vez): la IA lo arma
   }
 
+  // ===== Arma mi día (IA, #31) =====
+  // Cada mañana: la IA organiza el día con tus hábitos pendientes y tu rutina
+  // según el tiempo que tengas. Si no alcanza, prioriza los core y sugiere las
+  // versiones mínimas del resto. reps-diaplan {fecha,texto} guarda el aplicado.
+  const DIAPLAN_KEY = 'reps-diaplan';
+  let diaPlan = { fecha:'', texto:'' };
+  let adPropuesta = '';
+  function loadDiaPlan(){
+    diaPlan = { fecha:'', texto:'' };
+    try{ const v = JSON.parse(localStorage.getItem(DIAPLAN_KEY));
+      if(esMapa(v) && typeof v.texto === 'string'){ diaPlan.fecha = String(v.fecha||''); diaPlan.texto = v.texto; } }catch(e){}
+  }
+  function saveDiaPlan(){ try{ localStorage.setItem(DIAPLAN_KEY, JSON.stringify(diaPlan)); }catch(e){} }
+  function renderDiaPlan(){
+    const on = diaPlan.fecha === today() && diaPlan.texto.trim();
+    $('diaPlanCard').hidden = !on;
+    if(on) $('diaPlanBody').textContent = diaPlan.texto;
+  }
+  // contexto del día para la IA: hábitos pendientes hoy + rutina + pendientes
+  function contextoDia(){
+    const k = today(), dow = dowDe(k), rec = dias[k] || {};
+    const pend = HABITS.filter(h => habAplica(h, dow) && !hecho(rec, h.id))
+      .map(h => h.name + (h.core ? ' (innegociable)' : '') + (h.planB ? ' [mínimo: ' + h.planB + ']' : ''));
+    const p = [];
+    if(pend.length) p.push('Hábitos que me faltan hoy: ' + pend.join('; ') + '.');
+    else p.push('Ya cumplí mis hábitos de hoy.');
+    const rut = rutinaOrdenada();
+    if(rut.length) p.push('Mi rutina base: ' + rut.map(x => x.hora + ' ' + x.nombre).join(', ') + '.');
+    const ps = planSemana[localISO(mondayOf(new Date()))];
+    if(ps && ps.pendientes) p.push('Pendientes de la semana: ' + ps.pendientes + '.');
+    const sm = (semana[k] || '').trim();
+    if(sm) p.push('Ya tenía anotado para hoy: ' + sm + '.');
+    return p.join(' ');
+  }
+  $('armaDia').addEventListener('click', ()=>{
+    adPropuesta = ''; $('adOut').hidden = true; $('adSave').hidden = true; $('armaDiaWrap').hidden = false;
+  });
+  $('adClose').addEventListener('click', ()=>{ $('armaDiaWrap').hidden = true; });
+  $('armaDiaWrap').addEventListener('click', (e)=>{ if(e.target === $('armaDiaWrap')) $('armaDiaWrap').hidden = true; });
+  $('adGo').addEventListener('click', async ()=>{
+    if(iaOcupado) return; iaOcupado = true;
+    adPropuesta = ''; $('adSave').hidden = true;
+    const out = $('adOut'); out.hidden = false; out.textContent = 'Organizando tu día… ✨';
+    const hora = new Date().toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
+    const sistema = 'Eres un organizador del día, cálido y realista. Con el tiempo disponible y los compromisos de la ' +
+      'persona, arma un plan para HOY por bloques con horas ("HH:MM — actividad"), metiendo sus hábitos pendientes. ' +
+      'REGLA CLAVE: si no alcanza el tiempo para todo, prioriza los hábitos innegociables, usa la versión mínima de los ' +
+      'demás y di con claridad qué conviene dejar para otro día. Sé breve y concreto, en español, sin markdown. Ahora son las ' + hora + '.';
+    const preg = (($('adInput').value.trim()) ? 'Así viene mi día: ' + $('adInput').value.trim() + '. ' : '') + contextoDia();
+    try{
+      const res = await fetch(PUSH_WORKER + '/ia', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ sistema, pregunta: preg }) });
+      if(!res.ok) throw new Error('worker ' + res.status);
+      const d = await res.json();
+      adPropuesta = (d.texto || '').trim();
+      out.textContent = adPropuesta || 'No pude armar el día. Intenta de nuevo.';
+      $('adSave').hidden = !adPropuesta;
+    }catch(e){ out.textContent = 'No se pudo conectar. Revisa tu internet e intenta de nuevo.'; }
+    iaOcupado = false;
+  });
+  $('adSave').addEventListener('click', ()=>{
+    if(!adPropuesta) return;
+    diaPlan = { fecha: today(), texto: adPropuesta }; saveDiaPlan(); renderDiaPlan();
+    $('armaDiaWrap').hidden = true;
+    toast('Guardado. Tu plan de hoy está en la pantalla de inicio. ✨');
+  });
+  $('diaPlanClear').addEventListener('click', ()=>{
+    diaPlan = { fecha:'', texto:'' }; saveDiaPlan(); renderDiaPlan();
+  });
+
   // detalle EDITABLE de cualquier día (hoy o pasado): permite marcar hábitos,
   // poner el ánimo y escribir notas que recuerdas después. La honestidad
   // tardía vale: nunca serás perfecto, pero sí honesto.
@@ -4720,6 +4790,7 @@
       $('suenoWrap').hidden = true;
       $('anioWrap').hidden = true;
       $('ideaPlanWrap').hidden = true;
+      $('armaDiaWrap').hidden = true;
       $('habWrap').hidden = true;
     }
   });
@@ -5724,6 +5795,7 @@
   fillCierreForm();
   renderPlanHoy();
   loadBrief(); renderBrief(); // resumen de la mañana (IA, 1×/día)
+  loadDiaPlan(); renderDiaPlan(); // "arma mi día": plan guardado (IA)
   renderFrase(); // frase del día (local)
   renderEvitar(); // días sin… (cuenta días limpios)
 
@@ -5795,6 +5867,7 @@
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       renderBrief(); // día nuevo: arma el resumen de la mañana otra vez
+      renderDiaPlan(); // el plan del día viejo ya no aplica (otra fecha)
       renderFrase(); // rota la frase del día
       renderEvitar(); // suma un día sin recaída
       renderDiario(); // el diario ahora apunta al día nuevo

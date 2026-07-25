@@ -37,6 +37,11 @@
       <div class="brief-head"><span class="brief-t" id="briefT">Tu mañana</span><button class="brief-ref" id="briefRef" aria-label="Actualizar resumen">↻</button></div>
       <div class="brief-body" id="briefBody"></div>
     </div>
+    <button class="ai-btn ai-wide" id="armaDia" style="margin-top:12px"><svg class="ai-spark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c.4 3.6 1.4 4.6 5 5-3.6.4-4.6 1.4-5 5-.4-3.6-1.4-4.6-5-5 3.6-.4 4.6-1.4 5-5z"/></svg>Arma mi día</button>
+    <div class="brief" id="diaPlanCard" hidden>
+      <div class="brief-head"><span class="brief-t">Tu plan de hoy</span><button class="brief-ref" id="diaPlanClear" aria-label="Quitar">✕</button></div>
+      <div class="brief-body" id="diaPlanBody"></div>
+    </div>
     <div class="ahora" id="ahora" hidden>
       <div class="ah-top"><span class="ah-lbl">AHORA</span><span class="ah-rest" id="ahRest"></span></div>
       <div class="ah-name" id="ahName"></div>
@@ -574,6 +579,17 @@
       <div class="t-head"><h2>Cómo hacerlo</h2><button id="ipClose" aria-label="Cerrar">✕</button></div>
       <div class="t-note" id="ipIdea" style="margin-bottom:10px"></div>
       <div class="ia-out" id="ipOut"></div>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="armaDiaWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Arma mi día</h2><button id="adClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-note" style="margin-bottom:10px">Cuéntame cómo viene tu día (tiempo libre, compromisos) y la IA lo organiza con tus hábitos y rutina. Si no da el tiempo, prioriza lo importante y te dice qué dejar para otro día.</div>
+      <textarea id="adInput" class="ps-txt" rows="3" placeholder="Ej: entro a clase 9–3, entrega mañana, salgo en la noche. Me quedan como 3 horas libres."></textarea>
+      <button class="ai-btn ai-wide" id="adGo"><svg class="ai-spark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c.4 3.6 1.4 4.6 5 5-3.6.4-4.6 1.4-5 5-.4-3.6-1.4-4.6-5-5 3.6-.4 4.6-1.4 5-5z"/></svg>Armar mi día</button>
+      <div class="ia-out" id="adOut" hidden></div>
+      <button class="cel-btn" id="adSave" style="width:100%;margin-top:10px" hidden>Guardar como plan de hoy</button>
     </div>
   </div>
 
