@@ -6902,7 +6902,10 @@
   function loadViaje(){
     viaje = { activo:false, dias:{} };
     try{ const v = JSON.parse(localStorage.getItem(VIAJE_KEY)); if(esMapa(v)){ viaje.activo = !!v.activo; if(esMapa(v.dias)) viaje.dias = v.dias; } }catch(e){ viaje = { activo:false, dias:{} }; }
-    if(viaje.activo) viaje.dias[today()] = true; // hoy cuenta como viaje mientras esté activo
+    // si el viaje está activo, hoy cuenta como viaje; si NO, hoy nunca debe
+    // ser día de viaje (sana un "hoy" que quedó atascado al terminar un viaje).
+    if(viaje.activo) viaje.dias[today()] = true;
+    else if(viaje.dias[today()]){ delete viaje.dias[today()]; saveViaje(); }
   }
   function saveViaje(){ try{ localStorage.setItem(VIAJE_KEY, JSON.stringify(viaje)); }catch(e){} }
   function renderViajeBanner(){
@@ -6912,7 +6915,13 @@
   }
   function setViaje(on){
     viaje.activo = on;
-    if(on) viaje.dias[today()] = true; // marca hoy; los días siguientes se marcan al abrir la app
+    if(on){
+      viaje.dias[today()] = true; // marca hoy; los días siguientes se marcan al abrir la app
+    } else {
+      // al terminar, HOY vuelve a contar (ya no estás de viaje). Los días
+      // PASADOS de viaje se conservan neutrales (fue tu historia real).
+      delete viaje.dias[today()];
+    }
     saveViaje();
     procesarRacha(); render();
     toast(on ? '✈️ Modo viaje activado. Descansa sin culpa.' : 'Modo viaje terminado. ¡Bienvenido de vuelta!');
