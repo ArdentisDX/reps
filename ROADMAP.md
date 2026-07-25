@@ -138,26 +138,32 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 ### Tanda 1 (ideas 1–20)
 
 **Finanzas**
-1. Gastos fijos recurrentes (renta, suscripciones) que se auto-registran.
+1. ✅ Gastos fijos recurrentes (finanzas: suscripciones auto-registradas, #81 v95).
+
 2. ✅ (v73) Gráfica de gastos por categoría (barras "En qué se te va").
 3. ✅ (v74) Comparar mes vs mes.
-4. Aportar al ahorro cuenta como hábito del día.
+4. 🔄 Reemplazada por «ahorro sincero» (#79 v95): aportar baja tu saldo real.
+
 5. ✅ (v87) Coach financiero IA (analiza gastos → consejo).
 
 **Hábitos**
 6. ✅ (v75) Hábitos a evitar ("Días sin…", contador de días limpios).
 7. ✅ (v76) Racha por hábito individual (🔥N en la tarjeta).
 8. ✅ (v79) Diario/journal del día (Mi día, con historial).
-9. Recordatorio por hábito a cierta hora.
+9. ✅ Cubierta: ventana horaria del hábito (#37 v107) + alarmas de rutina + recordatorios.
+
 
 **Asistente IA**
-10. 🌐🧠 Chat con memoria del hilo (conversación real).
-11. 🌐🧠 Reflexión semanal (analiza semana → 1 consejo).
+10. ✅ Chat con memoria persistente (#84 v96).
+
+11. ✅ Cubierta: «Mi semana» (IA) + reflexión guiada + cierre de semana.
+
 12. ✅ (v87) Idea de la Bandeja → plan con pasos (botón ✨).
 
 **Motivación**
 13. ✅ (v76) Más medallas (200 días, racha 60, foco, ahorro, días sin).
-14. Retos de 30 días.
+14. ✅ Retos con meta y fecha límite (#75 v94).
+
 15. ✅ (v74) Frase del día al abrir (local).
 
 **Verte crecer**
@@ -186,32 +192,41 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 22. ✅ (v77) Presupuesto por categoría (tope y alerta al pasarse).
 23. ✅ (v85) Deudas y préstamos (a quién debo / me deben).
 24. ✅ (v91) Carteras (efectivo, banco, tarjeta) con saldo por cartera.
-25. Gasto de viaje con conversión de divisas.
-26. Foto del ticket adjunta al gasto.
+25. ❌ No factible offline (tasas de cambio necesitan internet); nicho, descartada.
+
+26. ❌ Descartada: fotos en base64 saturan localStorage (riesgo de perder datos).
+
 27. ✅ (v83) Proyección de cierre de mes ("a este ritmo cierras en $X").
 28. 🏗️ Dividir gastos con amigos (quién debe qué).
 
 **IA avanzada**
-29. 🌐🧠 Asistente proactivo (push con el consejo del día).
+29. 🏗️🌐 Grande: push proactivo (necesita ampliar el Worker de push). Aplazada.
+
 30. ✅ (v89) Dictar por voz en la Bandeja (speech-to-text).
 31. ✅ (v88) "Arma mi día": la IA organiza el día y acomoda si no da tiempo.
 32. ✅ (v90) Reflexión guiada: la IA te hace preguntas para pensar.
 33. ❌ descartada (a petición del usuario).
-34. 🌐🧠 Detecta cuándo vas a fallar y te manda un empujón.
+34. ✅ Aviso de posible caída, detección LOCAL (#88 v96).
+
 
 **Hábitos / estructura**
-35. Plantillas de rutina (mañana ideal, día de estudio, descanso).
+35. ✅ Plantillas de rutina (4 base + las tuyas, #114 v101).
+
 36. ✅ Sub-tareas dentro de un hábito (checklist; al completarlas se marca el hábito). (v106)
 37. ✅ Hábitos con ventana horaria (hini/hfin; la tarjeta avisa si se pasó). (v107)
-38. Habit stacking ("después de X hago Y").
-39. Modo vacaciones/pausa sin romper racha.
+38. ✅ Hábito apilado «después de X» (#73 v94).
+
+39. ✅ Modo viaje (#116 v101, arreglado v103).
+
 
 **Salud y bienestar**
 40. ✅ (v81) Registro de sueño (horas por noche + promedio, pantalla propia).
 41. ✅ (v89) Ánimo detallado (emociones opcionales en el cierre).
-42. Meditación/respiración guiada (pauta visual).
+42. ✅ Respiración guiada animada (#90 v97).
+
 43. ✅ Peso con gráfica de tendencia (canvas, hub Bienestar; reps-peso). (v105)
-44. Recordatorio de agua/medicinas con contador.
+44. ✅ Agua con contador (#92 v97); medicinas = recordatorios diarios.
+
 
 **Social / comunidad**
 45. 🏗️ Amigos: compartir racha y animarse.
@@ -226,30 +241,37 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 52. 🏗️ Companion de reloj (Wear OS / Apple Watch).
 53. 🌐🏗️ Integrar Google Calendar (eventos → tu día).
 54. 🌐🏗️ Integrar Google Fit / Salud (pasos, sueño).
-55. Modo familia/pareja: varios perfiles en un dispositivo.
+55. 🏗️ Grande (varios perfiles = cambio de modelo de datos). Con las Grandes.
+
 
 **Gamificación / mundo**
-56. Un mundo que crece con tus días (isla/ciudad estilo Habitica).
+56. 🏗️ Grande (gamificación tipo mundo); el compañero ya da una versión mínima.
+
 57. ✅ (v86) Mascota animada (el compañero flota).
-58. Tienda: gastar "puntos ganados" en temas/cosméticos.
+58. ❌ Descartada: redundante (los temas ya se desbloquean gratis).
+
 59. ⏸️ aplazada (recompensas: "aún no").
 60. ⏸️ aplazada (recompensas: "aún no").
 
 **Productividad**
 61. ✅ (v92) Pomodoro (ciclos de trabajo/descanso automáticos).
-62. Bloqueo de distracciones durante el foco.
+62. ❌ No factible: una PWA no puede bloquear otras apps del teléfono.
+
 63. ✅ (v86) Prioridad en la Bandeja (estrella importante, sube al tope).
 64. ✅ (v92) Kanban (tablero de proyectos, pantalla propia).
 
 **Datos / inteligencia**
-65. Dashboard de correlaciones (sueño↔ánimo↔productividad).
+65. ✅ Cubierta por El Espejo (insights de correlación).
+
 66. ✅ (v84) Predicción de racha (cerca de tu récord).
-67. Informe mensual en PDF bonito.
+67. ❌ Descartada: redundante con «Compartir mi mes/año»; PDF exigiría librería.
+
 68. ✅ (v82) "Tu año en REPS" (wrapped anual, pantalla propia).
 
 **Estética / experiencia**
 69. ✅ (v82) Animaciones y transiciones (fade de pestañas, slide de hojas).
-70. Pantalla de inicio configurable (elige tus widgets).
+70. ✅ Personalizar Hoy: enciende/apaga tarjetas (#106/#107 v100).
+
 
 ### Tanda 3 (ideas 71–116) — jul 2026
 
