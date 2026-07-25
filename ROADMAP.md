@@ -202,7 +202,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 **Hábitos / estructura**
 35. Plantillas de rutina (mañana ideal, día de estudio, descanso).
 36. ✅ Sub-tareas dentro de un hábito (checklist; al completarlas se marca el hábito). (v106)
-37. Hábitos con ventana horaria (gym 6–8pm).
+37. ✅ Hábitos con ventana horaria (hini/hfin; la tarjeta avisa si se pasó). (v107)
 38. Habit stacking ("después de X hago Y").
 39. Modo vacaciones/pausa sin romper racha.
 

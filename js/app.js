@@ -56,6 +56,18 @@
   function habAplica(h, dow){
     return h.days === 'all' || (Array.isArray(h.days) && h.days.includes(dow));
   }
+  // estado de la ventana horaria (idea #37): 'antes' | 'dentro' | 'despues'
+  // según la hora actual. null si no tiene ventana. Sin fin, "dentro" desde ini.
+  function ventanaEstado(h){
+    if(!h || (!h.hini && !h.hfin)) return null;
+    const now = new Date(); const nm = now.getHours() * 60 + now.getMinutes();
+    const toMin = s => { const [x, y] = s.split(':').map(n => parseInt(n, 10)); return x * 60 + y; };
+    const ini = h.hini ? toMin(h.hini) : 0;
+    const fin = h.hfin ? toMin(h.hfin) : 1440;
+    if(nm < ini) return 'antes';
+    if(nm > fin) return 'despues';
+    return 'dentro';
+  }
   // ids de los hábitos CORE programados para ese día (según su calendario)
   function coreDelDia(dateKey){
     // modo viaje/vacaciones (idea #116): un día marcado como viaje no exige
@@ -160,6 +172,8 @@
   function sanearEmoji(v){
     return typeof v === 'string' ? v.trim().slice(0, 8) : '';
   }
+  // hora "H:MM" válida o '' (para la ventana horaria del hábito, idea #37)
+  function sanearHora(v){ return (typeof v === 'string' && /^\d{1,2}:\d{2}$/.test(v.trim())) ? v.trim() : ''; }
   // sub-tareas del hábito (idea #36): lista de pasos {id, txt}. Máx 10.
   function sanearSubs(v){
     if(!Array.isArray(v)) return [];
@@ -185,7 +199,7 @@
     const limpio = v
       .filter(h => h && typeof h.id === 'string' && h.id && typeof h.name === 'string' && h.name.trim())
       .filter(h => vistos[h.id] ? false : (vistos[h.id] = true)) // ids únicos
-      .map(h => { const frec = sanearFrec(h.frecSemanal); return { id: h.id, name: h.name.trim(), hint: typeof h.hint === 'string' ? h.hint.trim() : '', core: frec ? false : !!h.core, days: sanearDays(h.days), planB: typeof h.planB === 'string' ? h.planB.trim() : '', emoji: sanearEmoji(h.emoji), porQue: typeof h.porQue === 'string' ? h.porQue.trim() : '', meta: sanearMeta(h.meta), unidad: typeof h.unidad === 'string' ? h.unidad.trim().slice(0, 16) : '', tras: typeof h.tras === 'string' ? h.tras.trim().slice(0, 60) : '', frecSemanal: frec, subs: sanearSubs(h.subs) }; })
+      .map(h => { const frec = sanearFrec(h.frecSemanal); return { id: h.id, name: h.name.trim(), hint: typeof h.hint === 'string' ? h.hint.trim() : '', core: frec ? false : !!h.core, days: sanearDays(h.days), planB: typeof h.planB === 'string' ? h.planB.trim() : '', emoji: sanearEmoji(h.emoji), porQue: typeof h.porQue === 'string' ? h.porQue.trim() : '', meta: sanearMeta(h.meta), unidad: typeof h.unidad === 'string' ? h.unidad.trim().slice(0, 16) : '', tras: typeof h.tras === 'string' ? h.tras.trim().slice(0, 60) : '', frecSemanal: frec, subs: sanearSubs(h.subs), hini: sanearHora(h.hini), hfin: sanearHora(h.hfin) }; })
       .slice(0, MAX_HABITS);
     return limpio.length ? limpio : null;
   }
@@ -586,6 +600,14 @@
     if(h.hint){
       const hint = document.createElement('div'); hint.className = 'h-hint'; hint.textContent = h.hint;
       body.appendChild(hint);
+    }
+    // ventana horaria (idea #37): "hazlo entre X y Y". Informa si ya pasó.
+    if((h.hini || h.hfin) && !done){
+      const est = ventanaEstado(h);
+      const vd = document.createElement('div'); vd.className = 'h-ventana' + (est === 'dentro' ? ' ahora' : est === 'despues' ? ' pasada' : '');
+      const rango = (h.hini || '…') + (h.hfin ? '–' + h.hfin : '');
+      vd.textContent = '🕐 ' + rango + (est === 'dentro' ? ' · es la hora' : est === 'despues' ? ' · se pasó la ventana' : '');
+      body.appendChild(vd);
     }
     // ancla / hábito apilado (idea #73): "después de X, hago esto"
     if(h.tras && !done){
@@ -3593,6 +3615,18 @@
       tras.setAttribute('aria-label', 'Después de qué hábito o momento');
       tras.addEventListener('input', ()=>{ h.tras = tras.value; saveHabitos(); render(); });
 
+      // ventana horaria (idea #37): "hazlo entre X y Y" (opcional)
+      const vent = document.createElement('div'); vent.className = 'hab-count-edit';
+      const vLbl = document.createElement('span'); vLbl.className = 'hab-count-lbl'; vLbl.textContent = '🕐';
+      const vIni = document.createElement('input'); vIni.type = 'time'; vIni.className = 'hab-meta'; vIni.style.width = 'auto';
+      vIni.value = h.hini ? h.hini.padStart(5,'0') : ''; vIni.setAttribute('aria-label', 'Hora de inicio de la ventana');
+      const vSep = document.createElement('span'); vSep.className = 'hab-frec-txt'; vSep.textContent = 'a';
+      const vFin = document.createElement('input'); vFin.type = 'time'; vFin.className = 'hab-meta'; vFin.style.width = 'auto';
+      vFin.value = h.hfin ? h.hfin.padStart(5,'0') : ''; vFin.setAttribute('aria-label', 'Hora de fin de la ventana');
+      const setVent = ()=>{ h.hini = sanearHora(vIni.value.replace(/^0(\d)/, '$1')); h.hfin = sanearHora(vFin.value.replace(/^0(\d)/, '$1')); saveHabitos(); render(); };
+      vIni.addEventListener('change', setVent); vFin.addEventListener('change', setVent);
+      vent.append(vLbl, vIni, vSep, vFin);
+
       // sub-tareas (idea #36): una por línea. Conserva el id si el texto no cambia.
       const subs = document.createElement('textarea');
       subs.className = 'hab-hint hab-subs-edit'; subs.rows = 2;
@@ -3705,7 +3739,7 @@
         daysRow.appendChild(chip);
       });
 
-      row.append(top, hint, planb, porque, tras, subs, cnt, frecW, daysRow);
+      row.append(top, hint, planb, porque, tras, vent, subs, cnt, frecW, daysRow);
       list.appendChild(row);
     });
   }
