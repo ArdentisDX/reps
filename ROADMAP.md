@@ -163,7 +163,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 **Verte crecer**
 16. ✅ (v78) Pantalla "Resumen" — "Esta semana" en Stats.
 17. ✅ (v84) Correlaciones (El Espejo 2.0): sueño↔ánimo, despertar↔ganar.
-18. Compartir el mes ampliado (hábitos + finanzas en la postal).
+18. ✅ Postal del mes ampliada: hábito top del mes + saldo del mes (si hay finanzas). (v108)
 
 **Pulido**
 19. ✅ Buscador en Bandeja (filtra ideas al escribir; mensaje claro sin match). (v104)

@@ -2006,20 +2006,42 @@
     ctx.font = '800 64px ' + FONT;
     ctx.fillText(mesLargo.charAt(0).toUpperCase() + mesLargo.slice(1), PAD, 175);
 
-    // 3) métricas: ganados del mes y mejor racha histórica
+    // datos del mes que se comparte (idea #18: hábitos + finanzas en la postal)
     const daysInMonth = new Date(calY, calM + 1, 0).getDate();
+    const mesKey = calY + '-' + String(calM + 1).padStart(2, '0');
     let wonMes = 0;
     for(let d = 1; d <= daysInMonth; d++){
       if(esGanado(localISO(new Date(calY, calM, d)))) wonMes++;
     }
-    ctx.fillStyle = accent;
-    ctx.font = '800 88px ' + FONT;
-    ctx.fillText(String(wonMes), PAD, 330);
-    ctx.fillText(String(statsData().best), W/2 + 20, 330);
-    ctx.fillStyle = muted;
-    ctx.font = '600 26px ' + FONT;
-    ctx.fillText('DÍAS GANADOS', PAD, 372);
-    ctx.fillText('MEJOR RACHA', W/2 + 20, 372);
+    // hábito top del mes (más veces hecho)
+    let topH = null, topN = 0;
+    HABITS.forEach(h => {
+      let n = 0; for(let d = 1; d <= daysInMonth; d++){ if(hecho(dias[localISO(new Date(calY, calM, d))], h.id)) n++; }
+      if(n > topN){ topN = n; topH = h; }
+    });
+    // saldo del mes (ingresos − gastos − ahorro apartado) desde finanzas
+    const dm = (fin.movs || []).filter(m => (m.fecha || '').startsWith(mesKey));
+    const ingMes = dm.filter(m => m.tipo === 'ingreso').reduce((s,m)=>s+(+m.monto),0);
+    const gasMes = dm.filter(m => m.tipo === 'gasto').reduce((s,m)=>s+(+m.monto),0);
+    const ahoMes = dm.filter(m => m.tipo === 'ahorro').reduce((s,m)=>s+(m.dir==='out'?-(+m.monto):(+m.monto)),0);
+    const saldoMes = ingMes - gasMes - ahoMes;
+    const hayFin = dm.length > 0;
+
+    // subtítulo: hábito top del mes
+    if(topH && topN > 0){
+      ctx.fillStyle = muted; ctx.font = '600 26px ' + FONT;
+      ctx.fillText('🔥 ' + topH.name + ' · ' + topN + '×', PAD, 218);
+    }
+
+    // 3) métricas: 3 tiles (ganados, mejor racha, y saldo si hay finanzas)
+    const tiles = [[String(wonMes), 'DÍAS GANADOS'], [String(statsData().best), 'MEJOR RACHA']];
+    if(hayFin) tiles.push([fmtDinero(saldoMes), 'SALDO DEL MES']);
+    const tw = (W - PAD*2) / tiles.length;
+    tiles.forEach(([num, lbl], i) => {
+      const x = PAD + i * tw;
+      ctx.fillStyle = accent; ctx.font = '800 ' + (tiles.length === 3 ? '68px ' : '88px ') + FONT; ctx.fillText(num, x, 330);
+      ctx.fillStyle = muted; ctx.font = '600 24px ' + FONT; ctx.fillText(lbl, x, 372);
+    });
 
     // 4) calendario: misma lógica que renderCal, pero pintada a mano
     const gap = 12;
