@@ -185,7 +185,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 21. ✅ (v83) Suscripciones/gastos fijos (se registran solos cada mes).
 22. ✅ (v77) Presupuesto por categoría (tope y alerta al pasarse).
 23. ✅ (v85) Deudas y préstamos (a quién debo / me deben).
-24. Varias carteras/cuentas (efectivo, banco, tarjeta).
+24. ✅ (v91) Carteras (efectivo, banco, tarjeta) con saldo por cartera.
 25. Gasto de viaje con conversión de divisas.
 26. Foto del ticket adjunta al gasto.
 27. ✅ (v83) Proyección de cierre de mes ("a este ritmo cierras en $X").
