@@ -303,12 +303,12 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 105. ✅ Insight proactivo al abrir Stats (dato sorprendente, estable por día). (v99)
 
 **Experiencia / personalización**
-106. Reordenar y ocultar secciones de Hoy (pantalla a tu gusto).
-107. Modo "solo esenciales" configurable (elige qué tarjetas ver).
-108. Más temas y un editor de degradados.
-109. Sonidos/hápticos configurables por acción.
-110. Modo enfoque de la app (esconde todo menos el hábito actual).
-111. Atajos de captura más rápidos (widget-shortcut a "Arma mi día").
+106. ✅ Personalizar Hoy: enciende/apaga tarjetas (reps-hoy-cfg). (v100)
+107. ✅ «Solo esenciales» = la misma config de #106 (elige qué ver). (v100)
+108. ✅ Editor de degradado de fondo (reps-degradado: base + 2º color). (v100)
+109. ✅ Sonidos/hápticos por acción (reps-sonidos: check/ganado/fin/vibración). (v100)
+110. ➖ Cubierto por lo que ya existe: modo un solo hábito (#74) + temporizador de foco (#20) + Personalizar Hoy (#106). No se duplicó para no inflar la app.
+111. ✅ Atajo del ícono a «Arma mi día» (manifest ?tab=armadia). (v100)
 
 **Estructura / tiempo**
 112. Agenda visual del día (timeline con tus bloques + progreso en vivo).

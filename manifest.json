@@ -27,6 +27,12 @@
       "short_name": "Stats",
       "url": "./index.html?tab=stats",
       "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Arma mi día",
+      "short_name": "Mi día",
+      "url": "./index.html?tab=armadia",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
     }
   ],
   "icons": [

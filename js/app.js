@@ -879,6 +879,7 @@
     renderEnergia(); // semáforo de energía del día (idea #77)
     renderCheckin(); // chequeo de ánimo a media jornada (idea #91)
     renderStats(); // mantiene la pestaña Stats al día con cada cambio
+    applyHoyCfg(); // enciende/apaga tarjetas de Hoy según tu gusto (idea #106/#107)
     updateBadge(); // la insignia del ícono refleja los core pendientes
   }
   // El Ahora avanza solo: refresca el bloque en curso cada minuto sin
@@ -3138,7 +3139,7 @@
     const t = THEMES.find(x => x.id === sel.id) || THEMES[0];
     return t.vars;
   }
-  function applyThemeSel(){ applyVars(currentVars()); }
+  function applyThemeSel(){ applyVars(currentVars()); try{ applyGrad(); }catch(e){} }
   function loadTemaAuto(){ temaAuto = localStorage.getItem(AUTO_KEY) === '1'; }
   function saveTemaAuto(){
     try{ if(temaAuto) localStorage.setItem(AUTO_KEY, '1'); else localStorage.removeItem(AUTO_KEY); }catch(e){}
@@ -3206,6 +3207,9 @@
   function abrirApariencia(){
     renderThemeUI();
     marcarAuto();
+    renderGradCfg();  // #108 fondo degradado
+    renderHoyCfg();   // #106/#107 personalizar Hoy
+    renderSonCfg();   // #109 sonidos por acción
     $('themeWrap').hidden = false;
   }
   // abre el sheet de Avisos y sonido (sonidos, despertar, notificaciones)
@@ -4312,8 +4316,8 @@
     o.start(t); o.stop(t + dur + 0.02);
   }
   function sonarFin(){
-    try{ if(navigator.vibrate) navigator.vibrate([120, 60, 120]); }catch(e){}
-    if(!focoSonido) return;
+    vibrar([120, 60, 120]); // háptica configurable (idea #109)
+    if(!focoSonido || sonCfg.fin === false) return;
     try{
       unlockAudio();
       if(!audioCtx) return;
@@ -4363,8 +4367,8 @@
 
   // pop corto y satisfactorio al marcar algo como hecho (hábito, meta, idea)
   function sonarCheck(){
-    try{ if(navigator.vibrate) navigator.vibrate(12); }catch(e){}
-    if(!focoSonido) return;
+    vibrar(12);
+    if(!focoSonido || sonCfg.check === false) return;
     try{
       unlockAudio(); if(!audioCtx) return;
       tono(660, 0,    0.09, 0.20);
@@ -4373,8 +4377,8 @@
   }
   // pequeño fanfarrón al GANAR el día (los 3 core listos) o cumplir meta grande
   function sonarGanado(){
-    try{ if(navigator.vibrate) navigator.vibrate([40, 50, 90]); }catch(e){}
-    if(!focoSonido) return;
+    vibrar([40, 50, 90]);
+    if(!focoSonido || sonCfg.ganado === false) return;
     try{
       unlockAudio(); if(!audioCtx) return;
       tono(659.25, 0,    0.18, 0.24);
@@ -5319,7 +5323,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-diario', 'reps-sueno', 'reps-kanban', 'reps-retos', 'reps-energia', 'reps-solo', 'reps-ia-chat', 'reps-gratitud', 'reps-agua', 'reps-pausas', 'reps-sueno-rutina', 'reps-checkin', 'reps-mantra', 'reps-carta-futuro', 'reps-victorias', 'reps-brutal', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-diario', 'reps-sueno', 'reps-kanban', 'reps-retos', 'reps-energia', 'reps-solo', 'reps-ia-chat', 'reps-gratitud', 'reps-agua', 'reps-pausas', 'reps-sueno-rutina', 'reps-checkin', 'reps-mantra', 'reps-carta-futuro', 'reps-victorias', 'reps-brutal', 'reps-hoy-cfg', 'reps-degradado', 'reps-sonidos', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -6753,6 +6757,77 @@
     renderBrutal();
   });
 
+  // ===== Experiencia / personalización (ideas #106–#111) =====
+
+  // ---- #106/#107 Personalizar Hoy: enciende/apaga tarjetas ----
+  const HOY_CFG_KEY = 'reps-hoy-cfg';
+  const HOY_CARDS = [
+    {id:'mantra', name:'Mantra'},
+    {id:'brief', name:'Resumen de la mañana'},
+    {id:'armaDia', name:'Botón «Arma mi día»'},
+    {id:'ahora', name:'El Ahora (bloque en curso)'},
+    {id:'energiaCard', name:'Semáforo de energía'},
+    {id:'checkinCard', name:'Chequeo de ánimo'},
+    {id:'week', name:'Mini-semana'},
+    {id:'compa', name:'Compañero'},
+    {id:'despWrap', name:'Despertar a tiempo'},
+  ];
+  let hoyCfg = {}; // {id:false} = oculto
+  function loadHoyCfg(){ hoyCfg = {}; try{ const v = JSON.parse(localStorage.getItem(HOY_CFG_KEY)); if(esMapa(v)) Object.keys(v).forEach(k => { if(v[k] === false) hoyCfg[k] = false; }); }catch(e){ hoyCfg = {}; } }
+  function saveHoyCfg(){ try{ localStorage.setItem(HOY_CFG_KEY, JSON.stringify(hoyCfg)); }catch(e){} }
+  function applyHoyCfg(){
+    HOY_CARDS.forEach(c => { const el = $(c.id); if(!el) return;
+      if(hoyCfg[c.id] === false) el.style.display = 'none';
+      else if(el.style.display === 'none') el.style.display = ''; // devuelve el control a su lógica propia
+    });
+  }
+  function renderHoyCfg(){
+    const cont = $('hoyCfgList'); if(!cont) return; cont.innerHTML = '';
+    HOY_CARDS.forEach(c => {
+      const row = document.createElement('label'); row.className = 'cfg-row';
+      const tx = document.createElement('span'); tx.textContent = c.name;
+      const chk = document.createElement('input'); chk.type = 'checkbox'; chk.checked = hoyCfg[c.id] !== false;
+      chk.addEventListener('change', ()=>{ if(chk.checked) delete hoyCfg[c.id]; else hoyCfg[c.id] = false; saveHoyCfg(); applyHoyCfg(); });
+      row.append(tx, chk); cont.appendChild(row);
+    });
+  }
+
+  // ---- #108 Fondo degradado ----
+  const GRAD_KEY = 'reps-degradado';
+  let grad = { on:false, color:'#1a1030' };
+  function loadGrad(){ grad = { on:false, color:'#1a1030' }; try{ const v = JSON.parse(localStorage.getItem(GRAD_KEY)); if(esMapa(v)){ grad.on = !!v.on; if(/^#[0-9a-fA-F]{6}$/.test(v.color)) grad.color = v.color; } }catch(e){} }
+  function saveGrad(){ try{ if(grad.on) localStorage.setItem(GRAD_KEY, JSON.stringify(grad)); else localStorage.removeItem(GRAD_KEY); }catch(e){} }
+  function applyGrad(){
+    const css = getComputedStyle(document.documentElement);
+    const base = css.getPropertyValue('--bg').trim() || '#12161d';
+    document.body.style.backgroundImage = grad.on ? 'linear-gradient(180deg, ' + base + ' 0%, ' + grad.color + ' 100%)' : '';
+    document.body.style.backgroundAttachment = grad.on ? 'fixed' : '';
+  }
+  function renderGradCfg(){
+    const p = $('pickBg2'); if(p) p.value = grad.color;
+    document.querySelectorAll('#themeWrap .grad-opts .dist-opt').forEach(b => b.classList.toggle('on', (b.dataset.grad === 'on') === grad.on));
+  }
+  { const p = $('pickBg2'); if(p) p.addEventListener('input', ()=>{ grad.color = p.value; if(grad.on){ saveGrad(); applyGrad(); } }); }
+  document.querySelectorAll('#themeWrap .grad-opts .dist-opt').forEach(b => b.addEventListener('click', ()=>{ grad.on = b.dataset.grad === 'on'; saveGrad(); applyGrad(); renderGradCfg(); }));
+
+  // ---- #109 Sonidos y vibración por acción ----
+  const SONIDOS_KEY = 'reps-sonidos';
+  let sonCfg = { check:true, ganado:true, fin:true, haptic:true };
+  function loadSonCfg(){ sonCfg = { check:true, ganado:true, fin:true, haptic:true }; try{ const v = JSON.parse(localStorage.getItem(SONIDOS_KEY)); if(esMapa(v)){ ['check','ganado','fin','haptic'].forEach(k => { if(v[k] === false) sonCfg[k] = false; }); } }catch(e){} }
+  function saveSonCfg(){ try{ localStorage.setItem(SONIDOS_KEY, JSON.stringify(sonCfg)); }catch(e){} }
+  function vibrar(ms){ if(sonCfg.haptic && navigator.vibrate){ try{ navigator.vibrate(ms); }catch(e){} } }
+  function renderSonCfg(){
+    const cont = $('sonidosCfg'); if(!cont) return; cont.innerHTML = '';
+    const items = [['check','Al completar un hábito o idea'],['ganado','Al ganar el día o una meta'],['fin','Al terminar el temporizador'],['haptic','Vibración (háptica)']];
+    items.forEach(([k, name]) => {
+      const row = document.createElement('label'); row.className = 'cfg-row';
+      const tx = document.createElement('span'); tx.textContent = name;
+      const chk = document.createElement('input'); chk.type = 'checkbox'; chk.checked = sonCfg[k] !== false;
+      chk.addEventListener('change', ()=>{ sonCfg[k] = chk.checked; saveSonCfg(); if(chk.checked && k === 'check') sonarCheck(); if(chk.checked && k === 'haptic') vibrar(30); });
+      row.append(tx, chk); cont.appendChild(row);
+    });
+  }
+
   // ===== Datos / visualización (ideas #101–#105) =====
 
   // ---- #105 Insight proactivo al abrir Stats ----
@@ -6926,7 +7001,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-diario': diario, 'reps-sueno': sueno, 'reps-kanban': kanban, 'reps-retos': retos, 'reps-energia': energia, 'reps-solo': solo, 'reps-ia-chat': iaChat, 'reps-gratitud': gratitud, 'reps-agua': agua, 'reps-pausas': pausas, 'reps-sueno-rutina': suenoRut, 'reps-checkin': checkin, 'reps-mantra': mantra, 'reps-carta-futuro': cartaFut, 'reps-victorias': victorias, 'reps-brutal': brutal ? '1' : '', 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-diario': diario, 'reps-sueno': sueno, 'reps-kanban': kanban, 'reps-retos': retos, 'reps-energia': energia, 'reps-solo': solo, 'reps-ia-chat': iaChat, 'reps-gratitud': gratitud, 'reps-agua': agua, 'reps-pausas': pausas, 'reps-sueno-rutina': suenoRut, 'reps-checkin': checkin, 'reps-mantra': mantra, 'reps-carta-futuro': cartaFut, 'reps-victorias': victorias, 'reps-brutal': brutal ? '1' : '', 'reps-hoy-cfg': hoyCfg, 'reps-degradado': grad.on ? grad : '', 'reps-sonidos': sonCfg, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -7097,6 +7172,15 @@
         else localStorage.removeItem(VICT_KEY);
         if(b.data['reps-brutal'] === '1') localStorage.setItem(BRUTAL_KEY, '1');
         else localStorage.removeItem(BRUTAL_KEY);
+        const hcf = b.data['reps-hoy-cfg'];
+        if(esMapa(hcf)) localStorage.setItem(HOY_CFG_KEY, JSON.stringify(hcf));
+        else localStorage.removeItem(HOY_CFG_KEY);
+        const grd = b.data['reps-degradado'];
+        if(esMapa(grd) && grd.on) localStorage.setItem(GRAD_KEY, JSON.stringify(grd));
+        else localStorage.removeItem(GRAD_KEY);
+        const snc = b.data['reps-sonidos'];
+        if(esMapa(snc)) localStorage.setItem(SONIDOS_KEY, JSON.stringify(snc));
+        else localStorage.removeItem(SONIDOS_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -7144,6 +7228,9 @@
       cartaFut = null; loadCartaFut();
       victorias = []; loadVictorias();
       brutal = false; loadBrutal();
+      loadHoyCfg();
+      loadGrad(); applyGrad();
+      loadSonCfg();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -7179,6 +7266,9 @@
   applyFont();
   loadFx();
   applyFx();
+  loadGrad(); applyGrad();    // #108 fondo degradado (tras aplicar el tema)
+  loadHoyCfg();               // #106/#107 personalizar Hoy (applyHoyCfg corre en render)
+  loadSonCfg();               // #109 sonidos por acción
   load();
   loadTray();
   loadCierres();   // antes de render(): el calendario ya lee los cierres
@@ -7274,7 +7364,7 @@
   (function(){
     const tab = new URLSearchParams(location.search).get('tab');
     if(!tab) return;
-    const map = { bandeja:'p-bandeja', stats:'p-stats', dia:'p-dia', cierre:'p-hoy' };
+    const map = { bandeja:'p-bandeja', stats:'p-stats', dia:'p-dia', cierre:'p-hoy', armadia:'p-hoy' };
     const panel = map[tab];
     if(!panel) return;
     const btn = document.querySelector('.tab[data-panel="' + panel + '"]');
@@ -7284,6 +7374,9 @@
     }
     if(tab === 'bandeja'){
       setTimeout(()=> $('trayInput').focus(), 300); // listo para escribir
+    }
+    if(tab === 'armadia'){ // atajo #111: abre «Arma mi día» directo
+      setTimeout(()=>{ const b = $('armaDia'); if(b) b.click(); }, 300);
     }
   })();
 
