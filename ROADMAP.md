@@ -195,7 +195,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 29. 🌐🧠 Asistente proactivo (push con el consejo del día).
 30. ✅ (v89) Dictar por voz en la Bandeja (speech-to-text).
 31. ✅ (v88) "Arma mi día": la IA organiza el día y acomoda si no da tiempo.
-32. 🌐🧠 "Modo entrevista": la IA te hace preguntas para reflexionar.
+32. ✅ (v90) Reflexión guiada: la IA te hace preguntas para pensar.
 33. ❌ descartada (a petición del usuario).
 34. 🌐🧠 Detecta cuándo vas a fallar y te manda un empujón.
 
