@@ -1121,3 +1121,22 @@ body.font-serif .anio-hero .an-big{font-family:Georgia,"Times New Roman",serif}
 .fin-nogasto-add button{background:var(--card-2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:9px 12px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
 /* #79 botón retirar */
 .fin-meta-ret{background:var(--card-2)!important;color:var(--muted)!important}
+
+/* ===== Bloque IA v96 (#84,#86,#87,#88,#89) ===== */
+/* herramientas del asistente */
+.ia-tools{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.ia-tool{background:var(--card-2);border:1px solid var(--line);color:var(--text);border-radius:12px;padding:10px 8px;font-size:13px;font-weight:600;cursor:pointer;text-align:center}
+.ia-tool:active{transform:scale(.98)}
+/* chat con memoria (#84) */
+.ia-chat{max-height:46vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 0 8px}
+.ia-empty{font-size:13px;color:var(--muted);text-align:center;padding:18px 6px}
+.ia-msg{max-width:85%;padding:9px 12px;border-radius:14px;font-size:14px;line-height:1.4;white-space:pre-wrap;word-break:break-word}
+.ia-msg.yo{align-self:flex-end;background:var(--amber);color:var(--on-accent);border-bottom-right-radius:4px}
+.ia-msg.ia{align-self:flex-start;background:var(--card-2);color:var(--text);border-bottom-left-radius:4px}
+.ia-msg.pensando{opacity:.6}
+.ia-send-row{display:flex;gap:8px;margin-top:10px;align-items:stretch}
+.ia-clear{background:var(--card-2);border:1px solid var(--line);color:var(--muted);border-radius:12px;padding:0 12px;font-size:13px;cursor:pointer;white-space:nowrap}
+/* journaling (#89) */
+.diario-prompt{background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.4;margin-bottom:8px;font-style:italic}
+/* aviso de riesgo (#88) */
+.riesgo{background:color-mix(in srgb,var(--red,#e5484d) 12%,var(--card));border:1px solid color-mix(in srgb,var(--red,#e5484d) 40%,var(--line));border-radius:14px;padding:11px 14px;margin:10px 0;font-size:13px;line-height:1.4;font-weight:600}

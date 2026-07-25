@@ -735,6 +735,35 @@
   function saveSolo(){ try{ if(solo) localStorage.setItem(SOLO_KEY, solo); else localStorage.removeItem(SOLO_KEY); }catch(e){} }
   function setSolo(id){ solo = (solo === id) ? '' : id; saveSolo(); render(); if(typeof renderHabEditor === 'function') renderHabEditor(); }
 
+  // ===== Aviso de riesgo (idea #88): predice una posible caída HOY =====
+  // Detección 100% local: cruza tu historial por día de la semana con tu
+  // estado de ahora (hora, core pendientes, racha). Avisa ANTES de caer
+  // (distinto del modo rescate, que actúa DESPUÉS de 2 días caídos).
+  function tasaDiaSemana(dow){
+    let req = 0, won = 0;
+    Object.keys(dias).forEach(k => {
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(k) || k >= today()) return;
+      if(dowDe(k) !== dow || esDescanso(k)) return;
+      req++; if(esGanado(k)) won++;
+    });
+    return req >= 3 ? won / req : null; // null = pocos datos para opinar
+  }
+  function renderRiesgo(won, desc, s, caidosN, coreHoy, coreDone){
+    const card = $('riesgoCard'); if(!card) return;
+    if(won || desc || caidosN >= 2 || coreHoy.length === 0){ card.hidden = true; return; } // no competir con rescate/descanso
+    const hora = new Date().getHours();
+    const tasa = tasaDiaSemana(dowDe(today()));
+    const faltan = coreHoy.length - coreDone;
+    const tardeSinCerrar = hora >= 18 && faltan > 0;
+    const diaDebil = tasa !== null && tasa < 0.5 && faltan > 0;
+    if(!(tardeSinCerrar || diaDebil)){ card.hidden = true; return; }
+    const nombreDia = new Date(today() + 'T12:00:00').toLocaleDateString('es-MX', {weekday:'long'});
+    let msg = diaDebil ? 'Los ' + nombreDia + ' se te suelen escapar. ' : 'Se hace tarde y ';
+    msg += 'te falta' + (faltan === 1 ? '' : 'n') + ' ' + faltan + ' core. ';
+    msg += s >= 3 ? 'Tu racha de ' + s + ' está en juego: cae UNO ahora y la salvas.' : 'Cierra uno ahora y evitas el bajón.';
+    card.hidden = false; card.textContent = '⚠️ ' + msg;
+  }
+
   function render(){
     $('fecha').textContent = new Date().toLocaleDateString('es-MX',{weekday:'long', day:'numeric', month:'long'});
     const rec = dias[today()] || {};
@@ -812,6 +841,7 @@
         'haz UNA sola cosa hoy y rompe la inercia. Volver ya es ganar.';
     }
     $('streakWarn').hidden = !(lostYesterday() && !won) || enPeligro;
+    renderRiesgo(won, desc, s, caidosN, coreHoy, coreDone); // aviso de posible caída (idea #88)
 
     // Hoy pide: la recomendación única (acción), leyendo el bloque en curso
     const pide = hoyPide(won, desc, s, caidosN, coreHoy, coreDone, bloqueActual());
@@ -4584,23 +4614,117 @@
     return d.texto || '';
   }
   let iaOcupado = false;
+
+  // ===== Chat con memoria persistente (idea #84) =====
+  // El hilo completo se guarda en localStorage: el asistente "recuerda" tus
+  // charlas entre sesiones. El Worker es stateless, así que en cada turno le
+  // mandamos el contexto + los últimos mensajes del hilo.
+  const IA_CHAT_KEY = 'reps-ia-chat';
+  let iaChat = []; // [{who:'yo'|'ia', text}]
+  function loadIaChat(){
+    iaChat = [];
+    try{ const v = JSON.parse(localStorage.getItem(IA_CHAT_KEY));
+      if(Array.isArray(v)) iaChat = v.filter(m => m && (m.who === 'yo' || m.who === 'ia') && typeof m.text === 'string').slice(-60);
+    }catch(e){ iaChat = []; }
+  }
+  function saveIaChat(){ try{ localStorage.setItem(IA_CHAT_KEY, JSON.stringify(iaChat.slice(-60))); }catch(e){} }
+  function renderIaChat(pensando){
+    const c = $('iaChat'); if(!c) return; c.innerHTML = '';
+    if(!iaChat.length && !pensando){
+      const d = document.createElement('div'); d.className = 'ia-empty';
+      d.textContent = 'Pregúntame lo que quieras. Recuerdo lo que hablamos.';
+      c.appendChild(d);
+    }
+    iaChat.forEach(m => {
+      const d = document.createElement('div'); d.className = 'ia-msg ' + m.who; d.textContent = m.text;
+      c.appendChild(d);
+    });
+    if(pensando){ const d = document.createElement('div'); d.className = 'ia-msg ia pensando'; d.textContent = 'Pensando… 🤖'; c.appendChild(d); }
+    c.scrollTop = c.scrollHeight;
+  }
   async function iaEnviar(texto){
     const q = (texto || '').trim();
     if(!q || iaOcupado) return;
     iaOcupado = true;
-    const out = $('iaOut');
-    out.hidden = false; out.textContent = 'Pensando… 🤖';
-    try{ out.textContent = await preguntarIA(q); }
-    catch(e){ out.textContent = 'No se pudo conectar con el asistente. Revisa tu internet e intenta de nuevo.'; }
+    iaChat.push({ who:'yo', text: q }); saveIaChat();
+    $('iaTxt').value = '';
+    renderIaChat(true);
+    // arma el hilo reciente para darle memoria (últimos ~16 mensajes)
+    const hilo = iaChat.slice(-16).map(m => (m.who === 'ia' ? 'Asistente: ' : 'Yo: ') + m.text).join('\n');
+    const sistema = contextoIA() + '\nEsta es una conversación continua: RECUERDA lo que ya se dijo en el hilo. Responde en 1–4 frases, cálido y útil.';
+    try{
+      const res = await fetch(PUSH_WORKER + '/ia', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ sistema, pregunta: hilo }) });
+      if(!res.ok) throw new Error('worker ' + res.status);
+      const d = await res.json();
+      iaChat.push({ who:'ia', text: (d.texto || '').trim() || 'Cuéntame un poco más.' });
+    }catch(e){ iaChat.push({ who:'ia', text:'(Sin conexión ahora. Tu mensaje quedó guardado; cuando vuelva el internet seguimos.)' }); }
+    saveIaChat(); renderIaChat(false);
     iaOcupado = false;
   }
-  $('iaBtn').addEventListener('click', ()=>{ $('iaWrap').hidden = false; });
+  $('iaBtn').addEventListener('click', ()=>{ renderIaChat(false); $('iaWrap').hidden = false; });
   $('iaClose').addEventListener('click', ()=>{ $('iaWrap').hidden = true; });
   $('iaWrap').addEventListener('click', (e)=>{ if(e.target === $('iaWrap')) $('iaWrap').hidden = true; });
   $('iaAsk').addEventListener('click', ()=>{ iaEnviar($('iaTxt').value); });
+  $('iaClear').addEventListener('click', ()=>{
+    if(!iaChat.length){ toast('No hay nada que olvidar.'); return; }
+    if(!confirm('¿Borrar toda la conversación con el asistente? No se puede deshacer.')) return;
+    iaChat = []; saveIaChat(); renderIaChat(false); toast('Conversación olvidada.');
+  });
   $('iaSemana').addEventListener('click', ()=>{
     iaEnviar('Dame un consejo concreto para organizar mi semana: qué hacer cada día con mis pendientes y eventos, usando mis bloques de rutina.');
   });
+
+  // ===== Desatóralo (idea #86): el primer paso mínimo ante un bloqueo =====
+  async function desatorar(){
+    if(iaOcupado) return;
+    const t = $('dtInput').value.trim();
+    if(!t){ toast('Cuéntame qué te tiene atorado.'); return; }
+    iaOcupado = true;
+    const out = $('dtOut'); out.hidden = false; out.textContent = 'Pensando el primer paso… 🧩';
+    const sistema = contextoIA() + '\nLa persona está ATORADA en algo. Da EXACTAMENTE UN primer paso concreto, ' +
+      'ridículamente pequeño y que se pueda hacer en 2 minutos AHORA (di el qué y cómo empezar). ' +
+      'Nada de listas ni sermones. 1–3 frases, cálido y directo, en español.';
+    try{
+      const res = await fetch(PUSH_WORKER + '/ia', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ sistema, pregunta: 'Estoy atorado con: ' + t }) });
+      if(!res.ok) throw new Error('worker ' + res.status);
+      const d = await res.json();
+      out.textContent = (d.texto || '').trim() || 'Empieza por lo más pequeño que puedas nombrar ahora mismo.';
+    }catch(e){ out.textContent = 'No hay conexión ahora. Aun así: haz la versión más pequeña posible de eso, solo 2 minutos.'; }
+    iaOcupado = false;
+  }
+  $('iaDesatora').addEventListener('click', ()=>{ $('iaWrap').hidden = true; $('dtInput').value = ''; $('dtOut').hidden = true; $('desatoraWrap').hidden = false; });
+  $('dtGo').addEventListener('click', desatorar);
+  $('dtClose').addEventListener('click', ()=>{ $('desatoraWrap').hidden = true; });
+  $('desatoraWrap').addEventListener('click', (e)=>{ if(e.target === $('desatoraWrap')) $('desatoraWrap').hidden = true; });
+
+  // ===== Reencuadre (idea #87): mini-TCC ante un pensamiento que pesa =====
+  async function reencuadrar(){
+    if(iaOcupado) return;
+    const t = $('reInput').value.trim();
+    if(!t){ toast('Escribe el pensamiento que te pesa.'); return; }
+    iaOcupado = true;
+    const out = $('reOut'); out.hidden = false; out.textContent = 'Tomando aire contigo… 🌥️';
+    const sistema = 'Eres un acompañante cálido con base en terapia cognitiva (TCC), dentro de una app personal. ' +
+      'La persona comparte un pensamiento negativo o autocrítico. Ayúdala a reencuadrarlo en 3 pasos BREVES: ' +
+      '(1) valida lo que siente sin juzgar; (2) señala con suavidad una distorsión o matiz (¿es 100% cierto? ¿siempre?); ' +
+      '(3) ofrece una mirada alternativa más justa y una micro-acción amable. ' +
+      'No diagnostiques ni sustituyas ayuda profesional; si detectas riesgo serio, sugiere buscar apoyo. ' +
+      'Máximo 5 frases, tono humano y cercano, español, sin markdown.';
+    try{
+      const res = await fetch(PUSH_WORKER + '/ia', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ sistema, pregunta: 'El pensamiento que me pesa es: ' + t }) });
+      if(!res.ok) throw new Error('worker ' + res.status);
+      const d = await res.json();
+      out.textContent = (d.texto || '').trim() || 'Ese pensamiento no es un hecho: es un estado. Respira, ya pasará.';
+    }catch(e){ out.textContent = 'No hay conexión ahora. Recuerda: un mal momento no te define. Respira hondo tres veces.'; }
+    iaOcupado = false;
+  }
+  $('iaReencuadre').addEventListener('click', ()=>{ $('iaWrap').hidden = true; $('reInput').value = ''; $('reOut').hidden = true; $('reencuadreWrap').hidden = false; });
+  $('reGo').addEventListener('click', reencuadrar);
+  $('reClose').addEventListener('click', ()=>{ $('reencuadreWrap').hidden = true; });
+  $('reencuadreWrap').addEventListener('click', (e)=>{ if(e.target === $('reencuadreWrap')) $('reencuadreWrap').hidden = true; });
 
   // #32 Reflexión guiada: la IA hace preguntas para pensar. Mini conversación;
   // el Worker es stateless, así que en cada turno le mando el hilo completo.
@@ -5169,7 +5293,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-diario', 'reps-sueno', 'reps-kanban', 'reps-retos', 'reps-energia', 'reps-solo', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-diario', 'reps-sueno', 'reps-kanban', 'reps-retos', 'reps-energia', 'reps-solo', 'reps-ia-chat', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -6009,9 +6133,31 @@
     saveDiario();
   });
   // Diario tiene su propia pantalla (se abre desde Mi día)
-  $('diarioOpen').addEventListener('click', ()=>{ renderDiario(); $('diarioWrap').hidden = false; });
+  $('diarioOpen').addEventListener('click', ()=>{ renderDiario(); $('diarioPrompt').hidden = true; $('diarioWrap').hidden = false; });
   $('diarioClose').addEventListener('click', ()=>{ $('diarioWrap').hidden = true; });
   $('diarioWrap').addEventListener('click', (e)=>{ if(e.target === $('diarioWrap')) $('diarioWrap').hidden = true; });
+  // #89 Pregunta de journaling generada a tu momento (ánimo/día/racha)
+  $('diarioPregunta').addEventListener('click', async ()=>{
+    if(iaOcupado) return; iaOcupado = true;
+    const p = $('diarioPrompt'); p.hidden = false; p.textContent = 'Buscando una buena pregunta… 🤖';
+    const cx = cierres[today()] || {};
+    const estado = 'Ánimo de hoy: ' + (cx.animo || 'sin registrar') + '. Racha: ' + streak() + ' días.';
+    const sistema = contextoIA() + '\nGenera UNA sola pregunta de journaling, abierta y personal, ' +
+      'ajustada a su momento de hoy (' + estado + '). Que invite a escribir sin ser genérica ni intrusiva. ' +
+      'Responde SOLO con la pregunta, en español, sin comillas ni markdown.';
+    try{
+      const res = await fetch(PUSH_WORKER + '/ia', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ sistema, pregunta: 'Dame mi pregunta de hoy.' }) });
+      if(!res.ok) throw new Error('worker ' + res.status);
+      const d = await res.json();
+      p.textContent = '💭 ' + ((d.texto || '').trim() || '¿Qué es lo que más te pesó o te movió hoy?');
+    }catch(e){
+      // sin internet: banco local de preguntas
+      const banco = ['¿Qué es lo que más te movió hoy, para bien o para mal?','¿De qué te sientes orgulloso de este día, aunque sea pequeño?','¿Qué te quitó energía hoy y qué podrías soltar?','Si hoy tuviera una lección, ¿cuál sería?','¿Qué necesitas mañana que hoy no te diste?'];
+      p.textContent = '💭 ' + banco[Math.floor(Math.random()*banco.length)];
+    }
+    iaOcupado = false;
+  });
 
   // ===== Sueño (pantalla propia) =====
   // Registro simple por noche: a qué hora te acostaste y despertaste →
@@ -6236,7 +6382,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-diario': diario, 'reps-sueno': sueno, 'reps-kanban': kanban, 'reps-retos': retos, 'reps-energia': energia, 'reps-solo': solo, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-diario': diario, 'reps-sueno': sueno, 'reps-kanban': kanban, 'reps-retos': retos, 'reps-energia': energia, 'reps-solo': solo, 'reps-ia-chat': iaChat, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -6378,6 +6524,9 @@
         const slo = b.data['reps-solo'];
         if(typeof slo === 'string' && slo) localStorage.setItem(SOLO_KEY, slo);
         else localStorage.removeItem(SOLO_KEY);
+        const iac = b.data['reps-ia-chat'];
+        if(Array.isArray(iac)) localStorage.setItem(IA_CHAT_KEY, JSON.stringify(iac));
+        else localStorage.removeItem(IA_CHAT_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -6415,6 +6564,7 @@
       retos = []; loadRetos();
       energia = {}; loadEnergia();
       solo = ''; loadSolo();
+      iaChat = []; loadIaChat();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -6474,6 +6624,7 @@
   loadEnergia(); // semáforo de energía del día (idea #77)
   loadSolo(); // modo un solo hábito (idea #74)
   loadRetos(); // retos con fecha límite (idea #75); se renderiza al abrir
+  loadIaChat(); // memoria del asistente (idea #84); se renderiza al abrir
   loadRecordatorios(); // antes de render(): suman al puntaje del día
   loadCapas(); renderCapas(); // mi ruta editable
   loadRutina();

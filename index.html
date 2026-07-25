@@ -61,6 +61,7 @@
     </div>
     <div class="pide" id="pide" hidden></div>
     <div class="empuje" id="empuje" hidden></div>
+    <div class="riesgo" id="riesgoCard" hidden></div>
     <div class="frase" id="frase" hidden></div>
     <div class="rescate" id="rescate" hidden>
       <div class="rs-title">🌱 Modo rescate</div>
@@ -211,6 +212,8 @@
     <div class="theme-sheet">
       <div class="t-head"><h2>Diario</h2><button id="diarioClose" aria-label="Cerrar">✕</button></div>
       <div class="t-note" style="margin-bottom:8px">Privado, solo en este dispositivo. Escribe sin filtro sobre tu día.</div>
+      <button class="ia-tool" id="diarioPregunta" style="width:100%;margin-bottom:8px">🤖 Dame una pregunta para escribir</button>
+      <div class="diario-prompt" id="diarioPrompt" hidden></div>
       <textarea id="diarioTxt" rows="6" placeholder="¿Cómo va tu día? Lo que sientas, sin filtro…"></textarea>
       <div class="diario-list" id="diarioList"></div>
     </div>
@@ -753,12 +756,39 @@
   <div class="theme-wrap" id="iaWrap" hidden>
     <div class="theme-sheet">
       <div class="t-head"><h2>Tu asistente</h2><button id="iaClose" aria-label="Cerrar">✕</button></div>
-      <div class="t-note" style="margin-bottom:10px">Conoce tu semana, tus metas y tu rutina. Requiere internet; tus datos viajan solo en el momento y no se guardan fuera.</div>
-      <button class="hab-add" id="iaSemana">🗓️ Consejo para mi semana</button>
-      <button class="hab-add" id="iaReflex" style="margin-top:8px">🪞 Reflexión guiada</button>
-      <div class="ia-out" id="iaOut" hidden></div>
-      <textarea id="iaTxt" class="carta-txt" rows="2" placeholder="Pregúntale lo que quieras: ¿cómo me preparo para…?"></textarea>
-      <button class="cel-btn" id="iaAsk" style="width:100%;margin-top:10px">Preguntar</button>
+      <div class="t-note" style="margin-bottom:10px">Recuerda tus charlas y conoce tu semana, metas y rutina. Requiere internet; tus datos viajan solo en el momento y no se guardan fuera.</div>
+      <div class="ia-tools">
+        <button class="ia-tool" id="iaSemana">🗓️ Mi semana</button>
+        <button class="ia-tool" id="iaReflex">🪞 Reflexión</button>
+        <button class="ia-tool" id="iaDesatora">🧩 Desatóralo</button>
+        <button class="ia-tool" id="iaReencuadre">🌥️ Reencuadre</button>
+      </div>
+      <div class="ia-chat" id="iaChat"></div>
+      <textarea id="iaTxt" class="carta-txt" rows="2" placeholder="Escríbele lo que quieras…"></textarea>
+      <div class="ia-send-row">
+        <button class="ia-clear" id="iaClear" title="Olvidar la conversación">🗑️ Olvidar</button>
+        <button class="cel-btn" id="iaAsk" style="flex:1">Enviar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="desatoraWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Desatóralo</h2><button id="dtClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-note" style="margin-bottom:10px">Cuéntame qué te tiene atorado y te doy <b>un primer paso ridículamente pequeño</b> para arrancar. Sin sermones.</div>
+      <textarea id="dtInput" class="carta-txt" rows="3" placeholder="Ej: llevo días sin empezar la tarea; no sé por dónde…"></textarea>
+      <button class="ai-btn ai-wide" id="dtGo"><svg class="ai-spark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c.4 3.6 1.4 4.6 5 5-3.6.4-4.6 1.4-5 5-.4-3.6-1.4-4.6-5-5 3.6-.4 4.6-1.4 5-5z"/></svg>Dame el primer paso</button>
+      <div class="ia-out" id="dtOut" hidden></div>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="reencuadreWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Reencuadre</h2><button id="reClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-note" style="margin-bottom:10px">Escribe el pensamiento que te está pesando. Con calma te ayudo a mirarlo desde otro ángulo, más justo contigo. No es terapia, es un respiro.</div>
+      <textarea id="reInput" class="carta-txt" rows="3" placeholder="Ej: soy un desastre, nunca termino nada…"></textarea>
+      <button class="ai-btn ai-wide" id="reGo"><svg class="ai-spark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c.4 3.6 1.4 4.6 5 5-3.6.4-4.6 1.4-5 5-.4-3.6-1.4-4.6-5-5 3.6-.4 4.6-1.4 5-5z"/></svg>Ayúdame a reencuadrarlo</button>
+      <div class="ia-out" id="reOut" hidden></div>
     </div>
   </div>
 

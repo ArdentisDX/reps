@@ -271,12 +271,12 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 83. ✅ Días sin gastar en X categoría (racha de días limpios por categoría vigilada). (v95)
 
 **IA / asistente**
-84. 🧠 Chat con memoria persistente (recuerda tus charlas, no solo la sesión).
+84. ✅ Chat con memoria persistente (hilo guardado en reps-ia-chat; recuerda entre sesiones). (v96)
 85. ❌ Descartada (era "resumen de tu semana narrado" — mismo espíritu que el mes narrado que ya quitamos).
-86. 🧠 "Desatóralo": describe un bloqueo y la IA te da el primer paso.
-87. 🧠 Reencuadre de pensamientos (mini-TCC guiada al sentirte mal).
-88. 🧠 La IA aprende tus patrones y te avisa antes de una posible caída.
-89. 🧠 Preguntas de journaling generadas a tu momento.
+86. ✅ "Desatóralo": describe un bloqueo y la IA da UN primer paso mínimo. (v96)
+87. ✅ Reencuadre de pensamientos (mini-TCC guiada al sentirte mal). (v96)
+88. ✅ Aviso de posible caída: detección LOCAL por día de semana + estado de hoy (antes de caer). (v96)
+89. ✅ Preguntas de journaling generadas a tu momento (en el Diario, con banco offline). (v96)
 
 **Bienestar y salud**
 90. Respiración guiada con animación (4-7-8, caja, etc.).
