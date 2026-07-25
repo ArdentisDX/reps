@@ -1395,12 +1395,14 @@
   $('celebra').addEventListener('click', (e)=>{ if(e.target === $('celebra')) mostrarSiguienteCel(); });
 
   // ===== Mapa de calor del año (estilo GitHub) =====
+  let heatHab = ''; // #101: id del hábito a mostrar en el heatmap, o '' (global)
   function renderHeatmap(){
     const heat = $('heat'); heat.innerHTML = '';
     const SEMANAS = 53;
     const start = mondayOf(new Date());
     start.setDate(start.getDate() - (SEMANAS - 1) * 7);
     const todayKey = today();
+    const hSel = heatHab ? habById(heatHab) : null; // hábito filtrado (idea #101)
     let ganados = 0;
     for(let w = 0; w < SEMANAS; w++){
       const col = document.createElement('div'); col.className = 'heat-col';
@@ -1409,7 +1411,12 @@
         const k = localISO(day);
         const cell = document.createElement('div'); cell.className = 'heat-cell';
         if(k > todayKey){ cell.classList.add('fut'); }
-        else {
+        else if(hSel){
+          // vista por hábito: hecho / no tocaba / fallado
+          if(!habAplica(hSel, dowDe(k))) cell.classList.add('rest');
+          else if(hecho(dias[k], hSel.id)){ cell.classList.add('won'); ganados++; }
+          // si no, queda vacío (fallado)
+        } else {
           const r = dias[k];
           if(esGanado(k)){ cell.classList.add('won'); ganados++; }
           else if(racha.congelados[k]) cell.classList.add('frozen');
@@ -1420,8 +1427,16 @@
       }
       heat.appendChild(col);
     }
-    $('yearTag').textContent = ganados + ' días ganados';
+    $('yearTag').textContent = hSel ? (ganados + ' veces · ' + hSel.name) : (ganados + ' días ganados');
+    // rellena el selector (una vez, o si cambian los hábitos)
+    const sel = $('heatHab');
+    if(sel && sel.options.length !== HABITS.length + 1){
+      const prev = sel.value; sel.innerHTML = '<option value="">Todos (día ganado)</option>';
+      HABITS.forEach(h => { const o = document.createElement('option'); o.value = h.id; o.textContent = (h.emoji ? h.emoji + ' ' : '') + h.name; sel.appendChild(o); });
+      sel.value = prev;
+    }
   }
+  { const sel = document.getElementById('heatHab'); if(sel) sel.addEventListener('change', ()=>{ heatHab = sel.value; renderHeatmap(); }); }
 
   // ===== Cadena del hábito (idea #72: "no rompas la cadena") =====
   // Pantalla por hábito: cuadrícula de sus últimas ~12 semanas marcando
@@ -1752,6 +1767,7 @@
     $('rzIdeas').textContent = ideas.filter(i => !i.done).length;
   }
   function renderStats(){
+    renderInsightProx(); // insight proactivo al abrir Stats (idea #105)
     renderResumen();
     renderPulso();
     renderScore();
@@ -6735,6 +6751,173 @@
     brutal = !brutal;
     try{ if(brutal) localStorage.setItem(BRUTAL_KEY, '1'); else localStorage.removeItem(BRUTAL_KEY); }catch(e){}
     renderBrutal();
+  });
+
+  // ===== Datos / visualización (ideas #101–#105) =====
+
+  // ---- #105 Insight proactivo al abrir Stats ----
+  // Un dato local y sorprendente. Se elige de forma estable por día (no
+  // cambia a cada repintado) entre los candidatos que hoy tienen sustancia.
+  function insightsProactivos(){
+    const out = [];
+    const keys = Object.keys(dias).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k));
+    if(keys.length < 5) return out;
+    const nombres = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+    // mejor día de la semana (mayor tasa de ganado, con requisito)
+    const perDow = Array.from({length:7}, ()=>({req:0,won:0}));
+    keys.forEach(k => { if(k > today() || esDescanso(k)) return; const dw = dowDe(k); perDow[dw].req++; if(esGanado(k)) perDow[dw].won++; });
+    const conDatos = perDow.map((x,i)=>({i, tasa: x.req>=3 ? x.won/x.req : -1, req:x.req})).filter(x=>x.tasa>=0);
+    if(conDatos.length >= 2){
+      const mejor = conDatos.slice().sort((a,b)=>b.tasa-a.tasa)[0];
+      const peor = conDatos.slice().sort((a,b)=>a.tasa-b.tasa)[0];
+      if(mejor.tasa > peor.tasa) out.push('Tu mejor día es el ' + nombres[mejor.i] + ' (' + Math.round(mejor.tasa*100) + '% ganados). El más flojo, el ' + nombres[peor.i] + '.');
+    }
+    // foco acumulado
+    if(focoTotal >= 60){ const h = Math.floor(focoTotal/60); out.push('Llevas ' + h + ' hora' + (h===1?'':'s') + ' de foco acumulado. Eso es tiempo que sí fue tuyo.'); }
+    // total de veces del hábito más hecho
+    let topH = null, topN = 0;
+    HABITS.forEach(h => { const n = keys.filter(k => hecho(dias[k], h.id)).length; if(n > topN){ topN = n; topH = h; } });
+    if(topH && topN >= 10) out.push('Tu hábito más constante es «' + topH.name + '»: ' + topN + ' veces registradas.');
+    // regresos
+    const reg = contarRegresos();
+    if(reg >= 2) out.push('Has caído y vuelto ' + reg + ' veces. Esa es la habilidad que de verdad importa.');
+    // primer día
+    const primero = keys.sort()[0];
+    if(primero){ const d = Math.round((new Date(today()+'T12:00:00') - new Date(primero+'T12:00:00'))/86400000); if(d >= 14) out.push('Llevas ' + d + ' días desde que empezaste esto. Nada mal.'); }
+    return out;
+  }
+  function renderInsightProx(){
+    const card = $('insightProx'); if(!card) return;
+    const ins = insightsProactivos();
+    if(!ins.length){ card.hidden = true; return; }
+    // estable por día: índice según la fecha
+    const idx = parseInt(today().replace(/-/g,''), 10) % ins.length;
+    card.hidden = false; card.textContent = '💡 ' + ins[idx];
+  }
+
+  // ---- #102 Línea de tiempo (mes a mes) ----
+  function mesStats(mesKey){
+    let ganados = 0, conReg = 0;
+    Object.keys(dias).forEach(k => {
+      if(!k.startsWith(mesKey)) return;
+      if(dias[k] && HABITS.some(h => dias[k][h.id])) conReg++;
+      if(esGanado(k)) ganados++;
+    });
+    return { ganados, conReg };
+  }
+  function renderTimeline(){
+    const cont = $('tlList'); if(!cont) return; cont.innerHTML = '';
+    const keys = Object.keys(dias).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
+    if(!keys.length){ const e = document.createElement('div'); e.className = 'tl-empty'; e.textContent = 'Aún no hay historia. Empieza hoy.'; cont.appendChild(e); return; }
+    const primero = keys[0].slice(0,7);
+    const [py, pm] = primero.split('-').map(Number);
+    const now = new Date();
+    const meses = [];
+    let y = py, m = pm;
+    while(y < now.getFullYear() || (y === now.getFullYear() && m <= now.getMonth()+1)){
+      meses.push(y + '-' + String(m).padStart(2,'0'));
+      m++; if(m > 12){ m = 1; y++; }
+    }
+    const maxG = Math.max(1, ...meses.map(mk => mesStats(mk).ganados));
+    meses.reverse().forEach(mk => {
+      const st = mesStats(mk);
+      const row = document.createElement('div'); row.className = 'tl-row';
+      const lbl = document.createElement('div'); lbl.className = 'tl-mes';
+      lbl.textContent = new Date(mk + '-15T12:00:00').toLocaleDateString('es-MX', {month:'long', year:'numeric'});
+      const barW = document.createElement('div'); barW.className = 'tl-bar';
+      const fill = document.createElement('i'); fill.style.width = Math.round(st.ganados/maxG*100) + '%'; barW.appendChild(fill);
+      const num = document.createElement('div'); num.className = 'tl-num'; num.textContent = st.ganados + ' ganados';
+      row.append(lbl, barW, num);
+      cont.appendChild(row);
+    });
+  }
+  $('openTimeline').addEventListener('click', ()=>{ renderTimeline(); $('timelineWrap').hidden = false; });
+  $('tlClose').addEventListener('click', ()=>{ $('timelineWrap').hidden = true; });
+  $('timelineWrap').addEventListener('click', (e)=>{ if(e.target === $('timelineWrap')) $('timelineWrap').hidden = true; });
+
+  // ---- #103 Tú vs tú (trimestre actual vs anterior) ----
+  function rangoStats(desde, hasta){
+    let req = 0, won = 0, foco = 0, animoSum = 0, animoN = 0;
+    const AS = { bien:2, regular:1, mal:0 };
+    const d = new Date(desde + 'T12:00:00'), fin = new Date(hasta + 'T12:00:00');
+    while(d <= fin){
+      const k = localISO(d);
+      if(!esDescanso(k) && k <= today()){ req++; if(esGanado(k)) won++; }
+      const c = cierres[k]; if(c && c.animo != null){ animoSum += AS[c.animo]; animoN++; }
+      d.setDate(d.getDate() + 1);
+    }
+    return { won, tasa: req ? Math.round(won/req*100) : 0, animo: animoN ? (animoSum/animoN) : null };
+  }
+  function renderVsTu(){
+    const hoy = new Date(today() + 'T12:00:00');
+    const finNow = today();
+    const iniNow = localISO(new Date(hoy.getTime() - 89*86400000));
+    const finPrev = localISO(new Date(hoy.getTime() - 90*86400000));
+    const iniPrev = localISO(new Date(hoy.getTime() - 179*86400000));
+    const nowS = rangoStats(iniNow, finNow), prevS = rangoStats(iniPrev, finPrev);
+    const animoTxt = a => a == null ? '·' : (a >= 1.5 ? '🙂' : a >= 0.75 ? '😐' : '☹️');
+    $('vtPrev').innerHTML = '<div class="vt-h">Trimestre anterior</div>' +
+      '<div class="vt-big">' + prevS.won + '</div><div class="vt-sub">días ganados</div>' +
+      '<div class="vt-line">' + prevS.tasa + '% cumplido</div><div class="vt-line">ánimo ' + animoTxt(prevS.animo) + '</div>';
+    $('vtNow').innerHTML = '<div class="vt-h">Este trimestre</div>' +
+      '<div class="vt-big">' + nowS.won + '</div><div class="vt-sub">días ganados</div>' +
+      '<div class="vt-line">' + nowS.tasa + '% cumplido</div><div class="vt-line">ánimo ' + animoTxt(nowS.animo) + '</div>';
+    const dif = nowS.won - prevS.won;
+    const st = $('vtStats');
+    st.className = 'vt-verdict ' + (dif > 0 ? 'up' : dif < 0 ? 'down' : '');
+    st.textContent = dif > 0 ? '📈 Vas ' + dif + ' días ganados por encima del trimestre pasado.' :
+      dif < 0 ? '📉 Vas ' + (-dif) + ' días por debajo. Aún hay tiempo de darle la vuelta.' :
+      '➡️ Empatas con tu trimestre pasado.';
+  }
+  $('openVsTu').addEventListener('click', ()=>{ renderVsTu(); $('vsTuWrap').hidden = false; });
+  $('vtClose').addEventListener('click', ()=>{ $('vsTuWrap').hidden = true; });
+  $('vsTuWrap').addEventListener('click', (e)=>{ if(e.target === $('vsTuWrap')) $('vsTuWrap').hidden = true; });
+
+  // ---- #104 Compartir progreso (imagen con canvas, mismo estilo que el mes) ----
+  function drawProgresoImage(){
+    const W = 1080, H = 1350, PAD = 80;
+    const css = getComputedStyle(document.documentElement);
+    const C = n => css.getPropertyValue(n).trim();
+    const bg = C('--bg'), card = C('--card-2'), text = C('--text'), muted = C('--muted'), accent = C('--amber');
+    const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    const FONT = 'system-ui, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = muted; ctx.font = '600 28px ' + FONT; ctx.fillText('MI PROGRESO EN REPS', PAD, 110);
+    ctx.fillStyle = text; ctx.font = '800 64px ' + FONT;
+    ctx.fillText(perfil && perfil.nombre ? perfil.nombre : 'Mi camino', PAD, 195);
+    const s = statsData();
+    const tiles = [[String(s.now), 'RACHA ACTUAL'], [String(s.best), 'MEJOR RACHA'], [String(s.total), 'DÍAS GANADOS'], [s.pct30 + '%', 'ÚLTIMO MES']];
+    tiles.forEach(([num, lbl], i) => {
+      const cx = i % 2, cy = Math.floor(i / 2);
+      const bx = PAD + cx * ((W - PAD*2)/2 + 0) , by = 320 + cy * 300;
+      const bw = (W - PAD*2 - 40) / 2, bh = 260;
+      ctx.fillStyle = card; roundRect(ctx, bx, by, bw, bh, 28); ctx.fill();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = accent; ctx.font = '800 96px ' + FONT; ctx.fillText(num, bx + bw/2, by + 140);
+      ctx.fillStyle = muted; ctx.font = '600 24px ' + FONT; ctx.fillText(lbl, bx + bw/2, by + 190);
+      ctx.textAlign = 'left';
+    });
+    ctx.textAlign = 'center';
+    ctx.fillStyle = muted; ctx.font = '600 26px ' + FONT;
+    ctx.fillText('Un día a la vez. Cada rep, un voto por quién soy.', W/2, 1000);
+    ctx.font = '800 60px ' + FONT;
+    const wReps = ctx.measureText('REPS').width, wDot = ctx.measureText('.').width;
+    const x0 = W/2 - (wReps + wDot)/2; ctx.textAlign = 'left';
+    ctx.fillStyle = text; ctx.fillText('REPS', x0, 1300);
+    ctx.fillStyle = accent; ctx.fillText('.', x0 + wReps, 1300);
+    return { canvas, nombre: 'reps-progreso-' + today() + '.png' };
+  }
+  // helper rectángulo redondeado (para el canvas)
+  function roundRect(ctx, x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x+r, y); ctx.arcTo(x+w, y, x+w, y+h, r); ctx.arcTo(x+w, y+h, x, y+h, r);
+    ctx.arcTo(x, y+h, x, y, r); ctx.arcTo(x, y, x+w, y, r); ctx.closePath();
+  }
+  $('shareProgreso').addEventListener('click', ()=>{
+    const { canvas, nombre } = drawProgresoImage();
+    compartirCanvas(canvas, nombre, 'Mi progreso en REPS');
   });
 
   // ===== Respaldo: exportar / importar =====

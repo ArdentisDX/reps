@@ -319,6 +319,7 @@
   </div>
 
   <div class="panel" id="p-stats">
+    <div class="insight-prox" id="insightProx" hidden></div>
     <div class="resumen" id="resumenCard">
       <div class="rz-title">Esta semana</div>
       <div class="rz-grid">
@@ -388,8 +389,14 @@
     </div>
     <div class="sec">
       <div class="sec-head"><h2>Tu año</h2><div class="tag" id="yearTag"></div></div>
+      <select id="heatHab" class="heat-hab" aria-label="Ver por hábito"><option value="">Todos (día ganado)</option></select>
       <div class="heatwrap"><div class="heat" id="heat"></div></div>
       <button class="share-btn" id="shareYearBtn" style="margin-top:10px">🗓️ Compartir mi año</button>
+    </div>
+    <div class="datos-tools">
+      <button class="datos-tool" id="openTimeline">📈 Línea de tiempo</button>
+      <button class="datos-tool" id="openVsTu">⚖️ Tú vs tú</button>
+      <button class="datos-tool" id="shareProgreso">📤 Compartir progreso</button>
     </div>
     <div class="sec">
       <div class="sec-head"><h2>Identidad</h2><div class="tag">cada rep, un voto por quién eres</div></div>
@@ -459,6 +466,23 @@
       <button class="mas-item" id="masExport"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></span><span class="mas-tx"><b>Exportar respaldo</b><i>Guarda una copia de tus datos</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
       <button class="mas-item" id="masImport"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14V3m0 0 4 4m-4-4-4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></span><span class="mas-tx"><b>Importar respaldo</b><i>Restaura desde una copia</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
       <button class="mas-item mas-danger" id="masReset"><span class="mas-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-9 0 1 13a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2l1-13"/></svg></span><span class="mas-tx"><b>Borrar todo el historial</b><i>No se puede deshacer</i></span><span class="mas-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></button>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="timelineWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Tu vida en REPS</h2><button id="tlClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-note" style="margin-bottom:10px">Cada mes desde que empezaste, mes a mes.</div>
+      <div id="tlList"></div>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="vsTuWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Tú vs tú</h2><button id="vtClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-note" style="margin-bottom:10px">Este trimestre comparado con el anterior.</div>
+      <div class="vt-cols"><div class="vt-col" id="vtPrev"></div><div class="vt-col vt-now" id="vtNow"></div></div>
+      <div id="vtStats"></div>
     </div>
   </div>
 

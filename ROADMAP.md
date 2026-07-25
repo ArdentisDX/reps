@@ -296,11 +296,11 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 100. ✅ Modo espejo brutal: números duros sin adornos (toggle en El Espejo). (v98)
 
 **Datos / visualización**
-101. Mapa de calor por hábito (no solo global).
-102. Línea de tiempo de tu vida en REPS (scroll por meses).
-103. Comparador "tú vs tú" (este trimestre vs el pasado).
-104. Botón "compartir" en cualquier pantalla (Stats, El Espejo, una meta…) que genere una imagen bonita de ESA vista para guardar/enviar, como ya hace "Compartir mi mes" pero para todo.
-105. Insights proactivos: la app te muestra 1 dato sorprendente al abrir Stats.
+101. ✅ Mapa de calor por hábito (selector en «Tu año»; hecho/no tocaba/fallado). (v99)
+102. ✅ Línea de tiempo mes a mes desde que empezaste (pantalla propia). (v99)
+103. ✅ Comparador "tú vs tú" (este trimestre vs el anterior). (v99)
+104. ✅ Compartir progreso: imagen (canvas, estilo del mes/año) con tus números. (v99) — nota: imagen curada por canvas, no screenshot genérico (sin librerías = offline eterno).
+105. ✅ Insight proactivo al abrir Stats (dato sorprendente, estable por día). (v99)
 
 **Experiencia / personalización**
 106. Reordenar y ocultar secciones de Hoy (pantalla a tu gusto).
