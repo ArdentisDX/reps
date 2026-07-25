@@ -24,6 +24,24 @@
   // modo viaje/vacaciones (idea #116): días marcados como neutrales. Se
   // declara aquí arriba porque coreDelDia lo consulta desde el arranque.
   let viaje = { activo:false, dias:{} };
+  // progreso de sub-tareas por día (idea #36): {fecha:{habId:{subId:true}}}
+  const HABSUB_KEY = 'reps-habsub';
+  let habSub = {};
+  function loadHabSub(){ habSub = {}; try{ const v = JSON.parse(localStorage.getItem(HABSUB_KEY)); if(v && typeof v === 'object' && !Array.isArray(v)) habSub = v; }catch(e){ habSub = {}; } }
+  function saveHabSub(){ try{ localStorage.setItem(HABSUB_KEY, JSON.stringify(habSub)); }catch(e){} }
+  function subHecho(habId, subId, fecha){ const d = habSub[fecha]; return !!(d && d[habId] && d[habId][subId]); }
+  function toggleSub(h, subId){
+    const k = today();
+    if(!habSub[k]) habSub[k] = {};
+    if(!habSub[k][h.id]) habSub[k][h.id] = {};
+    const cur = habSub[k][h.id];
+    if(cur[subId]) delete cur[subId]; else cur[subId] = true;
+    saveHabSub();
+    // si TODAS las sub-tareas quedaron hechas, el hábito se marca hecho
+    const todas = h.subs.length > 0 && h.subs.every(s => cur[s.id]);
+    if(todas){ setHabit(h, true); } // setHabit ya repinta (render)
+    else { sonarCheck(); render(); }
+  }
 
   const $ = id => document.getElementById(id);
 
@@ -142,6 +160,13 @@
   function sanearEmoji(v){
     return typeof v === 'string' ? v.trim().slice(0, 8) : '';
   }
+  // sub-tareas del hábito (idea #36): lista de pasos {id, txt}. Máx 10.
+  function sanearSubs(v){
+    if(!Array.isArray(v)) return [];
+    return v.filter(s => s && typeof s.txt === 'string' && s.txt.trim())
+      .map(s => ({ id: (typeof s.id === 'string' && s.id) ? s.id : ('s' + Math.random().toString(36).slice(2,8)), txt: s.txt.trim().slice(0,60) }))
+      .slice(0, 10);
+  }
   // meta numérica del hábito: entero 0..999 (0/ausente = sin contador)
   function sanearMeta(v){
     const n = parseInt(v, 10);
@@ -160,7 +185,7 @@
     const limpio = v
       .filter(h => h && typeof h.id === 'string' && h.id && typeof h.name === 'string' && h.name.trim())
       .filter(h => vistos[h.id] ? false : (vistos[h.id] = true)) // ids únicos
-      .map(h => { const frec = sanearFrec(h.frecSemanal); return { id: h.id, name: h.name.trim(), hint: typeof h.hint === 'string' ? h.hint.trim() : '', core: frec ? false : !!h.core, days: sanearDays(h.days), planB: typeof h.planB === 'string' ? h.planB.trim() : '', emoji: sanearEmoji(h.emoji), porQue: typeof h.porQue === 'string' ? h.porQue.trim() : '', meta: sanearMeta(h.meta), unidad: typeof h.unidad === 'string' ? h.unidad.trim().slice(0, 16) : '', tras: typeof h.tras === 'string' ? h.tras.trim().slice(0, 60) : '', frecSemanal: frec }; })
+      .map(h => { const frec = sanearFrec(h.frecSemanal); return { id: h.id, name: h.name.trim(), hint: typeof h.hint === 'string' ? h.hint.trim() : '', core: frec ? false : !!h.core, days: sanearDays(h.days), planB: typeof h.planB === 'string' ? h.planB.trim() : '', emoji: sanearEmoji(h.emoji), porQue: typeof h.porQue === 'string' ? h.porQue.trim() : '', meta: sanearMeta(h.meta), unidad: typeof h.unidad === 'string' ? h.unidad.trim().slice(0, 16) : '', tras: typeof h.tras === 'string' ? h.tras.trim().slice(0, 60) : '', frecSemanal: frec, subs: sanearSubs(h.subs) }; })
       .slice(0, MAX_HABITS);
     return limpio.length ? limpio : null;
   }
@@ -575,6 +600,26 @@
       pb.textContent = '🅱️ mínimo: ' + h.planB;
       body.appendChild(pb);
     }
+    // sub-tareas (idea #36): checklist de pasos; al marcarlos todos, el
+    // hábito se completa. Solo se muestra si aún no está hecho.
+    if(Array.isArray(h.subs) && h.subs.length && !done){
+      const wrap = document.createElement('div'); wrap.className = 'h-subs';
+      const hoyK = today();
+      h.subs.forEach(s => {
+        const li = document.createElement('span'); li.className = 'h-sub';
+        const on = subHecho(h.id, s.id, hoyK);
+        li.classList.toggle('on', on);
+        li.setAttribute('role', 'button'); li.setAttribute('tabindex', '0');
+        const ck = document.createElement('span'); ck.className = 'hs-ck'; ck.textContent = on ? '✓' : '';
+        const tx = document.createElement('span'); tx.className = 'hs-tx'; tx.textContent = s.txt;
+        li.append(ck, tx);
+        const toggle = (e)=>{ e.stopPropagation(); e.preventDefault(); toggleSub(h, s.id); };
+        li.addEventListener('click', toggle);
+        li.addEventListener('keydown', (e)=>{ if(e.key === 'Enter' || e.key === ' ') toggle(e); });
+        wrap.appendChild(li);
+      });
+      body.appendChild(wrap);
+    }
     // el "por qué": tu motivo, visible cuando el hábito aún no cae (el
     // empujón para el día flojo)
     if(h.porQue && !done){
@@ -621,7 +666,7 @@
     let sx = 0, sy = 0, drag = false;
     const UMBRAL = 64;
     b.addEventListener('pointerdown', (e)=>{
-      if(e.target.closest('.h-foco') || e.target.closest('.h-minus') || e.target.closest('.h-streak')) return; // controles propios
+      if(e.target.closest('.h-foco') || e.target.closest('.h-minus') || e.target.closest('.h-streak') || e.target.closest('.h-sub')) return; // controles propios
       sx = e.clientX; sy = e.clientY; drag = false;
     });
     b.addEventListener('pointermove', (e)=>{
@@ -3548,6 +3593,19 @@
       tras.setAttribute('aria-label', 'Después de qué hábito o momento');
       tras.addEventListener('input', ()=>{ h.tras = tras.value; saveHabitos(); render(); });
 
+      // sub-tareas (idea #36): una por línea. Conserva el id si el texto no cambia.
+      const subs = document.createElement('textarea');
+      subs.className = 'hab-hint hab-subs-edit'; subs.rows = 2;
+      subs.value = (h.subs || []).map(s => s.txt).join('\n');
+      subs.placeholder = '☑ Sub-tareas (una por línea): «tender la cama», «lavar trastes»…';
+      subs.setAttribute('aria-label', 'Sub-tareas del hábito');
+      subs.addEventListener('input', ()=>{
+        const prev = h.subs || [];
+        const lineas = subs.value.split('\n').map(t => t.trim()).filter(Boolean).slice(0, 10);
+        h.subs = lineas.map(txt => { const viejo = prev.find(s => s.txt === txt); return { id: viejo ? viejo.id : ('s' + Math.random().toString(36).slice(2,8)), txt: txt.slice(0,60) }; });
+        saveHabitos(); render();
+      });
+
       // frecuencia semanal (idea #71): N veces por semana (sin fijar días).
       // Al ponerla, el hábito deja de ser core (no gana/pierde el día).
       const frecW = document.createElement('div'); frecW.className = 'hab-count-edit';
@@ -3647,7 +3705,7 @@
         daysRow.appendChild(chip);
       });
 
-      row.append(top, hint, planb, porque, tras, cnt, frecW, daysRow);
+      row.append(top, hint, planb, porque, tras, subs, cnt, frecW, daysRow);
       list.appendChild(row);
     });
   }
@@ -5412,7 +5470,7 @@
   const SCHEMA = 6; // versión de formato que esta app espera
   // incluye 'reps-compacto' (clave retirada en v3) para que el respaldo
   // pre-migración también la proteja
-  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-diario', 'reps-sueno', 'reps-kanban', 'reps-retos', 'reps-energia', 'reps-solo', 'reps-ia-chat', 'reps-gratitud', 'reps-agua', 'reps-pausas', 'reps-sueno-rutina', 'reps-checkin', 'reps-mantra', 'reps-carta-futuro', 'reps-victorias', 'reps-brutal', 'reps-hoy-cfg', 'reps-degradado', 'reps-sonidos', 'reps-eventos', 'reps-viaje', 'reps-rutina-tpl', 'reps-peso', 'reps-compacto'];
+  const DATA_KEYS = ['reps-dias', 'reps-bandeja', 'reps-cierres', 'reps-semana', 'reps-cierre-semana', 'reps-tema', 'reps-distribucion', 'reps-efecto', 'reps-racha', 'reps-habitos', 'reps-caidas', 'reps-hitos', 'reps-perfil', 'reps-foco', 'reps-foco-sonido', 'reps-metas', 'reps-rutina', 'reps-carta', 'reps-recompensas', 'reps-despertar', 'reps-plan-semana', 'reps-recordatorios', 'reps-record-hechos', 'reps-capas', 'reps-nav', 'reps-fuente', 'reps-semana-flex', 'reps-compa', 'reps-tema-auto', 'reps-finanzas', 'reps-evitar', 'reps-diario', 'reps-sueno', 'reps-kanban', 'reps-retos', 'reps-energia', 'reps-solo', 'reps-ia-chat', 'reps-gratitud', 'reps-agua', 'reps-pausas', 'reps-sueno-rutina', 'reps-checkin', 'reps-mantra', 'reps-carta-futuro', 'reps-victorias', 'reps-brutal', 'reps-hoy-cfg', 'reps-degradado', 'reps-sonidos', 'reps-eventos', 'reps-viaje', 'reps-rutina-tpl', 'reps-peso', 'reps-habsub', 'reps-compacto'];
 
   // Cada escalón migra de N a N+1 trabajando SOBRE localStorage crudo.
   // Regla: una migración nunca se borra ni se edita una vez publicada.
@@ -7257,7 +7315,7 @@
       app: 'reps',          // firma: identifica que este json es nuestro
       schema: SCHEMA,       // versión del formato de los datos que contiene
       exportado: new Date().toISOString(),
-      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-diario': diario, 'reps-sueno': sueno, 'reps-kanban': kanban, 'reps-retos': retos, 'reps-energia': energia, 'reps-solo': solo, 'reps-ia-chat': iaChat, 'reps-gratitud': gratitud, 'reps-agua': agua, 'reps-pausas': pausas, 'reps-sueno-rutina': suenoRut, 'reps-checkin': checkin, 'reps-mantra': mantra, 'reps-carta-futuro': cartaFut, 'reps-victorias': victorias, 'reps-brutal': brutal ? '1' : '', 'reps-hoy-cfg': hoyCfg, 'reps-degradado': grad.on ? grad : '', 'reps-sonidos': sonCfg, 'reps-eventos': eventos, 'reps-viaje': viaje, 'reps-rutina-tpl': rutTpl, 'reps-peso': peso, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
+      data: { 'reps-dias': dias, 'reps-bandeja': ideas, 'reps-cierres': cierres, 'reps-tema': themeSel, 'reps-semana': semana, 'reps-cierre-semana': cierreSemana, 'reps-distribucion': dist, 'reps-efecto': fx, 'reps-racha': racha, 'reps-habitos': HABITS, 'reps-caidas': caidas, 'reps-hitos': hitosVistos, 'reps-perfil': perfil, 'reps-foco': focoTotal, 'reps-foco-sonido': focoSonido, 'reps-metas': metas, 'reps-rutina': rutina, 'reps-carta': carta, 'reps-recompensas': recompensas, 'reps-despertar': despConf, 'reps-plan-semana': planSemana, 'reps-recordatorios': recordatorios, 'reps-record-hechos': recordHechos, 'reps-capas': capas, 'reps-semana-flex': semFlex, 'reps-compa': compaConf, 'reps-finanzas': fin, 'reps-evitar': evitares, 'reps-diario': diario, 'reps-sueno': sueno, 'reps-kanban': kanban, 'reps-retos': retos, 'reps-energia': energia, 'reps-solo': solo, 'reps-ia-chat': iaChat, 'reps-gratitud': gratitud, 'reps-agua': agua, 'reps-pausas': pausas, 'reps-sueno-rutina': suenoRut, 'reps-checkin': checkin, 'reps-mantra': mantra, 'reps-carta-futuro': cartaFut, 'reps-victorias': victorias, 'reps-brutal': brutal ? '1' : '', 'reps-hoy-cfg': hoyCfg, 'reps-degradado': grad.on ? grad : '', 'reps-sonidos': sonCfg, 'reps-eventos': eventos, 'reps-viaje': viaje, 'reps-rutina-tpl': rutTpl, 'reps-peso': peso, 'reps-habsub': habSub, 'reps-nav': navPos === 'arriba' ? 'arriba' : '', 'reps-fuente': fuente === 'sistema' ? 'sistema' : '', 'reps-tema-auto': temaAuto ? '1' : '' },
     };
     // un Blob es un "archivo en memoria"; el <a download> lo baja al disco
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
@@ -7449,6 +7507,9 @@
         const pso = b.data['reps-peso'];
         if(esMapa(pso)) localStorage.setItem(PESO_KEY, JSON.stringify(pso));
         else localStorage.removeItem(PESO_KEY);
+        const hsb = b.data['reps-habsub'];
+        if(esMapa(hsb)) localStorage.setItem(HABSUB_KEY, JSON.stringify(hsb));
+        else localStorage.removeItem(HABSUB_KEY);
       }catch(e){}
       save(); saveTray(); saveCierres(); saveSemana();
       // el respaldo pudo venir de una app vieja: se marca su versión de
@@ -7503,6 +7564,7 @@
       viaje = { activo:false, dias:{} }; loadViaje();
       loadRutTpl();
       loadPeso();
+      loadHabSub();
       render(); renderTray(); renderSemana();
       fillCierreForm(); renderPlanHoy();
       toast('Respaldo restaurado. 💾');
@@ -7573,6 +7635,7 @@
   loadSuenoRut(); // higiene del sueño (idea #95)
   loadCheckin(); // chequeo de media jornada (idea #91)
   loadPeso(); // peso / medidas (idea #43)
+  loadHabSub(); // progreso de sub-tareas por día (idea #36)
   loadMantra(); // mantra arriba de Hoy (idea #97)
   loadCartaFut(); // carta a tu futuro yo (idea #96)
   loadVictorias(); // muro de victorias (idea #98)

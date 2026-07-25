@@ -1301,3 +1301,11 @@ body.font-serif .anio-hero .an-big{font-family:Georgia,"Times New Roman",serif}
 .pe-fecha{flex:1;font-size:13px;color:var(--muted)}
 .pe-val{font-size:15px;font-weight:700}
 .pe-del{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 6px}
+
+/* ===== Sub-tareas del hábito (idea #36, v106) ===== */
+.h-subs{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.h-sub{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--muted)}
+.h-sub .hs-ck{width:18px;height:18px;flex:none;border:1.5px solid var(--line);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--on-accent)}
+.h-sub.on .hs-ck{background:var(--amber);border-color:var(--amber)}
+.h-sub.on .hs-tx{text-decoration:line-through;opacity:.7}
+.hab-subs-edit{resize:vertical;font-family:inherit;line-height:1.4}
