@@ -675,9 +675,20 @@
       <div class="t-head"><h2>Tu asistente</h2><button id="iaClose" aria-label="Cerrar">✕</button></div>
       <div class="t-note" style="margin-bottom:10px">Conoce tu semana, tus metas y tu rutina. Requiere internet; tus datos viajan solo en el momento y no se guardan fuera.</div>
       <button class="hab-add" id="iaSemana">🗓️ Consejo para mi semana</button>
+      <button class="hab-add" id="iaReflex" style="margin-top:8px">🪞 Reflexión guiada</button>
       <div class="ia-out" id="iaOut" hidden></div>
       <textarea id="iaTxt" class="carta-txt" rows="2" placeholder="Pregúntale lo que quieras: ¿cómo me preparo para…?"></textarea>
       <button class="cel-btn" id="iaAsk" style="width:100%;margin-top:10px">Preguntar</button>
+    </div>
+  </div>
+
+  <div class="theme-wrap" id="reflexWrap" hidden>
+    <div class="theme-sheet">
+      <div class="t-head"><h2>Reflexión guiada</h2><button id="rxClose" aria-label="Cerrar">✕</button></div>
+      <div class="t-note" style="margin-bottom:10px">La IA te hace preguntas para pensar tu día o tu momento. Responde con calma; nada se guarda fuera de tu dispositivo.</div>
+      <div class="reflex-conv" id="rxConv"></div>
+      <textarea id="rxInput" class="carta-txt" rows="2" placeholder="Escribe tu respuesta…"></textarea>
+      <button class="cel-btn" id="rxSend" style="width:100%;margin-top:8px">Responder</button>
     </div>
   </div>
 

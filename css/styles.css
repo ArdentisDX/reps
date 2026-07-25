@@ -982,3 +982,10 @@ body.font-serif .anio-hero .an-big{font-family:Georgia,"Times New Roman",serif}
 .emo-row{display:flex;flex-wrap:wrap;gap:6px}
 .emo-chip{background:var(--card-2);border:1px solid var(--line);border-radius:999px;color:var(--text);font:inherit;font-size:12px;font-weight:600;padding:6px 11px;cursor:pointer}
 .emo-chip.on{border-color:var(--amber);color:var(--amber);box-shadow:0 0 0 2px color-mix(in srgb,var(--amber) 30%,transparent)}
+
+/* ===== Reflexión guiada (#32) ===== */
+.reflex-conv{max-height:46vh;overflow-y:auto;margin-bottom:10px}
+.rx-msg{border-radius:12px;padding:10px 13px;margin-bottom:8px;font-size:14px;line-height:1.5;white-space:pre-wrap}
+.rx-msg.ia{background:var(--card);border:1px solid color-mix(in srgb,var(--teal) 30%,var(--line));color:var(--text)}
+.rx-msg.yo{background:color-mix(in srgb,var(--amber) 12%,var(--card));border:1px solid color-mix(in srgb,var(--amber) 30%,var(--line));margin-left:24px}
+.rx-msg.pensando{color:var(--muted)}

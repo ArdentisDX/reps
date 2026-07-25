@@ -4335,6 +4335,56 @@
     iaEnviar('Dame un consejo concreto para organizar mi semana: qué hacer cada día con mis pendientes y eventos, usando mis bloques de rutina.');
   });
 
+  // #32 Reflexión guiada: la IA hace preguntas para pensar. Mini conversación;
+  // el Worker es stateless, así que en cada turno le mando el hilo completo.
+  let rxConv = [];
+  function renderRxConv(pensando){
+    const c = $('rxConv'); c.innerHTML = '';
+    rxConv.forEach(m => {
+      const d = document.createElement('div'); d.className = 'rx-msg ' + m.who; d.textContent = m.text;
+      c.appendChild(d);
+    });
+    if(pensando){ const d = document.createElement('div'); d.className = 'rx-msg ia pensando'; d.textContent = 'Pensando… 🪞'; c.appendChild(d); }
+    c.scrollTop = c.scrollHeight;
+  }
+  const RX_SISTEMA = 'Eres un guía de reflexión personal, cálido y curioso. Haz UNA sola pregunta a la vez, ' +
+    'breve y que invite a pensar (sobre su día, sus hábitos, cómo se siente, qué aprendió). Escucha lo que responde y ' +
+    'profundiza con la siguiente. Tras 3 respuestas de la persona, en vez de otra pregunta, cierra con una observación ' +
+    'breve y alentadora y NO preguntes más. Responde SOLO con tu mensaje, en español, sin markdown ni comillas.';
+  async function reflexTurno(){
+    if(iaOcupado) return; iaOcupado = true;
+    renderRxConv(true);
+    const respuestas = rxConv.filter(m => m.who === 'yo').length;
+    const hilo = rxConv.map(m => (m.who === 'ia' ? 'Guía: ' : 'Yo: ') + m.text).join('\n');
+    const pregunta = rxConv.length === 0
+      ? contextoIA() + '\nInicia la reflexión de hoy con UNA pregunta cálida.'
+      : hilo + '\n\n(La persona ya dio ' + respuestas + ' respuesta(s). ' +
+        (respuestas >= 3 ? 'Cierra con una observación alentadora, sin más preguntas.' : 'Haz la siguiente pregunta, más profunda.') + ')';
+    try{
+      const res = await fetch(PUSH_WORKER + '/ia', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ sistema: RX_SISTEMA, pregunta }) });
+      if(!res.ok) throw new Error('worker ' + res.status);
+      const d = await res.json();
+      rxConv.push({ who:'ia', text: (d.texto || '').trim() || '¿Cómo te sientes ahora mismo?' });
+    }catch(e){ rxConv.push({ who:'ia', text:'(No hay conexión. Cuando vuelva el internet seguimos.)' }); }
+    renderRxConv(false);
+    iaOcupado = false;
+  }
+  $('iaReflex').addEventListener('click', ()=>{
+    $('iaWrap').hidden = true;
+    rxConv = []; renderRxConv(false); $('rxInput').value = '';
+    $('reflexWrap').hidden = false;
+    reflexTurno(); // la IA lanza la primera pregunta
+  });
+  $('rxSend').addEventListener('click', ()=>{
+    const t = $('rxInput').value.trim();
+    if(!t || iaOcupado) return;
+    rxConv.push({ who:'yo', text: t }); $('rxInput').value = '';
+    reflexTurno();
+  });
+  $('rxClose').addEventListener('click', ()=>{ $('reflexWrap').hidden = true; });
+  $('reflexWrap').addEventListener('click', (e)=>{ if(e.target === $('reflexWrap')) $('reflexWrap').hidden = true; });
+
   // ===== Diseñar mi semana con IA =====
   // Lee lo escrito en cada día de la semana VISIBLE (weekOff) y propone, por
   // día: tareas concretas + un ajuste de flexibilidad (día ligero por viaje,
@@ -4839,6 +4889,7 @@
       $('anioWrap').hidden = true;
       $('ideaPlanWrap').hidden = true;
       $('armaDiaWrap').hidden = true;
+      $('reflexWrap').hidden = true;
       $('habWrap').hidden = true;
     }
   });
