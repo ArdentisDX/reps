@@ -5043,12 +5043,12 @@
       {id:'otros',emoji:'📦',name:'Otros'},
     ],
   };
-  let fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[], deudas:[] };
+  let fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[], deudas:[], carteras:[] };
   let finTipo = 'gasto';
   let finCatSel = { gasto:'comida', ingreso:'sueldo' };
 
   function loadFin(){
-    fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[], deudas:[] };
+    fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[], deudas:[], carteras:[] };
     try{
       const v = JSON.parse(localStorage.getItem(FIN_KEY));
       if(esMapa(v)){
@@ -5069,8 +5069,10 @@
           typeof d.quien === 'string' && d.quien.trim() && Number.isFinite(+d.monto) && +d.monto > 0)
           .map(d => ({ id: d.id, quien: d.quien.trim().slice(0,30), monto: +d.monto,
             tipo: d.tipo === 'meDeben' ? 'meDeben' : 'debo', saldada: !!d.saldada, creada: d.creada || new Date().toISOString() }));
+        if(Array.isArray(v.carteras)) fin.carteras = v.carteras.filter(w => w && typeof w.id === 'string' &&
+          typeof w.nombre === 'string' && w.nombre.trim()).map(w => ({ id: w.id, nombre: w.nombre.trim().slice(0,24) }));
       }
-    }catch(e){ fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[], deudas:[] }; }
+    }catch(e){ fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[], deudas:[], carteras:[] }; }
     procesarSubs(); // registra los fijos que ya tocan este mes
   }
   // registra como gasto las suscripciones cuyo día ya llegó y aún no están
@@ -5333,6 +5335,33 @@
       row.append(chk, body, amt, del);
       dc.appendChild(row);
     });
+
+    // carteras: lista con saldo (todos los movimientos asignados a cada una)
+    const wc = $('finCarteras'); wc.innerHTML = '';
+    (fin.carteras || []).forEach(w => {
+      const bal = fin.movs.filter(m => m.cart === w.id)
+        .reduce((a,m) => a + (m.tipo === 'ingreso' ? +m.monto : -m.monto), 0);
+      const row = document.createElement('div'); row.className = 'fin-cart';
+      const nm = document.createElement('span'); nm.className = 'fw-nm'; nm.textContent = w.nombre;
+      const b = document.createElement('span'); b.className = 'fw-bal ' + (bal < 0 ? 'neg' : 'pos'); b.textContent = fmtDinero(bal);
+      const del = document.createElement('button'); del.className = 'fw-del'; del.textContent = '✕';
+      del.setAttribute('aria-label', 'Borrar cartera');
+      del.addEventListener('click', ()=>{
+        if(!confirm('¿Borrar la cartera «' + w.nombre + '»? Los movimientos se conservan, solo pierden la asignación.')) return;
+        fin.carteras = fin.carteras.filter(x => x.id !== w.id);
+        fin.movs.forEach(m => { if(m.cart === w.id) delete m.cart; });
+        saveFin(); renderFin();
+      });
+      row.append(nm, b, del);
+      wc.appendChild(row);
+    });
+    // el selector de cartera del formulario: solo si hay carteras
+    const msel = $('finMovCart');
+    msel.hidden = (fin.carteras || []).length === 0;
+    const prev = msel.value;
+    msel.innerHTML = '';
+    (fin.carteras || []).forEach(w => { const o = document.createElement('option'); o.value = w.id; o.textContent = w.nombre; msel.appendChild(o); });
+    if(prev) msel.value = prev;
   }
   // tipo gasto/ingreso
   document.querySelectorAll('#finTipo button').forEach(b => {
@@ -5345,16 +5374,27 @@
   $('finAdd').addEventListener('click', ()=>{
     const monto = parseFloat($('finMonto').value);
     if(!(monto > 0)){ toast('Escribe un monto válido.'); return; }
-    fin.movs.push({
+    const mov = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
       tipo: finTipo, monto: Math.round(monto * 100) / 100,
       cat: finCatSel[finTipo], nota: $('finNota').value.trim().slice(0,60),
       fecha: today(), creado: new Date().toISOString(),
-    });
+    };
+    if(fin.carteras.length && $('finMovCart').value) mov.cart = $('finMovCart').value; // cartera opcional
+    fin.movs.push(mov);
     saveFin();
     $('finMonto').value = ''; $('finNota').value = '';
     sonarCheck(); renderFin();
     toast('Movimiento registrado.');
+  });
+  $('finCartAdd').addEventListener('click', ()=>{
+    const nombre = $('finCartNom').value.trim().slice(0,24);
+    if(!nombre){ toast('Ponle nombre a la cartera.'); return; }
+    fin.carteras.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), nombre });
+    saveFin();
+    $('finCartNom').value = '';
+    renderFin();
+    toast('Cartera creada.');
   });
   $('finMetaAdd').addEventListener('click', ()=>{
     const nombre = $('finMetaNom').value.trim().slice(0,30);
@@ -5821,7 +5861,7 @@
       recordatorios = []; recordHechos = {}; loadRecordatorios();
       capas = []; loadCapas(); renderCapas();
       compaConf = { nombre:'', criatura:'planta', emoji:'' }; loadCompa();
-      fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[], deudas:[] }; loadFin();
+      fin = { movs:[], presupuesto:0, presuCat:{}, metas:[], subs:[], deudas:[], carteras:[] }; loadFin();
       evitares = []; loadEvitar(); renderEvitar();
       diario = {}; loadDiario(); renderDiario();
       sueno = {}; loadSueno();

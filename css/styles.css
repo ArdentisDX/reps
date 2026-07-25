@@ -989,3 +989,14 @@ body.font-serif .anio-hero .an-big{font-family:Georgia,"Times New Roman",serif}
 .rx-msg.ia{background:var(--card);border:1px solid color-mix(in srgb,var(--teal) 30%,var(--line));color:var(--text)}
 .rx-msg.yo{background:color-mix(in srgb,var(--amber) 12%,var(--card));border:1px solid color-mix(in srgb,var(--amber) 30%,var(--line));margin-left:24px}
 .rx-msg.pensando{color:var(--muted)}
+
+/* ===== Finanzas: carteras ===== */
+.fin-cart{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--hair,var(--line));border-radius:12px;padding:9px 12px;margin-bottom:6px}
+.fin-cart .fw-nm{flex:1;min-width:0;font-size:13px;font-weight:700;color:var(--text)}
+.fin-cart .fw-bal{font-size:14px;font-weight:700;white-space:nowrap}
+.fin-cart .fw-bal.pos{color:var(--teal)} .fin-cart .fw-bal.neg{color:var(--red)}
+.fin-cart .fw-del{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 4px}
+.fin-cart-add{display:flex;gap:8px;margin-bottom:6px}
+.fin-cart-add #finCartNom{flex:1;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:9px;color:var(--text);font:inherit;font-size:13px;padding:9px 10px;outline:none}
+.fin-cart-add #finCartAdd{background:var(--amber);border:none;border-radius:9px;color:var(--on-accent);font-weight:800;font-size:15px;padding:0 14px;cursor:pointer}
+#finMovCart{width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;color:var(--text);font:inherit;font-size:14px;padding:10px 12px;outline:none;margin-bottom:2px}

@@ -445,6 +445,7 @@
         <input id="finMonto" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Monto $">
         <div class="fin-cats" id="finCats"></div>
         <input id="finNota" type="text" maxlength="60" placeholder="Nota (opcional): ej. súper, uber…">
+        <select id="finMovCart" aria-label="Cartera" hidden></select>
         <button class="cel-btn" id="finAdd" style="width:100%;margin-top:10px">Registrar</button>
       </div>
 
@@ -459,6 +460,14 @@
         <input id="finMetaObj" type="number" inputmode="decimal" min="1" placeholder="$ objetivo">
         <button id="finMetaAdd">＋</button>
       </div>
+
+      <div class="t-sub">Carteras</div>
+      <div id="finCarteras"></div>
+      <div class="fin-cart-add">
+        <input id="finCartNom" type="text" maxlength="24" placeholder="Nueva cartera (Efectivo, Banco…)">
+        <button id="finCartAdd">＋</button>
+      </div>
+      <div class="t-note">Si creas carteras, cada movimiento se puede asignar a una y verás el saldo de cada una.</div>
 
       <div class="t-sub">Deudas y préstamos</div>
       <div class="fin-deuda-tot" id="finDeudaTot" hidden></div>
