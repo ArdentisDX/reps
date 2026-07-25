@@ -193,7 +193,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 
 **IA avanzada**
 29. 🌐🧠 Asistente proactivo (push con el consejo del día).
-30. 🌐 Dictar ideas/gastos por voz (speech-to-text).
+30. ✅ (v89) Dictar por voz en la Bandeja (speech-to-text).
 31. ✅ (v88) "Arma mi día": la IA organiza el día y acomoda si no da tiempo.
 32. 🌐🧠 "Modo entrevista": la IA te hace preguntas para reflexionar.
 33. ❌ descartada (a petición del usuario).
@@ -208,7 +208,7 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 
 **Salud y bienestar**
 40. ✅ (v81) Registro de sueño (horas por noche + promedio, pantalla propia).
-41. Ánimo detallado (emociones, no solo 3 caras) + gráfica.
+41. ✅ (v89) Ánimo detallado (emociones opcionales en el cierre).
 42. Meditación/respiración guiada (pauta visual).
 43. Peso/medidas con gráfica.
 44. Recordatorio de agua/medicinas con contador.
