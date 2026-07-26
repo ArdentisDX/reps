@@ -1314,3 +1314,59 @@ body.font-serif .anio-hero .an-big{font-family:Georgia,"Times New Roman",serif}
 .habit .h-ventana{font-size:12px;color:var(--muted);margin-top:3px;font-weight:600}
 .habit .h-ventana.ahora{color:var(--amber)}
 .habit .h-ventana.pasada{color:var(--red,#e5484d)}
+
+/* ============================================================
+   PULIDO VISUAL v109 — coherencia, profundidad y jerarquía
+   Capa aditiva sobre lo existente. Funciona con TODOS los temas
+   (usa las variables; no quema colores). Fácil de ajustar/revertir.
+   ============================================================ */
+
+/* — fix: --on-accent se auto-referenciaba (CSS inválido); fallback real.
+     JS lo sobreescribe por tema, esto solo cubre el primer pintado — */
+:root{
+  --on-accent:#191204;
+  --radius:18px;                 /* radio un pelín más suave y moderno */
+  --shadow-sm:0 1px 3px rgba(0,0,0,.14);
+  --shadow-md:0 6px 20px rgba(0,0,0,.16);
+}
+
+/* — profundidad suave: las tarjetas dejan de ser "cajas planas" — */
+.streak,.compa,.brief,.pide,.ahora,.energia,.checkin,.riesgo,.viaje-banner,
+.cuenta-card,.solo-banner,.resumen,.score,.stat-card,.recap,.mesvs,
+.fin-sum,.fin-card,.reto-card,.vi-card,.insight-prox,.gr-recuerdo,
+.reflex-conv,.ia-chat{
+  box-shadow:var(--shadow-sm);
+}
+
+/* — jerarquía de botones: el ámbar sólido se reserva para 1 acción
+     principal; los secundarios pasan a "ghost" (contorno suave) — */
+.share-btn{
+  background:color-mix(in srgb,var(--amber) 12%,var(--card));
+  color:var(--amber);
+  border:1px solid color-mix(in srgb,var(--amber) 35%,var(--line));
+  font-weight:700;
+}
+.share-btn:active{background:color-mix(in srgb,var(--amber) 20%,var(--card))}
+
+/* — el botón grande "Tu año" pierde el degradado ruidoso y la sombra
+     pesada; queda elegante y consistente con lo demás — */
+.anio-btn{
+  background:color-mix(in srgb,var(--amber) 14%,var(--card));
+  color:var(--amber);
+  box-shadow:none;
+  border:1px solid color-mix(in srgb,var(--amber) 32%,var(--line));
+}
+
+/* — CTAs primarias (cel-btn, ai-btn): un toque de profundidad y un
+     radio coherente, sin cambiar su rol de "acción principal" — */
+.cel-btn,.ai-btn{border-radius:14px;box-shadow:var(--shadow-sm)}
+.cel-btn:active,.ai-btn:active{transform:translateY(1px)}
+
+/* — tarjetas de hábito: un pelín más de aire y profundidad — */
+.habit{box-shadow:var(--shadow-sm)}
+
+/* — barra de navegación inferior: más limpia y con mejor separación — */
+body.nav-bottom .tabs{box-shadow:0 -8px 28px rgba(0,0,0,.32);border-top:1px solid var(--line)}
+
+/* — respiro de lectura general — */
+.streak .sub,.pide,.brief-body,.empuje{line-height:1.5}
