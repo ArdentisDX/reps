@@ -926,6 +926,21 @@
     $('empuje').hidden = !emp;
     if(emp) $('empuje').textContent = emp;
 
+    // — pulido v110: UN solo mensaje de coaching a la vez —
+    // Antes se apilaban rescate + riesgo + pide + empuje + frase (5 avisos
+    // parecidos). Prioridad: rescate > riesgo > pide > empuje > frase.
+    const riesgoOn = !$('riesgoCard').hidden;
+    if(enPeligro){            // el modo rescate es el mensaje: calla al resto
+      $('riesgoCard').hidden = true; $('pide').hidden = true; $('empuje').hidden = true;
+    } else if(riesgoOn){      // "se hace tarde…" ya dice qué hacer
+      $('pide').hidden = true; $('empuje').hidden = true;
+    } else if(pide){          // la acción concreta gana al empujón genérico
+      $('empuje').hidden = true;
+    }
+    // la frase (cita) solo cuando NO hay ningún aviso fuerte: un respiro amable
+    const hayNudge = enPeligro || riesgoOn || pide || !$('empuje').hidden;
+    { const fr = $('frase'); if(fr) fr.hidden = hayNudge; }
+
     renderRitual();
     renderCarta(); // la carta aparece junto al rescate cuando hace falta
 
@@ -2978,7 +2993,8 @@
     const dia = Math.floor((new Date() - inicio) / 86400000); // día del año
     const [txt, aut] = FRASES[dia % FRASES.length];
     const el = $('frase');
-    el.hidden = false;
+    // NO tocar el.hidden: render() decide si mostrarla (pulido v110: la cita
+    // solo sale cuando no hay un aviso más importante en pantalla).
     el.textContent = '“' + txt + '”';
     const a = document.createElement('span'); a.className = 'fr-aut'; a.textContent = '— ' + aut;
     el.appendChild(a);

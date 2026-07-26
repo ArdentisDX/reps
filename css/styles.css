@@ -1370,3 +1370,16 @@ body.nav-bottom .tabs{box-shadow:0 -8px 28px rgba(0,0,0,.32);border-top:1px soli
 
 /* — respiro de lectura general — */
 .streak .sub,.pide,.brief-body,.empuje{line-height:1.5}
+
+/* ===== PULIDO v110 — ritmo de Hoy y mensajes más calmados ===== */
+/* mantra vacío: que se vea intencional (pastilla sutil), no texto suelto */
+.mantra.vacio{display:inline-block;width:auto;margin:0 auto 4px;padding:5px 14px;border:1px dashed var(--line);border-radius:999px;background:var(--card-2);opacity:.85}
+/* los avisos de coaching, más compactos y con el mismo lenguaje visual */
+.pide,.empuje,.riesgo{margin-top:10px}
+.empuje{padding:0 4px}
+.frase{margin-top:10px}
+/* ritmo vertical de las secciones: menos hueco entre bloques (más aire útil) */
+.sec{margin-top:20px}
+/* el semáforo de energía y el chequeo, un poco más compactos */
+.energia,.checkin{padding:12px 14px}
+.en-opt{padding:9px 4px}
