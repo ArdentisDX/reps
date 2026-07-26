@@ -1383,3 +1383,16 @@ body.nav-bottom .tabs{box-shadow:0 -8px 28px rgba(0,0,0,.32);border-top:1px soli
 /* el semáforo de energía y el chequeo, un poco más compactos */
 .energia,.checkin{padding:12px 14px}
 .en-opt{padding:9px 4px}
+
+/* ===== PULIDO v111 — menú Ajustes como lista agrupada (iOS/Things) ===== */
+/* Las filas de una sección se funden en un solo bloque con divisores finos,
+   en vez de tarjetas separadas flotando. Se ve más ordenado y premium. */
+#masWrap .mas-item{margin:0;border-radius:0;border-top:none;border-bottom:none}
+#masWrap .mas-item + .mas-item{border-top:1px solid var(--line)}          /* divisor entre filas */
+#masWrap .mas-sec + .mas-item{border-top:1px solid var(--line);border-radius:16px 16px 0 0}  /* 1ª del grupo */
+#masWrap .mas-item:has(+ .mas-sec){border-bottom:1px solid var(--line);border-radius:0 0 16px 16px}  /* última */
+#masWrap .mas-item:last-child{border-bottom:1px solid var(--line);border-radius:0 0 16px 16px}
+#masWrap .mas-sec + .mas-item:has(+ .mas-sec),
+#masWrap .mas-sec + .mas-item:last-child{border-radius:16px}              /* grupo de 1 sola fila */
+#masWrap .mas-item:active{transform:none;background:var(--card-2)}         /* feedback sutil, sin "salto" */
+#masWrap .mas-sec{margin:20px 2px 8px}
