@@ -1438,3 +1438,32 @@ textarea:focus, select:focus{
 .hab-adv-toggle:active{opacity:.6}
 .hab-adv{display:flex;flex-direction:column;gap:8px;margin-top:6px;padding-top:10px;border-top:1px solid var(--line)}
 .hab-adv[hidden]{display:none}
+
+/* ============================================================
+   PULIDO v115 — micro-interacciones y detalles mínimos
+   ============================================================ */
+/* — la fecha: solo la 1ª letra en mayúscula ("Sábado, 25 de julio"),
+     no "25 De Julio" — */
+.fecha{text-transform:none}
+.fecha::first-letter{text-transform:uppercase}
+
+/* — feedback táctil al tocar controles (no en .habit/.slot que usan gestos) — */
+.cel-btn,.ai-btn,.hab-add,.chip,.cp-opt,.en-opt,.ci-opt,.dist-opt,.resp-tec,
+.foco-dur,.foco-start,.reto-op,.ag-op,.bib-item,.rutplan,.cri-item,.share-btn,
+.datos-tool,.ia-tool,.tab,.brutal-toggle,.anio-btn,.story-ring,.en-opt,
+.sr-item,.vi-add button,.ev-add-row button,.reto-form .cel-btn,.foco-pomo{
+  transition:transform .1s ease,background .16s ease,border-color .16s ease,box-shadow .16s ease,color .16s ease;
+}
+.cel-btn:active,.ai-btn:active,.hab-add:active,.chip:active,.cp-opt:active,
+.en-opt:active,.ci-opt:active,.dist-opt:active,.resp-tec:active,.foco-dur:active,
+.foco-start:active,.reto-op:active,.ag-op:active,.bib-item:active,.rutplan:active,
+.cri-item:active,.share-btn:active,.datos-tool:active,.ia-tool:active,
+.sr-item:active,.brutal-toggle:active,.foco-pomo:active{transform:scale(.96)}
+
+/* — chips (Bandeja) más redondos y consistentes — */
+.chip{transition:transform .1s ease,background .16s ease,color .16s ease}
+
+/* — scrollbar sutil en las hojas (WebKit) para que no se vea "de sistema" — */
+.theme-sheet::-webkit-scrollbar{width:8px}
+.theme-sheet::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+.theme-sheet::-webkit-scrollbar-track{background:transparent}
