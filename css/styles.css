@@ -1396,3 +1396,19 @@ body.nav-bottom .tabs{box-shadow:0 -8px 28px rgba(0,0,0,.32);border-top:1px soli
 #masWrap .mas-sec + .mas-item:last-child{border-radius:16px}              /* grupo de 1 sola fila */
 #masWrap .mas-item:active{transform:none;background:var(--card-2)}         /* feedback sutil, sin "salto" */
 #masWrap .mas-sec{margin:20px 2px 8px}
+
+/* ===== PULIDO v112 — estados vacíos más cálidos (Things/Todoist) ===== */
+/* Bandeja: estado vacío centrado con ícono, no una línea perdida en el vacío */
+.tray-empty{text-align:center;color:var(--muted);font-size:14px;line-height:1.55;padding:72px 30px 0;max-width:320px;margin:0 auto}
+.tray-empty::before{content:"📥";display:block;font-size:46px;margin-bottom:16px;opacity:.9}
+/* estados vacíos de las hojas: un respiro consistente y tono amable */
+.reto-empty,.vi-empty,.tl-empty,.ev-empty,.fin-vacio,.fin-meta-vacio,.gr-empty{
+  padding:26px 16px;line-height:1.5;font-size:13.5px
+}
+
+/* ===== PULIDO v112 — jerarquía de color en Stats (WHOOP/Oura) ===== */
+/* Las stats históricas (2x2) dejan el ámbar y usan texto neutro: el ámbar
+   se reserva para lo "vivo" (puntaje de hoy, resumen de la semana, calendario).
+   Menos "todo grita en ámbar", más jerarquía. */
+.stats-grid .stat-num{color:var(--text)}
+.stats-grid .stat-card{background:var(--card-2)}
