@@ -3777,7 +3777,20 @@
         daysRow.appendChild(chip);
       });
 
-      row.append(top, hint, planb, porque, tras, vent, subs, cnt, frecW, daysRow);
+      // progressive disclosure (pulido v114): lo esencial (nombre, ⭐, días)
+      // queda visible; lo avanzado se esconde tras «Más opciones».
+      const adv = document.createElement('div'); adv.className = 'hab-adv'; adv.hidden = true;
+      adv.append(hint, planb, porque, tras, vent, subs, cnt, frecW);
+      const advBtn = document.createElement('button');
+      advBtn.type = 'button'; advBtn.className = 'hab-adv-toggle';
+      advBtn.textContent = 'Más opciones ▾';
+      advBtn.setAttribute('aria-expanded', 'false');
+      advBtn.addEventListener('click', ()=>{
+        adv.hidden = !adv.hidden;
+        advBtn.textContent = adv.hidden ? 'Más opciones ▾' : 'Menos ▴';
+        advBtn.setAttribute('aria-expanded', String(!adv.hidden));
+      });
+      row.append(top, daysRow, advBtn, adv);
       list.appendChild(row);
     });
   }
