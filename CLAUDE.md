@@ -25,7 +25,50 @@ sw.js           Service worker (cache offline). La constante CACHE lleva
                 la versión: reps-vN.
 manifest.json   Identidad PWA (standalone, portrait, íconos).
 icons/          3 PNG generados: 192, 512 y 512-maskable.
+css/bento.css   (v116) Diseño Bento. Va DESPUÉS de styles.css y todo cuelga
+                de `body.bento`: quitar el archivo devuelve el diseño anterior.
+js/os/          (v116) REPS OS: módulos del Life OS que leen el motor SOLO
+                por `window.REPS` (ver "API interna" abajo).
+  conectores.js Catálogo de apps externas (WHOOP, Calendar, YouTube, TikTok,
+                Shopify, IA local) y lectura del caché `reps-cx`.
+  bento.js      Tablero de Hoy (retícula 4 columnas), tarjetas del Life OS,
+                hoja de Conexiones y entrada en Ajustes.
+fonts/          Inter, Space Grotesk e Instrument Serif (woff2, OFL). Locales
+                para respetar el offline-first; están en ASSETS del SW.
 ```
+
+## REPS OS: arquitectura del Life OS (v116)
+
+Dos capas que NO se mezclan:
+
+1. **Motor** (`js/app.js`): datos, reglas (isWon, racha, puntaje…) y las
+   pantallas de siempre. Es el único que lee/escribe sus claves de
+   localStorage.
+2. **Módulos OS** (`js/os/*.js`): diseño y apps nuevas. Leen el motor por la
+   **API interna** `window.REPS` (sección `===== API interna (Life OS) =====`
+   de app.js), que devuelve *view-models* (objetos planos, sin DOM):
+   - `REPS.hoy()` → puntaje, promedio de 7 días, racha, mejor, core hechos,
+     semana (7 días con ganado/descanso/puntaje), nombre del perfil.
+   - `REPS.salud()` → sueño de hoy y promedio, agua, energía, último peso.
+   - `REPS.dinero()` → saldo del mes, ingresos, gastos, gasto de hoy, `fmt`.
+   - `REPS.agenda()` → bloque en curso/siguiente, recordatorios con hora
+     pendientes, próximos eventos.
+   - `REPS.on('render', fn)` → se dispara al final de cada `render()`.
+   - `REPS.repintar()`, `REPS.tema()`, `REPS.contexto()` (contexto de la IA).
+   **Regla:** si un módulo necesita un dato nuevo, se agrega a la API; un
+   módulo nunca toca localStorage del motor ni sus funciones internas.
+
+El tablero Bento NO mueve las tarjetas viejas de Hoy en el DOM: `#p-hoy` es
+un CSS grid y el orden/tamaño de cada tarjeta se decide en `css/bento.css`
+(`order` + `grid-column`). Así ningún id ni listener se rompe. Una tarjeta
+nueva de Hoy: crearla en bento.js, darle `order` y tamaño en bento.css y
+(si debe poder ocultarse) agregar su id a `HOY_CARDS`.
+
+**Conectores (Fase 2):** las llaves de cada servicio viven como secretos en el
+Worker de Cloudflare (nunca en el JS del sitio). El Worker devuelve un
+resumen y la app lo guarda en `reps-cx`; las tarjetas leen ese caché para
+funcionar sin internet. Mientras no haya datos, la tarjeta muestra
+"Conectar" — **nunca números inventados**.
 
 ## localStorage — todas las claves
 
@@ -50,7 +93,7 @@ directo sobre un Date: corre el día en zonas horarias negativas.
 | `reps-semana-flex` | `{fecha: "texto"}` | Ajuste de flexibilidad por día que propone el diseñador de semana con IA (ej. "día de viaje: hazlo ligero"). Plano por día. Lo muestra el banner "Plan de hoy" de Hoy (`renderPlanHoy`, línea 🤖 en `#planHoyFlex`). Aditiva, va en el respaldo. |
 | `reps-plan-semana` | `{lunesKey: {foco, pendientes, eventos, guardado}}` | Plan de la semana (pop dominical): enfoque, pendientes y eventos de la semana que empieza en `lunesKey`. El domingo auto-abre el sheet para la semana ENTRANTE (`planSemTarget`); entre semana el botón de Mi día edita la actual. Tarjeta "Esta semana" en Mi día. Será el contexto del asistente IA (Capa 3.2). Va en el respaldo. `reps-plansem-visto` (fecha) es su marca transitoria de "ya saltó hoy" — NO va en el respaldo. Claves aditivas. |
 | `reps-cierre-semana` | `{lunesKey: {animo, mejor, intencion, guardado}}` | Cierre de semana (ritual dominical), indexado por el lunes de la semana. Vive en Mi día bajo el plan; sigue la semana visible (`weekOff`). Clave aditiva. |
-| `reps-tema` | `{modo:'preset', id}` o `{modo:'custom', accent, bg}` | Validar con `themeValido()` antes de aplicar. |
+| `reps-tema` | `{modo:'preset', id}` o `{modo:'custom', accent, bg}` | Validar con `themeValido()` antes de aplicar. Desde v116 el de fábrica es `bento` (claro) y existe `bento-noche`; con el tema automático, Bento alterna entre esos dos. |
 | `reps-distribucion` | `"compacto"`, `"minimal"` o ausente (= normal) | Distribución de la interfaz: clases `compact`/`minimal` en `<body>`. Sustituyó a `reps-compacto` en el schema v3 (migración 2→3). |
 | `reps-efecto` | `"glass"`, `"clay"`, `"neon"` o ausente (= ninguno) | Efecto visual, INDEPENDIENTE del tema/color. Clases `fx-*` en `<body>`. En v4 se separó del tema "Cristal" (migración 3→4). |
 | `reps-racha` | `{congeladores, fabRun, procesadoHasta, congelados:{fecha:true}}` | Protector de racha. `congeladores` 0–2. `procesarRacha()` avanza día por día desde `procesadoHasta` hasta ayer: cada 7 ganados fabrica 1 (máx 2), un día perdido gasta uno y marca `congelados[fecha]`. Nunca procesa "hoy" (en curso). |
@@ -87,6 +130,8 @@ directo sobre un Date: corre el día en zonas horarias negativas.
 | `reps-sueno-rutina` | `{fecha:{pasoId:true}}` | **Higiene del sueño** (idea #95, hub Bienestar): checklist de bajada nocturna (`SR_PASOS`), estado por noche. Aditiva, va en el respaldo. |
 | `reps-checkin` | `{fecha:{mid}}` | **Chequeo de ánimo a media jornada** (idea #91): tarjeta en Hoy (`#checkinCard`) visible 11–17h si aún no lo hiciste; 1 tap (😊😐😔). Aditiva, va en el respaldo. |
 | `reps-ia-chat` | `[{who:'yo'\|'ia', text}]` | **Memoria del asistente** (idea #84): hilo completo del chat con la IA, guardado (cap 60 msgs) para que RECUERDE entre sesiones. El Worker `/ia` es stateless: cada turno le mandamos `contextoIA()` + los últimos ~16 mensajes. Sheet `#iaWrap` (chat `#iaChat`), botón "Olvidar" borra. Aparte: **Desatóralo** (#86, `#desatoraWrap`) da UN primer paso; **Reencuadre** (#87, `#reencuadreWrap`) mini-TCC; ambos one-shot con fallback offline. Va en el respaldo. |
+| `reps-cx` | `{conectorId: {datos:{...}, actualizado}}` | **Caché de conectores** (Life OS, Fase 2): último resumen que trajo el Worker de cada app externa (`whoop`, `calendar`, `youtube`, `tiktok`, `shopify`). Lo lee `js/os/conectores.js`; hoy nadie lo escribe todavía. Cuando se implemente: va en el respaldo y se sanea al importar. |
+| `reps-bento-estreno` | `"YYYY-MM-DD"` | Marca transitoria del estreno del diseño Bento (v116): la primera vez cambia el tema a `bento`; después manda lo que elijas. NO va en el respaldo. |
 | `reps-schema` | `"N"` (número como string) | Versión del FORMATO de los datos. La gestiona `migrate()`; no tocar a mano. |
 | `reps-pre-migracion` | `{de, a, fecha, crudo}` | Copia cruda automática previa a la última migración. Solo lectura; no va en el respaldo exportado. |
 

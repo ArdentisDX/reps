@@ -1,0 +1,370 @@
+/* ============================================================
+   REPS OS · DISEÑO BENTO (v116)
+   Capa que va DESPUÉS de styles.css. Todo cuelga de body.bento
+   (la pone js/os/bento.js), así que quitar este archivo devuelve
+   el diseño anterior intacto.
+   - Usa las mismas variables de tema (--bg --card --text --amber…):
+     funciona con cualquier tema; con "Bento" / "Bento noche" luce
+     como el diseño original.
+   - body.claro / body.hero-lima los calcula bento.js según el tema.
+   - Fuentes locales en /fonts (offline-first, sin servicios externos).
+   ============================================================ */
+
+/* ===== Fuentes (OFL, ver fonts/OFL.txt) ===== */
+@font-face{font-family:"Inter";src:url(../fonts/inter-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"Inter";src:url(../fonts/inter-latin-500-normal.woff2) format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:"Inter";src:url(../fonts/inter-latin-600-normal.woff2) format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:"Inter";src:url(../fonts/inter-latin-700-normal.woff2) format("woff2");font-weight:700 900;font-display:swap}
+@font-face{font-family:"Grotesk";src:url(../fonts/space-grotesk-latin-500-normal.woff2) format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:"Grotesk";src:url(../fonts/space-grotesk-latin-600-normal.woff2) format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:"Grotesk";src:url(../fonts/space-grotesk-latin-700-normal.woff2) format("woff2");font-weight:700 900;font-display:swap}
+@font-face{font-family:"Instrument";src:url(../fonts/instrument-serif-latin-400-italic.woff2) format("woff2");font-style:italic;font-weight:400;font-display:swap}
+
+/* ===== Tokens ===== */
+body.bento{
+  --r-tile:24px; --r-in:14px; --gap:10px;
+  --shadow-sm:none; --shadow-md:0 10px 30px rgba(0,0,0,.10);
+  --f-disp:"Grotesk","Inter",system-ui,sans-serif;
+  --f-text:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  /* recuadros de color — modo oscuro: tintes profundos sobre la tarjeta */
+  --t-lime:#d7f36b; --t-lime-ink:#1c2406;
+  --t-sky:color-mix(in srgb,#6fbbe8 22%,var(--card));   --t-sky-ink:#a9dbf5;
+  --t-mint:color-mix(in srgb,#5fd49b 20%,var(--card));  --t-mint-ink:#a6ecc8;
+  --t-peach:color-mix(in srgb,#ff9a5c 20%,var(--card)); --t-peach-ink:#ffc9a6;
+  --t-rose:color-mix(in srgb,#ff6b6b 20%,var(--card));  --t-rose-ink:#ffbcbc;
+  --t-lav:color-mix(in srgb,#9b8cff 24%,var(--card));   --t-lav-ink:#d6d0ff;
+  --t-ink:color-mix(in srgb,#ffffff 7%,var(--card));    --t-ink-text:var(--text); --t-ink-muted:var(--muted);
+  --t-hero:var(--amber); --t-hero-ink:var(--on-accent);
+  font-family:var(--f-text);
+  font-feature-settings:"tnum" 1,"cv11" 1;
+  -webkit-font-smoothing:antialiased;
+  padding:16px 14px 128px;
+}
+/* modo claro: pasteles sólidos, tinta negra */
+body.bento.claro{
+  --t-sky:#c2e4f7;   --t-sky-ink:#1d4a63;
+  --t-mint:#c8f0db;  --t-mint-ink:#1c5a3c;
+  --t-peach:#ffd3b6; --t-peach-ink:#6e3511;
+  --t-rose:#ffd6d6;  --t-rose-ink:#7a2626;
+  --t-lav:#d5cfff;   --t-lav-ink:#2b2470;
+  --t-ink:#141414;   --t-ink-text:#ffffff; --t-ink-muted:#9a968e;
+  --shadow-md:0 10px 30px rgba(20,20,20,.10);
+}
+/* héroe lima en los temas Bento; en los demás, el acento del tema */
+body.bento.hero-lima{--t-hero:var(--t-lime); --t-hero-ink:var(--t-lime-ink)}
+
+/* ===== Encabezado ===== */
+body.bento .eyebrow{display:none}
+body.bento > h1{font-family:var(--f-disp);font-size:34px;font-weight:700;letter-spacing:-.045em;line-height:1.02;margin:4px 56px 0 2px}
+body.bento > h1 em{font-family:"Instrument",Georgia,serif;font-style:italic;font-weight:400;letter-spacing:-.01em;font-size:1.06em}
+body.bento .fecha{font-size:13.5px;font-weight:500;margin:6px 0 0 2px}
+body.bento .gear{top:20px;right:14px;width:44px;height:44px;border-radius:50%;background:var(--card);border:none;color:var(--text);font-size:18px}
+body.bento:not(.claro) .gear{border:1px solid var(--line)}
+/* en Bento la tipografía de títulos es Grotesk (la opción "serif" no aplica) */
+body.bento.font-serif :is(h1,.streak .num,.stat-num,.sc-num,.ahora .ah-name,.t-head h2,.co-nombre,.resumen .rz-num,.anio-hero .an-big){font-family:var(--f-disp);letter-spacing:-.03em}
+body.bento.font-serif :is(.st-body,#diarioTxt,.sec-head h2){font-family:var(--f-text)}
+body.bento.font-serif .sec-head h2{letter-spacing:.06em}
+body.bento.font-serif .st-title{font-family:var(--f-disp)}
+body.bento .frase{font-family:"Instrument",Georgia,serif;font-style:italic;font-size:17px}
+
+/* ===== Navegación: píldora flotante ===== */
+body.bento.nav-bottom .tabs{
+  left:50%;right:auto;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);
+  width:auto;max-width:calc(100% - 28px);border-radius:999px;border:none;
+  background:var(--t-ink);padding:6px;gap:2px;
+  box-shadow:0 14px 34px rgba(0,0,0,.28);
+}
+body.bento:not(.claro).nav-bottom .tabs{border:1px solid var(--line)}
+body.bento.nav-bottom .tab{
+  flex:none;flex-direction:row;gap:7px;height:46px;min-width:50px;padding:0 13px;
+  border-radius:999px;font-size:0;letter-spacing:0;text-transform:none;
+  color:var(--t-ink-text);opacity:.82;justify-content:center;
+}
+body.bento.nav-bottom .tab-ic{opacity:1}
+body.bento.nav-bottom .tab-ic svg{width:21px;height:21px}
+body.bento.nav-bottom .tab.active{background:var(--t-lime);color:#141414;opacity:1;font-size:13px;font-weight:700;padding:0 16px 0 14px}
+/* barra arriba (opción en Ajustes): segmentada */
+body.bento:not(.nav-bottom) .tabs{border:none;background:var(--card);border-radius:999px;padding:5px}
+body.bento:not(.nav-bottom) .tab{border-radius:999px;text-transform:none;letter-spacing:0;font-size:12.5px}
+body.bento:not(.nav-bottom) .tab.active{background:var(--t-ink);color:var(--t-ink-text)}
+
+/* ===== Base de tarjetas en TODA la app (más plano, más redondo) ===== */
+body.bento .panel{margin-top:18px}
+body.bento{--radius:22px}
+body.bento.claro :is(.streak,.compa,.brief,.pide,.ahora,.energia,.checkin,.riesgo,.viaje-banner,.cuenta-card,.solo-banner,
+  .resumen,.score,.stat-card,.recap,.mesvs,.fin-sum,.fin-card,.reto-card,.vi-card,.insight-prox,.gr-recuerdo,.reflex-conv,.ia-chat,
+  .week,.prog,.cierre,.desp,.habit,.idea,.slot,.capa,.meta-add,.week-plan,.cal,.cal-detail,.psem-card,.pulso,.museo-card,.sc-card,
+  .mas-item,.t-row,.swatch,.dist-opt,.mood,.en-opt,.cal-nav,.idea.done){border-color:transparent}
+body.bento :is(.sec-head h2,.t-sub,.mas-sec,.resumen .rz-title,.brief-t){font-family:var(--f-text);font-size:11px;letter-spacing:.06em;font-weight:700;text-transform:uppercase;color:var(--muted)}
+body.bento :is(.stat-num,.sc-num,.rz-num,.an-big,.cad-num,.sn-num,.fin-saldo){font-family:var(--f-disp);letter-spacing:-.04em}
+body.bento :is(.cel-btn,.c-save,.foco-start){border-radius:14px}
+
+/* botones de IA: píldora de tinta con chispa lima (sin brillo que flota) */
+body.bento .ai-btn{
+  background:var(--t-ink) !important;color:var(--t-ink-text) !important;
+  box-shadow:none !important;animation:none !important;font-weight:700 !important;
+}
+body.bento .ai-btn .ai-spark{color:var(--t-lime)}
+body.bento:not(.claro) .ai-btn{background:var(--t-lime) !important;color:#141414 !important}
+body.bento:not(.claro) .ai-btn .ai-spark{color:#141414}
+
+/* hojas (sheets): fondo del tema, tarjetas blancas encima */
+body.bento .theme-wrap{background:rgba(10,10,12,.45);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+body.bento .theme-sheet{border-radius:28px 28px 0 0;border:none;padding:0 16px calc(24px + env(safe-area-inset-bottom))}
+body.bento.claro .theme-sheet{background:var(--bg)}
+body.bento.claro .t-head{background:var(--bg)}
+body.bento .t-head{padding:20px 0 12px}
+body.bento .t-head h2{font-family:var(--f-disp);font-size:22px;letter-spacing:-.03em;font-weight:700}
+body.bento.claro .theme-sheet :is(.t-row,.swatch,.mas-item){background:var(--card)}
+body.bento .t-head button[aria-label="Cerrar"]{background:var(--card);border:none}
+body.bento .mas-item .mas-ic{border-radius:12px;color:var(--text)}
+body.bento.claro .mas-item .mas-ic{background:var(--bg)}
+
+/* ============================================================
+   HOY · retícula bento (4 columnas). Las tarjetas existentes no se
+   mueven en el DOM: el orden y el tamaño los decide este bloque.
+   ============================================================ */
+body.bento #p-hoy.active{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap);grid-auto-flow:row dense;align-items:stretch}
+body.bento #p-hoy > *{grid-column:1/-1;margin:0 !important;min-width:0;order:50}
+body.bento #p-hoy > [hidden]{display:none !important}
+body.bento .bt-group{display:contents}
+
+/* orden del tablero */
+body.bento #storyRing{order:1}
+body.bento #mantra{order:2}
+body.bento #btScore{order:10}
+body.bento #p-hoy .streak{order:11}
+body.bento #btSalud > .bt-sky{order:12}
+body.bento #btSalud > .bt-mint{order:13}
+body.bento #planHoy{order:15}
+body.bento #armaDia{order:20}
+body.bento #brief{order:21}
+body.bento #diaPlanCard{order:22}
+body.bento #ahora{order:23}
+body.bento #viajeBanner{order:24}
+body.bento #cuentaCard{order:25}
+body.bento #pide{order:26}
+body.bento #empuje{order:27}
+body.bento #riesgoCard{order:28}
+body.bento #frase{order:29}
+body.bento #rescate{order:30}
+body.bento #ritual{order:31}
+body.bento #soloBanner{order:39}
+body.bento #secCore{order:40}
+body.bento #secExtra{order:41}
+body.bento #evitarSec{order:42}
+body.bento #p-hoy .stamp-wrap{order:43}
+body.bento #p-hoy .edit-hab{order:44}
+body.bento #prog{order:45}
+body.bento #btMundoHead{order:50}
+body.bento #btDinero{order:51}
+body.bento #btMundo > :nth-child(1){order:52}
+body.bento #btMundo > :nth-child(2){order:53}
+body.bento #btMundo > :nth-child(3){order:54}
+body.bento #btAgenda{order:56}
+body.bento #week{order:60}
+body.bento #energiaCard{order:61}
+body.bento #checkinCard{order:62}
+body.bento #compa{order:63}
+body.bento #despWrap{order:64}
+body.bento #p-hoy > .sec:not([id]){order:70}
+body.bento #p-hoy > .regla{order:80}
+body.bento #p-hoy > .reset{order:90}
+
+/* tamaños */
+body.bento #btScore{grid-column:span 2;grid-row:span 2}
+body.bento #p-hoy .streak{grid-column:span 2}
+body.bento #btSalud > .bt{grid-column:span 1}
+body.bento #p-hoy .bt-s2{grid-column:span 2}
+body.bento #storyRing{grid-column:span 1}
+body.bento #mantra{grid-column:2 / -1}
+
+/* ===== Recuadro base (.bt) ===== */
+body.bento .bt{
+  display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;
+  background:var(--card);color:var(--text);border:none;border-radius:var(--r-tile);
+  padding:15px;font:inherit;cursor:pointer;min-width:0;position:relative;overflow:hidden;
+  transition:transform .12s ease,filter .2s ease;
+}
+body.bento:not(.claro) .bt{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--line) 70%,transparent)}
+body.bento .bt:active{transform:scale(.975)}
+body.bento .bt:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+body.bento .bt-lbl{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);line-height:1}
+body.bento .bt-ic{display:inline-grid;place-items:center}
+body.bento .bt-num{font-family:var(--f-disp);font-weight:700;letter-spacing:-.045em;line-height:.95;color:inherit}
+body.bento .bt-xl{font-size:84px;letter-spacing:-.06em}
+body.bento .bt-l{font-size:28px}
+body.bento .bt-m{font-size:25px}
+body.bento .bt-sub{font-size:12.5px;font-weight:600;color:var(--muted);line-height:1.3}
+body.bento .bt-foot{font-size:12.5px;font-weight:700;opacity:.82}
+body.bento .bt .neg{color:var(--red)}
+
+/* héroe: puntaje */
+body.bento .bt-hero{background:var(--t-hero);color:var(--t-hero-ink);justify-content:space-between;min-height:200px;box-shadow:none !important}
+body.bento .bt-hero .bt-lbl{color:inherit;opacity:.7}
+body.bento .bt-hero.ganado::after{content:"Día ganado ✓";position:absolute;top:13px;right:13px;font-size:10.5px;font-weight:800;letter-spacing:.03em;background:var(--t-hero-ink);color:var(--t-hero);padding:5px 9px;border-radius:999px}
+
+body.bento .bt-spark{display:flex;align-items:flex-end;gap:5px;width:100%;height:44px;margin-top:auto}
+body.bento .bt-spark i{flex:1;background:currentColor;opacity:.85;border-radius:5px;min-height:4px;transition:height .4s ease}
+body.bento .bt-spark i.rest{opacity:.25}
+body.bento .bt-spark i.hoy{background:none;box-shadow:inset 0 0 0 2px currentColor;opacity:1}
+body.bento .bt-hero .bt-xl{margin-top:8px}
+
+/* chicos de salud */
+body.bento .bt-mini{justify-content:space-between;min-height:94px}
+body.bento .bt-sky{background:var(--t-sky);color:var(--t-sky-ink)}
+body.bento .bt-mint{background:var(--t-mint);color:var(--t-mint-ink)}
+body.bento .bt-peach{background:var(--t-peach);color:var(--t-peach-ink)}
+body.bento .bt-rose{background:var(--t-rose);color:var(--t-rose-ink)}
+body.bento .bt-lav{background:var(--t-lav);color:var(--t-lav-ink)}
+body.bento .bt-ink{background:var(--t-ink);color:var(--t-ink-text)}
+body.bento :is(.bt-sky,.bt-mint,.bt-peach,.bt-rose,.bt-lav,.bt-ink) .bt-lbl{color:inherit;opacity:.72}
+body.bento :is(.bt-sky,.bt-mint,.bt-peach,.bt-rose,.bt-lav,.bt-ink) .bt-sub{color:inherit;opacity:.72}
+body.bento.claro :is(.bt-sky,.bt-mint,.bt-peach,.bt-rose,.bt-lav){box-shadow:none}
+
+/* conectores sin datos: invitación, no números inventados */
+body.bento .bt-cx{min-height:118px;justify-content:space-between}
+body.bento .bt-cx.off .bt-num{font-family:var(--f-text);font-size:15px;font-weight:700;letter-spacing:0;display:inline-flex;align-items:center;gap:6px;margin-top:auto}
+body.bento .bt-cx.off .bt-num::after{content:"→";font-size:15px;transition:transform .15s}
+body.bento .bt-cx.off:active .bt-num::after{transform:translateX(3px)}
+
+/* encabezado de sección dentro del tablero */
+body.bento .bt-sec{display:flex;align-items:baseline;justify-content:space-between;padding:14px 4px 0}
+body.bento .bt-sec h3{font-family:var(--f-disp);font-size:20px;font-weight:700;letter-spacing:-.03em}
+body.bento .bt-sec-a{background:none;border:none;color:var(--muted);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;padding:4px 2px}
+
+/* agenda */
+body.bento .bt-agenda{cursor:default;gap:0;padding:15px 16px 8px}
+body.bento .bt-agenda:active{transform:none}
+body.bento .bt-ag-head{display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:6px}
+body.bento .bt-ag-list{width:100%}
+body.bento .bt-ag-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0}
+body.bento .bt-ag-row + .bt-ag-row{border-top:1px solid var(--line)}
+body.bento .bt-ag-tx{display:flex;flex-direction:column;min-width:0}
+body.bento .bt-ag-tx b{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.bento .bt-ag-tx i{font-style:normal;font-size:12px;color:var(--muted);margin-top:2px}
+body.bento .bt-ag-h{flex:none;font-size:13px;font-weight:700;background:var(--bg);padding:6px 10px;border-radius:10px;font-variant-numeric:tabular-nums}
+body.bento .bt-ag-row.now .bt-ag-h{background:var(--t-ink);color:var(--t-ink-text)}
+body.bento .bt-ag-empty{font-size:13px;color:var(--muted);padding:6px 0 10px;line-height:1.45}
+
+/* ===== Tarjetas existentes de Hoy, vestidas de bento ===== */
+/* Tu día (stories) + mantra en una sola fila */
+body.bento #storyRing{align-self:center;justify-self:start;margin:0;padding:0}
+body.bento #storyRing .sr-lbl{display:none}
+body.bento #storyRing .sr-emoji{width:48px;height:48px;font-size:21px}
+body.bento #mantra{align-self:center;text-align:left;font-family:"Instrument",Georgia,serif;font-size:19px;font-weight:400;line-height:1.25;padding:2px 4px;color:var(--text)}
+body.bento #mantra.vacio{font-family:var(--f-text);font-style:normal;font-size:13px;font-weight:600;border:1.5px dashed var(--line);background:none;opacity:1;justify-self:stretch;text-align:center;padding:12px 14px;border-radius:999px;width:auto;color:var(--muted)}
+
+/* racha: recuadro de tinta */
+body.bento #p-hoy .streak{
+  display:grid;grid-template-columns:1fr auto;align-content:space-between;column-gap:8px;row-gap:4px;
+  background:var(--t-ink);color:var(--t-ink-text);border:none;border-radius:var(--r-tile);padding:15px;min-height:104px;
+}
+body.bento #p-hoy .streak > div:nth-child(2){display:contents}
+body.bento #p-hoy .streak .lbl{grid-area:1/1;font-size:0;line-height:1}
+body.bento #p-hoy .streak .lbl::before{content:"🔥 Racha";font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--t-ink-muted)}
+body.bento #p-hoy .streak > div:first-child{grid-area:2/1;align-self:end}
+body.bento #p-hoy .streak .num{font-family:var(--f-disp);font-size:34px;font-weight:700;letter-spacing:-.05em;color:var(--t-ink-text);text-align:left;min-width:0;line-height:1}
+body.bento #p-hoy .streak .num::after{content:" días";font-size:15px;letter-spacing:-.02em;font-weight:600;opacity:.75}
+body.bento #p-hoy .streak .ring{grid-area:1/2/3/3;width:40px;height:40px;align-self:start}
+body.bento #p-hoy .streak .ring .ring-in{width:30px;height:30px;font-size:10.5px;background:var(--t-ink);color:var(--t-ink-text)}
+body.bento.claro #p-hoy .streak .ring{background:conic-gradient(var(--t-lime) calc(var(--p,0)*1%),#2e2e2e 0)}
+body.bento.claro #p-hoy .streak .ring.done{background:var(--t-lime)}
+body.bento.claro #p-hoy .streak .ring.done .ring-in{color:var(--t-lime)}
+body.bento #p-hoy .streak .pres{display:none !important}
+body.bento #p-hoy .streak :is(.sub,.frz,.pres,.warn){grid-column:1/-1;font-size:11.5px;line-height:1.35;margin:0}
+body.bento #p-hoy .streak .sub{color:var(--t-ink-muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+body.bento.claro #p-hoy .streak .frz{color:#9fe0c3}
+
+/* Arma mi día: botón de tinta a lo ancho */
+body.bento #armaDia .ai-spark{width:18px;height:18px;margin-right:6px}
+body.bento #armaDia{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;height:54px;font-size:15px !important;border-radius:18px !important;padding:0 18px !important}
+
+/* resumen IA / plan del día: recuadro lavanda */
+body.bento :is(#brief,#diaPlanCard){background:var(--t-lav);color:var(--t-lav-ink);border:none;border-radius:var(--r-tile);padding:15px 16px}
+body.bento :is(#brief,#diaPlanCard) .brief-t{color:inherit;opacity:.75}
+body.bento :is(#brief,#diaPlanCard) .brief-body{color:inherit;font-size:14.5px;font-weight:500}
+body.bento :is(#brief,#diaPlanCard) .brief-ref{color:inherit}
+body.bento #planHoy{background:var(--card);border:none;border-radius:var(--r-tile);padding:13px 16px;font-size:14px}
+
+/* El Ahora */
+body.bento #ahora{background:var(--card);border:none;border-radius:var(--r-tile);padding:15px 16px}
+body.bento:not(.claro) #ahora{border:1px solid var(--line)}
+body.bento #ahora .ah-lbl{color:var(--muted);font-size:11px;letter-spacing:.06em;font-weight:800}
+body.bento #ahora .ah-name{font-family:var(--f-disp);font-size:21px;letter-spacing:-.03em;font-weight:700}
+body.bento #ahora .ah-bar{height:8px;background:var(--bg)}
+body.bento #ahora .ah-bar i{background:var(--t-ink)}
+body.bento:not(.claro) #ahora .ah-bar i{background:var(--t-lime)}
+
+/* avisos de coaching: tarjetas suaves */
+body.bento :is(#pide,#riesgoCard,#cuentaCard,#viajeBanner,#soloBanner,#rescate,#ritual){border-radius:20px;border:none;background:var(--card)}
+body.bento #pide{border-left:none;padding:14px 16px;font-size:14.5px;font-weight:600}
+body.bento :is(#empuje,#frase){padding:4px 6px;font-size:13.5px}
+body.bento #cuentaCard{background:var(--t-peach);color:var(--t-peach-ink);font-weight:700;padding:14px 16px;text-align:left}
+
+/* hábitos: una lista dentro de un recuadro */
+body.bento :is(#secCore,#secExtra,#evitarSec){background:var(--card);border-radius:var(--r-tile);padding:15px 16px 6px}
+body.bento:not(.claro) :is(#secCore,#secExtra,#evitarSec){box-shadow:inset 0 0 0 1px var(--line)}
+body.bento :is(#secCore,#secExtra,#evitarSec) .sec-head{margin-bottom:2px}
+body.bento #p-hoy .sec-head .tag{font-family:var(--f-text);font-size:11.5px;font-weight:700;letter-spacing:0;color:var(--muted);background:var(--bg);padding:4px 9px;border-radius:999px}
+body.bento #p-hoy .habit{background:none;border:none;border-radius:0;box-shadow:none;margin:0;padding:13px 0;gap:13px}
+body.bento #p-hoy .habit + .habit{border-top:1px solid var(--line)}
+body.bento #p-hoy .habit.done{background:none}
+body.bento #p-hoy .habit .check{width:26px;height:26px;min-width:26px;border-radius:9px;border-width:2px}
+body.bento #p-hoy .habit .h-name{font-size:15.5px;font-weight:600}
+body.bento #p-hoy .habit.done .h-name{text-decoration-thickness:1.5px;text-decoration-color:var(--muted)}
+body.bento #p-hoy .habit .core-mark{border:none;background:var(--bg);color:var(--muted);border-radius:999px;padding:4px 8px;font-size:9.5px}
+body.bento #p-hoy .habit.swipe-on{box-shadow:inset 3px 0 0 var(--amber)}
+body.bento #p-hoy .edit-hab{text-align:left;padding:0 4px}
+body.bento #p-hoy .edit-hab button{border:none;background:none;padding:2px 0;font-weight:700;color:var(--muted)}
+body.bento #p-hoy .stamp-wrap{min-height:0}
+body.bento #p-hoy .stamp-wrap:has(.stamp:not(.show)){display:none}
+body.bento #p-hoy .stamp-wrap{margin:6px 0 !important}
+body.bento #prog{background:var(--card);border:none;border-radius:20px}
+body.bento #prog .bar{background:var(--bg)}
+
+/* semana, energía, compañero, despertar, cierre */
+body.bento #week{background:var(--card);border:none;border-radius:var(--r-tile);padding:15px 10px}
+body.bento #week .dot{width:30px;height:30px;border-radius:10px}
+body.bento #week .dot.today{box-shadow:0 0 0 3px color-mix(in srgb,var(--text) 14%,transparent)}
+body.bento :is(#energiaCard,#checkinCard,#compa){border-radius:var(--r-tile);border:none;background:var(--card)}
+body.bento .en-opt{border-radius:16px;border:none;background:var(--bg)}
+body.bento .en-opt.on{background:var(--t-ink);border:none}
+body.bento .en-opt.on span{color:var(--t-ink-text)}
+body.bento #despWrap .desp{border:none;border-radius:var(--r-tile);padding:15px 16px}
+body.bento #p-hoy .cierre{border:none;border-radius:var(--r-tile);padding:16px}
+body.bento .mood{border:none;border-radius:14px;background:var(--bg)}
+body.bento .cierre textarea{border:none;background:var(--bg);border-radius:14px}
+body.bento.claro .cierre .c-save{background:var(--t-ink);color:var(--t-lime)}
+body.bento #p-hoy .regla{border-left:none;background:none;padding:6px 6px;font-size:12.5px}
+
+/* ===== Otras pestañas: mismos recuadros ===== */
+body.bento :is(.week-plan,.psem-card,.cal,.cal-detail,.resumen,.score,.stat-card,.meta-add,.capa,.idea,.slot,.cierre){border-radius:var(--r-tile)}
+body.bento :is(.idea,.slot){border-radius:18px}
+body.bento .capa.activa{background:var(--t-lime);color:#141414;border:none}
+body.bento .capa.activa :is(.c-num,.c-items li,.c-items li::before,.c-cond){color:#1c2406}
+body.bento .capa.activa .c-status.on{background:#141414;color:var(--t-lime)}
+body.bento .stats-grid .stat-card{background:var(--card)}
+body.bento :is(.wp-inp,.meta-add input,.tray-search input,.cd-notas){border:none;background:var(--bg)}
+body.bento.claro :is(.stat-card,.cal,.resumen,.score){border:none}
+body.bento .rut-acts button{border-radius:999px;background:var(--card);border:none;color:var(--text)}
+body.bento .toast{border-radius:999px;background:var(--t-ink);color:var(--t-ink-text);border:none;bottom:calc(84px + env(safe-area-inset-bottom));font-weight:600}
+
+/* ===== Hoja de Conexiones ===== */
+.cx-list{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+.cx-row{display:flex;align-items:center;gap:13px;background:var(--card);border-radius:18px;padding:13px 14px}
+body.bento:not(.claro) .cx-row{border:1px solid var(--line)}
+.cx-ic{flex:none;width:42px;height:42px;border-radius:13px;display:grid;place-items:center;color:#141414}
+.cx-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.cx-tx b{font-size:15px;font-weight:700}
+.cx-tx i{font-style:normal;font-size:12.5px;color:var(--text);opacity:.85;line-height:1.35}
+.cx-tx small{font-size:11.5px;color:var(--muted);line-height:1.35}
+.cx-st{flex:none;font-size:11px;font-weight:800;padding:5px 9px;border-radius:999px;background:var(--bg);color:var(--muted);white-space:nowrap}
+.cx-st.on{background:var(--t-lime,#d7f36b);color:#141414}
+
+/* pantallas angostas (celulares chicos): el número gigante se ajusta */
+@media (max-width:360px){
+  body.bento .bt-xl{font-size:68px}
+  body.bento #p-hoy .streak .num{font-size:28px}
+}
+@media (prefers-reduced-motion:reduce){ body.bento .bt{transition:none} }

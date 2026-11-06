@@ -44,6 +44,11 @@
   }
 
   const $ = id => document.getElementById(id);
+  // Oyentes de la API interna (Life OS): los módulos de js/os/ se suscriben
+  // con REPS.on('render', fn) y se enteran de cada repintado. Se declara aquí
+  // arriba porque render() emite desde el primer arranque.
+  const OYENTES = {};
+  function emitir(ev, dato){ (OYENTES[ev] || []).forEach(fn => { try{ fn(dato); }catch(e){ console.warn('[REPS]', ev, e); } }); }
 
   function localISO(d){
     const off = d.getTimezoneOffset();
@@ -969,6 +974,7 @@
     renderEnergia(); // semáforo de energía del día (idea #77)
     renderCheckin(); // chequeo de ánimo a media jornada (idea #91)
     renderStats(); // mantiene la pestaña Stats al día con cada cambio
+    emitir('render'); // los módulos del Life OS (js/os/) repintan sus tarjetas
     applyHoyCfg(); // enciende/apaga tarjetas de Hoy según tu gusto (idea #106/#107)
     updateBadge(); // la insignia del ícono refleja los core pendientes
   }
@@ -3254,10 +3260,14 @@
     {id:'hielo',      name:'Hielo',      vars:{bg:'#eef4f8', card:'#ffffff', card2:'#e2ecf3', line:'#cfdde8', text:'#14222e', muted:'#5d7181', accent:'#1273b8', onAccent:'#ffffff', teal:'#0c8a70'}},
     {id:'matcha',     name:'Matcha',     vars:{bg:'#f3f2ea', card:'#ffffff', card2:'#eaeadd', line:'#d6d6c2', text:'#232a1e', muted:'#6f7a63', accent:'#5c8a3a', onAccent:'#ffffff', teal:'#b3593d'}},
     {id:'lavanda',    name:'Lavanda',    vars:{bg:'#f3f0f9', card:'#ffffff', card2:'#eae5f4', line:'#d8d0e8', text:'#241f33', muted:'#6f6885', accent:'#7c5cd6', onAccent:'#ffffff', teal:'#c2508f'}},
+    // — Bento (diseño v116): claro de día, noche de noche. El acento del claro
+    //   es TINTA (botones negros con letra lima), como en el diseño elegido. —
+    {id:'bento',       name:'Bento',       vars:{bg:'#eeebe4', card:'#ffffff', card2:'#f5f3ee', line:'#e2ded5', text:'#141414', muted:'#6e6a62', accent:'#141414', onAccent:'#d7f36b', teal:'#2f7d5b'}},
+    {id:'bento-noche', name:'Bento noche', vars:{bg:'#0e0e10', card:'#18181b', card2:'#202024', line:'#2a2a2f', text:'#f3f2ee', muted:'#8d8a84', accent:'#d7f36b', onAccent:'#141414', teal:'#8fe3c0'}},
   ];
   const TEMA_KEY = 'reps-tema';
   const AUTO_KEY = 'reps-tema-auto'; // "1" = cambia claro/oscuro por hora
-  let themeSel = {modo:'preset', id:'carbon'};
+  let themeSel = {modo:'preset', id:'bento'}; // v116: Bento es el diseño de fábrica
   let temaAuto = false;
 
   // --- matemáticas de color (para el modo personalizado) ---
@@ -3324,8 +3334,9 @@
   function selEfectivo(){
     if(!temaAuto) return themeSel;
     const baseClaro = selEsClaro(themeSel);
-    if(esHoraDia()) return baseClaro ? themeSel : {modo:'preset', id:'claro'};
-    return baseClaro ? {modo:'preset', id:'carbon'} : themeSel;
+    const esBento = themeSel.modo === 'preset' && (themeSel.id === 'bento' || themeSel.id === 'bento-noche');
+    if(esHoraDia()) return baseClaro ? themeSel : {modo:'preset', id: esBento ? 'bento' : 'claro'};
+    return baseClaro ? {modo:'preset', id: esBento ? 'bento-noche' : 'carbon'} : themeSel;
   }
   function currentVars(){
     const sel = selEfectivo();
@@ -3352,7 +3363,7 @@
   function loadTheme(){
     try{
       const v = JSON.parse(localStorage.getItem(TEMA_KEY));
-      if(themeValido(v)) themeSel = v; // inválido: se queda Carbón
+      if(themeValido(v)) themeSel = v; // inválido: se queda el de fábrica (Bento)
     }catch(e){ /* se queda Carbón */ }
   }
   function saveTheme(){
@@ -7170,6 +7181,12 @@
     {id:'week', name:'Mini-semana'},
     {id:'compa', name:'Compañero'},
     {id:'despWrap', name:'Despertar a tiempo'},
+    // tarjetas del Life OS (las crea js/os/bento.js)
+    {id:'btScore', name:'Puntaje de hoy'},
+    {id:'btSalud', name:'Sueño y salud'},
+    {id:'btDinero', name:'Dinero del mes'},
+    {id:'btMundo', name:'Contenido y ventas (YouTube, TikTok, Shopify)'},
+    {id:'btAgenda', name:'Agenda'},
   ];
   let hoyCfg = {}; // {id:false} = oculto
   function loadHoyCfg(){ hoyCfg = {}; try{ const v = JSON.parse(localStorage.getItem(HOY_CFG_KEY)); if(esMapa(v)) Object.keys(v).forEach(k => { if(v[k] === false) hoyCfg[k] = false; }); }catch(e){ hoyCfg = {}; } }
@@ -7747,6 +7764,100 @@
 
   // usuario nuevo: tras la intro, abre el cuestionario de bienvenida
   if(instalacionNueva) setTimeout(abrirBienvenida, 2100);
+
+  // ===== API interna (Life OS) =====
+  // La puerta de solo-lectura entre el MOTOR (este archivo) y los módulos
+  // nuevos de js/os/ (diseño Bento, conectores). Devuelve "view-models":
+  // objetos planos con los datos ya calculados, sin tocar el DOM (es el
+  // refactor que pedía VISION.md §1). Regla: los módulos nunca leen ni
+  // escriben localStorage del motor; si necesitan un dato, se agrega aquí.
+  function promedio(arr){ return arr.length ? arr.reduce((a,b) => a+b, 0) / arr.length : null; }
+  function hoyVM(){
+    const k = today();
+    const rec = dias[k] || {};
+    const core = coreDelDia(k);
+    const st = statsData();
+    const prev = [];
+    for(let i = 1; i <= 7; i++){ const p = puntajeDia(localISO(new Date(Date.now() - i*86400000))); if(p !== null) prev.push(p); }
+    const semana = [];
+    for(let i = 6; i >= 0; i--){
+      const kk = localISO(new Date(Date.now() - i*86400000));
+      semana.push({ fecha:kk, ganado:esGanado(kk), descanso:esDescanso(kk), hoy:i === 0, puntaje:puntajeDia(kk) });
+    }
+    return {
+      fecha: k,
+      nombre: (perfil && !perfil.saltado && perfil.nombre) ? String(perfil.nombre) : '',
+      puntaje: puntajeDia(k),
+      promedio7: prev.length ? Math.round(promedio(prev)) : null,
+      racha: st.now, mejor: st.best, total: st.total, pct30: st.pct30,
+      congeladores: racha.congeladores,
+      descanso: core.length === 0,
+      ganado: esGanado(k),
+      core: { hechos: core.filter(id => hecho(rec, id)).length, total: core.length },
+      semana,
+    };
+  }
+  function saludVM(){
+    const k = today();
+    const noches = Object.keys(sueno).sort().slice(-7).map(f => minDormidos(sueno[f])).filter(x => x != null);
+    const pesos = Object.keys(peso).sort();
+    return {
+      suenoHoy: minDormidos(sueno[k]),
+      suenoProm: noches.length ? Math.round(promedio(noches)) : null,
+      agua: { hoy: agua.dias[k] || 0, meta: agua.meta },
+      energia: energia[k] || null,
+      peso: pesos.length ? { kg: peso[pesos[pesos.length-1]], fecha: pesos[pesos.length-1] } : null,
+    };
+  }
+  function dineroVM(){
+    const mes = mesActual(), k = today();
+    const delMes = fin.movs.filter(m => (m.fecha || '').startsWith(mes));
+    const suma = (arr) => arr.reduce((s,m) => s + (+m.monto || 0), 0);
+    const ingresos = suma(delMes.filter(m => m.tipo === 'ingreso'));
+    const gastos = suma(delMes.filter(m => m.tipo === 'gasto'));
+    const ahorro = delMes.filter(m => m.tipo === 'ahorro').reduce((s,m) => s + (m.dir === 'out' ? -(+m.monto||0) : (+m.monto||0)), 0);
+    return {
+      mes, ingresos, gastos, saldo: ingresos - gastos - ahorro,
+      gastoHoy: suma(fin.movs.filter(m => m.tipo === 'gasto' && m.fecha === k)),
+      hayDatos: fin.movs.length > 0,
+      fmt: fmtDinero,
+    };
+  }
+  function agendaVM(){
+    const k = today();
+    const b = bloqueActual();
+    const ahoraMin = new Date().getHours()*60 + new Date().getMinutes();
+    const recs = recordatorios.filter(r => r.hora && !recHechoHoy(r.id))
+      .map(r => ({ texto:r.texto, hora:r.hora, min: minDe(r.hora) }))
+      .filter(r => r.min >= ahoraMin).sort((a,b) => a.min - b.min);
+    return {
+      bloque: b ? { actual: b.cur.nombre, horaActual: b.cur.hora, siguiente: b.next.nombre, horaSiguiente: b.next.hora, resta: b.resta, pct: b.pct } : null,
+      recordatorios: recs.slice(0, 3),
+      eventos: eventos.filter(e => e.fecha >= k).sort((a,b) => a.fecha.localeCompare(b.fecha)).slice(0, 3)
+        .map(e => ({ nombre: e.nombre, fecha: e.fecha, faltan: diasRestantes(e.fecha) })),
+    };
+  }
+  window.REPS = Object.freeze({
+    version: SCHEMA,
+    on(ev, fn){ if(typeof fn === 'function') (OYENTES[ev] = OYENTES[ev] || []).push(fn); },
+    hoy: hoyVM, salud: saludVM, dinero: dineroVM, agenda: agendaVM,
+    contexto: () => contextoIA(),            // lo que ya sabe la IA de ti
+    tema: () => Object.assign({}, selEfectivo()),
+    repintar: () => render(),
+    toast: (t) => toast(t),
+    hoyISO: () => today(),
+  });
+
+  // Estreno del diseño Bento (v116): UNA sola vez cambia al tema Bento.
+  // Después, lo que elijas en Ajustes manda. Marca transitoria (no va en el respaldo).
+  try{
+    if(!localStorage.getItem('reps-bento-estreno')){
+      localStorage.setItem('reps-bento-estreno', today());
+      if(!(themeSel.modo === 'preset' && /^bento/.test(themeSel.id))){
+        themeSel = { modo:'preset', id:'bento' }; saveTheme(); applyThemeSel();
+      }
+    }
+  }catch(e){}
 
   // ===== Intro: saludo según la hora + racha; el CSS la desvanece solo =====
   (function(){

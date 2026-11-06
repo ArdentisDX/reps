@@ -341,6 +341,26 @@ de la IA); ahí ya habrá backend y conviene resolver auth de una vez.
 
 **Bug corregido en v101:** el timeline #102 (v99) compartía `id="tlList"` con la rutina de Mi día; renombrado a `tlMeses`.
 
+## 🧭 REPS OS — el Life OS (nov 2026)
+
+REPS crece de app de hábitos a **sistema operativo de tu vida**: hábitos,
+salud, dinero, contenido, ventas y agenda en un solo tablero, con una IA que
+lo lee todo. Se construye por fases (la regla de siempre: una a la vez).
+
+- ✅ **Fase 1 (v116)** — Reestructura + diseño Bento. API interna
+  `window.REPS` (view-models), módulos en `js/os/`, tablero de Hoy en
+  retícula, temas Bento/Bento noche, fuentes locales, catálogo de
+  conectores y hoja de Conexiones. Cero cambios al formato de datos.
+- **Fase 2** — Conectores vía el Worker de Cloudflare (secretos allá, caché
+  `reps-cx` acá): Google Calendar → YouTube → Shopify → WHOOP → TikTok.
+  Cada uno: ruta en el Worker, botón "Conectar" (OAuth), tarjeta con datos
+  reales, entrada en el respaldo.
+- **Fase 3** — IA que cruza todo (sueño ↔ rachas ↔ vistas ↔ ventas) y te
+  recomienda; opción de **IA local** en la Mac del usuario (Ollama/LM
+  Studio) para que los datos no salgan de casa.
+- **Fase 4** — Rediseñar el resto de pantallas al lenguaje Bento con
+  layouts propios (Stats como tablero, Mi día como línea de tiempo).
+
 ## Reglas del proyecto
 
 1. Offline-first siempre: sin internet, la app completa sigue viva.
