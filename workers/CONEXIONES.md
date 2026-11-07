@@ -82,11 +82,16 @@ Los demás secretos los agregas en cada paso de abajo.
 ## Paso 3 · TikTok
 
 1. Entra a [developers.tiktok.com](https://developers.tiktok.com) → **Manage apps → Connect an app**.
-2. Agrega los productos **Login Kit** (Web) y **TikTok API / Display API**.
-3. **Scopes**: `user.info.basic`, `user.info.stats`, `video.list`.
+2. Cambia a **Sandbox** (arriba) y agrega el producto **Login Kit** (Web).
+   ("Display API" ya no existe como producto: sus permisos están en Scopes.)
+3. **Scopes → Add scopes**: `user.info.basic`, `user.info.stats`, `video.list`.
+   Si falta alguno, TikTok muestra "Hubo un problema… scope".
 4. **Redirect URI** (Login Kit → Web):
    `https://reps-push.iivf-2806.workers.dev/cx/callback/tiktok`
-5. Si TikTok pide **verificar la URL/dominio**: elige *URL prefix*
+5. Términos y Privacidad (`…/reps/terminos.html`, `…/reps/privacidad.html`) se
+   verifican con *URL prefix* `https://ardentisdx.github.io/reps/`: el archivo
+   `tiktok….txt` que da TikTok va en la raíz del repo (ya está subido).
+   Si TikTok pide **verificar la URL del Worker**: elige *URL prefix*
    `https://reps-push.iivf-2806.workers.dev/`, descarga su archivo `tiktok….txt`,
    abre el archivo, copia TODO su contenido y guárdalo en Cloudflare como
    `TIKTOK_VERIFICACION`. Tu Worker lo sirve solo en esa dirección.
