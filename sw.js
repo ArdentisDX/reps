@@ -1,7 +1,7 @@
 // Service Worker de REPS — estrategia offline-first.
 // Versión del cache: súbela (v2, v3...) cada vez que cambies HTML/CSS/JS,
 // para que los dispositivos descarguen la copia nueva.
-const CACHE = 'reps-v118';
+const CACHE = 'reps-v119';
 
 // El "app shell": todos los archivos que la app necesita para funcionar.
 const ASSETS = [
@@ -100,6 +100,10 @@ self.addEventListener('notificationclick', (e) => {
 // de la red lo guarda para la próxima vez.
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return; // solo cacheamos lecturas
+  // Peticiones a OTROS orígenes (Ollama en localhost, el Worker, Google…)
+  // pasan directo, sin el SW: si las interceptamos, Chrome pierde el permiso
+  // de "red local" y la IA en tu computadora falla.
+  if (!e.request.url.startsWith(self.location.origin)) return;
 
   e.respondWith(
     // en navegaciones se ignora el query (?tab=...): los atajos del ícono
