@@ -134,8 +134,6 @@ body.bento #storyRing{order:1}
 body.bento #mantra{order:2}
 body.bento #btScore{order:10}
 body.bento #p-hoy .streak{order:11}
-body.bento #btSalud > .bt-sky{order:12}
-body.bento #btSalud > .bt-mint{order:13}
 body.bento #planHoy{order:15}
 body.bento #armaDia{order:20}
 body.bento #brief{order:21}
@@ -156,12 +154,6 @@ body.bento #evitarSec{order:42}
 body.bento #p-hoy .stamp-wrap{order:43}
 body.bento #p-hoy .edit-hab{order:44}
 body.bento #prog{order:45}
-body.bento #btMundoHead{order:50}
-body.bento #btDinero{order:51}
-body.bento #btMundo > :nth-child(1){order:52}
-body.bento #btMundo > :nth-child(2){order:53}
-body.bento #btMundo > :nth-child(3){order:54}
-body.bento #btAgenda{order:56}
 body.bento #week{order:60}
 body.bento #energiaCard{order:61}
 body.bento #checkinCard{order:62}
@@ -172,9 +164,8 @@ body.bento #p-hoy > .regla{order:80}
 body.bento #p-hoy > .reset{order:90}
 
 /* tamaños */
-body.bento #btScore{grid-column:span 2;grid-row:span 2}
+body.bento #btScore{grid-column:span 2}
 body.bento #p-hoy .streak{grid-column:span 2}
-body.bento #btSalud > .bt{grid-column:span 1}
 body.bento #p-hoy .bt-s2{grid-column:span 2}
 body.bento #storyRing{grid-column:span 1}
 body.bento #mantra{grid-column:2 / -1}
@@ -200,7 +191,7 @@ body.bento .bt-foot{font-size:12.5px;font-weight:700;opacity:.82}
 body.bento .bt .neg{color:var(--red)}
 
 /* héroe: puntaje */
-body.bento .bt-hero{background:var(--t-hero);color:var(--t-hero-ink);justify-content:space-between;min-height:200px;box-shadow:none !important}
+body.bento .bt-hero{background:var(--t-hero);color:var(--t-hero-ink);justify-content:space-between;min-height:168px;box-shadow:none !important}
 body.bento .bt-hero .bt-lbl{color:inherit;opacity:.7}
 body.bento .bt-hero.ganado::after{content:"Día ganado ✓";position:absolute;top:13px;right:13px;font-size:10.5px;font-weight:800;letter-spacing:.03em;background:var(--t-hero-ink);color:var(--t-hero);padding:5px 9px;border-radius:999px}
 

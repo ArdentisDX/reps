@@ -351,6 +351,11 @@ lo lee todo. Se construye por fases (la regla de siempre: una a la vez).
   `window.REPS` (view-models), módulos en `js/os/`, tablero de Hoy en
   retícula, temas Bento/Bento noche, fuentes locales, catálogo de
   conectores y hoja de Conexiones. Cero cambios al formato de datos.
+- ✅ **Fase 1.5 (v117)** — El Life OS pasa al frente: shell con Inicio,
+  Salud, Dinero, Creador, Agenda y Asistente IA; REPS queda como la sección
+  "Hábitos". Detección PC/celular (menú lateral vs píldora) con opción
+  manual. Inicio en celular reducido a lo esencial (decisión del usuario:
+  "se ve muy saturado").
 - **Fase 2** — Conectores vía el Worker de Cloudflare (secretos allá, caché
   `reps-cx` acá): Google Calendar → YouTube → Shopify → WHOOP → TikTok.
   Cada uno: ruta en el Worker, botón "Conectar" (OAuth), tarjeta con datos

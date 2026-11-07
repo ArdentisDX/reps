@@ -1,7 +1,7 @@
 // Service Worker de REPS — estrategia offline-first.
 // Versión del cache: súbela (v2, v3...) cada vez que cambies HTML/CSS/JS,
 // para que los dispositivos descarguen la copia nueva.
-const CACHE = 'reps-v116';
+const CACHE = 'reps-v117';
 
 // El "app shell": todos los archivos que la app necesita para funcionar.
 const ASSETS = [
@@ -9,9 +9,11 @@ const ASSETS = [
   './index.html',
   './css/styles.css',
   './css/bento.css',
+  './css/os.css',
   './js/app.js',
   './js/os/conectores.js',
   './js/os/bento.js',
+  './js/os/shell.js',
   './fonts/inter-latin-400-normal.woff2',
   './fonts/inter-latin-500-normal.woff2',
   './fonts/inter-latin-600-normal.woff2',

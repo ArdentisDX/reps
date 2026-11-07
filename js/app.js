@@ -48,6 +48,7 @@
   // con REPS.on('render', fn) y se enteran de cada repintado. Se declara aquí
   // arriba porque render() emite desde el primer arranque.
   const OYENTES = {};
+  let consejoHoy = ''; // última recomendación de render() (hoyPide / empujón)
   function emitir(ev, dato){ (OYENTES[ev] || []).forEach(fn => { try{ fn(dato); }catch(e){ console.warn('[REPS]', ev, e); } }); }
 
   function localISO(d){
@@ -928,6 +929,7 @@
 
     // empujón del día: una frase que sí sabe cómo vienes
     const emp = empujeDelDia(won, desc, s, caidosN);
+    consejoHoy = pide || emp || ''; // lo lee la API del Life OS ("tu siguiente movimiento")
     $('empuje').hidden = !emp;
     if(emp) $('empuje').textContent = emp;
 
@@ -7181,12 +7183,8 @@
     {id:'week', name:'Mini-semana'},
     {id:'compa', name:'Compañero'},
     {id:'despWrap', name:'Despertar a tiempo'},
-    // tarjetas del Life OS (las crea js/os/bento.js)
+    // tarjeta del diseño Bento (la crea js/os/bento.js)
     {id:'btScore', name:'Puntaje de hoy'},
-    {id:'btSalud', name:'Sueño y salud'},
-    {id:'btDinero', name:'Dinero del mes'},
-    {id:'btMundo', name:'Contenido y ventas (YouTube, TikTok, Shopify)'},
-    {id:'btAgenda', name:'Agenda'},
   ];
   let hoyCfg = {}; // {id:false} = oculto
   function loadHoyCfg(){ hoyCfg = {}; try{ const v = JSON.parse(localStorage.getItem(HOY_CFG_KEY)); if(esMapa(v)) Object.keys(v).forEach(k => { if(v[k] === false) hoyCfg[k] = false; }); }catch(e){ hoyCfg = {}; } }
@@ -7795,6 +7793,12 @@
       ganado: esGanado(k),
       core: { hechos: core.filter(id => hecho(rec, id)).length, total: core.length },
       semana,
+      consejo: consejoHoy,
+      // hábitos que tocan HOY, en el orden del usuario (core primero)
+      habitos: HABITS.filter(h => habAplica(h, dowDe(k)))
+        .sort((a, b) => (b.core === true) - (a.core === true))
+        .map(h => ({ id:h.id, nombre:h.name, emoji:h.emoji || '', core:!!h.core, hecho:hecho(rec, h.id),
+          meta: h.meta > 0 ? h.meta : 0, cuenta: Number(rec[h.id]) || 0, unidad: h.unidad || '' })),
     };
   }
   function saludVM(){
@@ -7807,6 +7811,8 @@
       agua: { hoy: agua.dias[k] || 0, meta: agua.meta },
       energia: energia[k] || null,
       peso: pesos.length ? { kg: peso[pesos[pesos.length-1]], fecha: pesos[pesos.length-1] } : null,
+      // últimas 7 noches (de hace 6 días a hoy); min = null si no hay registro
+      noches: Array.from({length:7}, (_, i) => { const f = localISO(new Date(Date.now() - (6-i)*86400000)); return { fecha:f, min:minDormidos(sueno[f]) }; }),
     };
   }
   function dineroVM(){
@@ -7820,6 +7826,11 @@
       mes, ingresos, gastos, saldo: ingresos - gastos - ahorro,
       gastoHoy: suma(fin.movs.filter(m => m.tipo === 'gasto' && m.fecha === k)),
       hayDatos: fin.movs.length > 0,
+      presupuesto: +fin.presupuesto || 0,
+      // en qué se va: top 4 categorías de gasto del mes
+      categorias: (() => { const m = {}; delMes.filter(x => x.tipo === 'gasto').forEach(x => { m[x.cat] = (m[x.cat] || 0) + (+x.monto || 0); });
+        return Object.keys(m).map(c => { const fc = finCatOf('gasto', c); return { id:c, nombre: fc ? fc.name || fc.nombre || c : c, emoji: fc ? fc.emoji || fc.e || '' : '', monto:m[c] }; })
+          .sort((a,b) => b.monto - a.monto).slice(0, 4); })(),
       fmt: fmtDinero,
     };
   }
@@ -7833,6 +7844,8 @@
     return {
       bloque: b ? { actual: b.cur.nombre, horaActual: b.cur.hora, siguiente: b.next.nombre, horaSiguiente: b.next.hora, resta: b.resta, pct: b.pct } : null,
       recordatorios: recs.slice(0, 3),
+      rutina: rutinaOrdenada().map(r => ({ hora:r.hora, nombre:r.nombre, desc:r.desc || '', tipo:r.tipo,
+        actual: !!(b && b.cur === r) })),
       eventos: eventos.filter(e => e.fecha >= k).sort((a,b) => a.fecha.localeCompare(b.fecha)).slice(0, 3)
         .map(e => ({ nombre: e.nombre, fecha: e.fecha, faltan: diasRestantes(e.fecha) })),
     };
@@ -7841,6 +7854,14 @@
     version: SCHEMA,
     on(ev, fn){ if(typeof fn === 'function') (OYENTES[ev] = OYENTES[ev] || []).push(fn); },
     hoy: hoyVM, salud: saludVM, dinero: dineroVM, agenda: agendaVM,
+    bandeja: () => { const p = ideas.filter(i => !i.done); return { pendientes: p.length, top: p.slice(0, 3).map(i => i.text) }; },
+    brief: () => (brief.fecha === today() && brief.texto) ? brief.texto : '',
+    // marcar un hábito de HOY desde el Life OS (mismas reglas que tocarlo en REPS)
+    marcar(id){
+      const h = HABITS.find(x => x.id === id); if(!h) return;
+      if(h.meta > 0) incHabit(h, hecho(dias[today()] || {}, h.id) ? -h.meta : 1);
+      else setHabit(h, !hecho(dias[today()] || {}, h.id));
+    },
     contexto: () => contextoIA(),            // lo que ya sabe la IA de ti
     tema: () => Object.assign({}, selEfectivo()),
     repintar: () => render(),

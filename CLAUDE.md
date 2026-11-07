@@ -31,8 +31,14 @@ js/os/          (v116) REPS OS: módulos del Life OS que leen el motor SOLO
                 por `window.REPS` (ver "API interna" abajo).
   conectores.js Catálogo de apps externas (WHOOP, Calendar, YouTube, TikTok,
                 Shopify, IA local) y lectura del caché `reps-cx`.
-  bento.js      Tablero de Hoy (retícula 4 columnas), tarjetas del Life OS,
-                hoja de Conexiones y entrada en Ajustes.
+  bento.js      Viste la pestaña Hoy de REPS como retícula + recuadro del puntaje.
+  shell.js      (v117) LA APP PRINCIPAL: navegación (menú lateral en PC,
+                píldora abajo en celular), secciones Inicio, Salud, Dinero,
+                Creador, Agenda y Asistente IA; REPS es la sección "Hábitos"
+                (sus 5 pestañas de siempre). Hoja "Más", Conexiones y Vista.
+css/os.css      (v117) Estilos del shell. Cuelga de body.os; body.os-pc /
+                body.os-movil cambian el acomodo; body.os-v-<sección> muestra
+                la sección activa (os-v-reps = REPS de siempre).
 fonts/          Inter, Space Grotesk e Instrument Serif (woff2, OFL). Locales
                 para respetar el offline-first; están en ASSETS del SW.
 ```
@@ -55,8 +61,21 @@ Dos capas que NO se mezclan:
      pendientes, próximos eventos.
    - `REPS.on('render', fn)` → se dispara al final de cada `render()`.
    - `REPS.repintar()`, `REPS.tema()`, `REPS.contexto()` (contexto de la IA).
+   - `REPS.hoy().habitos` (hábitos de hoy) + `REPS.marcar(id)`: marcar un
+     hábito desde el Life OS con las MISMAS reglas que en REPS (setHabit /
+     incHabit). `REPS.hoy().consejo` = la recomendación de render().
+   - `REPS.bandeja()`, `REPS.brief()`, `REPS.salud().noches`,
+     `REPS.dinero().categorias/presupuesto`, `REPS.agenda().rutina`.
    **Regla:** si un módulo necesita un dato nuevo, se agrega a la API; un
    módulo nunca toca localStorage del motor ni sus funciones internas.
+
+**Shell del Life OS (v117):** `shell.js` inserta `#osNav` y `#osMain` al
+inicio de `<body>`. La cabecera, pestañas y paneles viejos de REPS NO se
+mueven: el CSS los oculta fuera de la sección "Hábitos". Tocar una pestaña
+de REPS (o un atajo `?tab=`) lleva a esa sección. Inicio en celular se
+mantiene tranquilo (lo de 5 segundos); en PC se muestra el tablero completo
+(clases `solo-pc` / `solo-movil`). Una sección nueva = entrada en
+`SECCIONES`, su función `pintar…` en `PINTORES` y su acomodo PC en os.css.
 
 El tablero Bento NO mueve las tarjetas viejas de Hoy en el DOM: `#p-hoy` es
 un CSS grid y el orden/tamaño de cada tarjeta se decide en `css/bento.css`
@@ -132,6 +151,7 @@ directo sobre un Date: corre el día en zonas horarias negativas.
 | `reps-ia-chat` | `[{who:'yo'\|'ia', text}]` | **Memoria del asistente** (idea #84): hilo completo del chat con la IA, guardado (cap 60 msgs) para que RECUERDE entre sesiones. El Worker `/ia` es stateless: cada turno le mandamos `contextoIA()` + los últimos ~16 mensajes. Sheet `#iaWrap` (chat `#iaChat`), botón "Olvidar" borra. Aparte: **Desatóralo** (#86, `#desatoraWrap`) da UN primer paso; **Reencuadre** (#87, `#reencuadreWrap`) mini-TCC; ambos one-shot con fallback offline. Va en el respaldo. |
 | `reps-cx` | `{conectorId: {datos:{...}, actualizado}}` | **Caché de conectores** (Life OS, Fase 2): último resumen que trajo el Worker de cada app externa (`whoop`, `calendar`, `youtube`, `tiktok`, `shopify`). Lo lee `js/os/conectores.js`; hoy nadie lo escribe todavía. Cuando se implemente: va en el respaldo y se sanea al importar. |
 | `reps-bento-estreno` | `"YYYY-MM-DD"` | Marca transitoria del estreno del diseño Bento (v116): la primera vez cambia el tema a `bento`; después manda lo que elijas. NO va en el respaldo. |
+| `reps-vista` | `"pc"`, `"movil"` o ausente (= automática) | **Vista del Life OS** (v117): automática decide por el ancho (≥ 900 px = PC) y se re-evalúa al girar/redimensionar; se puede forzar desde Ajustes → Vista o la hoja Más (cicla Auto → PC → Celular). Preferencia por dispositivo: NO va en el respaldo. |
 | `reps-schema` | `"N"` (número como string) | Versión del FORMATO de los datos. La gestiona `migrate()`; no tocar a mano. |
 | `reps-pre-migracion` | `{de, a, fecha, crudo}` | Copia cruda automática previa a la última migración. Solo lectura; no va en el respaldo exportado. |
 
