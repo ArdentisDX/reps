@@ -28,8 +28,8 @@
 
   // Proyecto Supabase. Valores PÚBLICOS por diseño (la seguridad la dan las
   // reglas RLS de la tabla). NUNCA poner aquí la llave secreta/service_role.
-  const SB_URL = '';
-  const SB_KEY = '';
+  const SB_URL = 'https://pirwumldsmryoipruvtu.supabase.co';
+  const SB_KEY = 'sb_publishable_8Ueif20OhJU1_bdWYQSYZw_Luavy8ql';
 
   const SES_KEY = 'reps-cuenta';
   const SYNC_KEY = 'reps-sync';
