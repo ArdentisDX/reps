@@ -221,26 +221,55 @@
     VISTAS[s.id] = sec; main.appendChild(sec);
   });
 
-  // tarjeta de conector (datos reales del caché o invitación a conectar)
+  // tarjeta de conector: datos reales del caché, o invitación a conectar
+  function cxValor(id, d){
+    if(id === 'youtube') return d.vistas != null ? { n: fmtCorto(d.vistas), sub: 'vistas · 7 días' } : { n: fmtCorto(d.vistasTotales), sub: 'vistas totales' };
+    if(id === 'tiktok') return d.publicadosSemana ? { n: fmtCorto(d.vistasSemana), sub: 'vistas · videos de la semana' } : { n: fmtCorto(d.vistas), sub: 'vistas · últimos videos' };
+    if(id === 'shopify') return { n: R.dinero().fmt(+d.ventas || 0), sub: 'ventas' };
+    if(id === 'whoop') return { n: d.recuperacion != null ? d.recuperacion + '%' : '—', sub: 'recuperación' };
+    if(id === 'calendar') return { n: String((d.eventos || []).length), sub: 'eventos esta semana' };
+    return { n: '—', sub: '' };
+  }
   function cxTile(id, cls, opciones){
     const c = CX && CX.get(id);
     const t = el('button', 'o-card o-cx ' + cls); t.type = 'button';
     const lbl = el('div', 'o-lbl');
     if(c){ const i = el('span', 'o-lbl-ic'); i.innerHTML = CX.icono(id, 14); lbl.appendChild(i); }
-    lbl.appendChild(document.createTextNode((c ? c.nombre : id) + (opciones && opciones.periodo ? ' · ' + opciones.periodo : '')));
+    lbl.appendChild(document.createTextNode(c ? c.nombre : id));
     t.appendChild(lbl);
     const d = CX && CX.datos(id);
+    const ent = CX && CX.entrada(id);
     if(d && d.datos){
-      const v = opciones && opciones.dinero ? R.dinero().fmt(+d.datos.ventas || 0) : fmtCorto(+d.datos.vistas);
-      t.appendChild(el('div', 'o-num o-num-m', v));
-      if(d.datos.resumen) t.appendChild(el('div', 'o-sub', String(d.datos.resumen)));
+      const v = cxValor(id, d.datos);
+      t.appendChild(el('div', 'o-num o-num-m', v.n));
+      t.appendChild(el('div', 'o-sub', v.sub + (d.datos.resumen ? ' · ' + d.datos.resumen : '')));
+      if(opciones && opciones.extra) opciones.extra(t, d.datos);
+      t.addEventListener('click', opciones && opciones.ir ? opciones.ir : abrirConexiones);
     } else {
       t.classList.add('off');
-      t.appendChild(el('div', 'o-conectar', 'Conectar'));
+      const pronto = c && c.tipo === 'pronto';
+      t.appendChild(el('div', 'o-conectar' + (pronto ? ' pronto' : ''), pronto ? 'Próximamente' : (ent && ent.error ? 'Reconectar' : 'Conectar')));
       t.appendChild(el('div', 'o-sub', opciones && opciones.vacio ? opciones.vacio : (c ? c.trae : '')));
+      t.addEventListener('click', abrirConexiones);
     }
-    t.addEventListener('click', abrirConexiones);
     return t;
+  }
+  // eventos de Google Calendar de HOY (los que no han terminado)
+  function eventosHoy(){
+    const d = CX && CX.datos('calendar');
+    if(!d || !Array.isArray(d.datos.eventos)) return [];
+    const hoy = R.hoyISO(), ahora = Date.now();
+    return d.datos.eventos.filter(e => {
+      if(e.todoElDia) return e.inicio === hoy;
+      const ini = new Date(e.inicio), fin = new Date(e.fin || e.inicio);
+      const k = ini.getFullYear() + '-' + String(ini.getMonth()+1).padStart(2,'0') + '-' + String(ini.getDate()).padStart(2,'0');
+      return k === hoy && fin.getTime() > ahora;
+    }).map(e => {
+      const ini = new Date(e.inicio);
+      return { titulo:e.titulo, lugar:e.lugar, todoElDia:e.todoElDia, ahora: !e.todoElDia && ini.getTime() <= ahora,
+        hora: e.todoElDia ? 'Hoy' : String(ini.getHours()).padStart(2,'0') + ':' + String(ini.getMinutes()).padStart(2,'0'),
+        min: e.todoElDia ? -1 : ini.getHours()*60 + ini.getMinutes() };
+    });
   }
 
   // --- Inicio ---
@@ -268,10 +297,11 @@
     const fila = el('div', 'o-ring-row');
     const whoop = CX && CX.datos('whoop');
     const r1 = whoop && whoop.datos && whoop.datos.recuperacion != null
-      ? { pct: whoop.datos.recuperacion/100, val: Math.round(whoop.datos.recuperacion) + '%', lbl:'Recuperación', color:'#7cc400', go: abrirConexiones }
+      ? { pct: whoop.datos.recuperacion/100, val: Math.round(whoop.datos.recuperacion) + '%', lbl:'Recuperación', color: whoop.datos.recuperacion >= 67 ? '#3fbf6f' : whoop.datos.recuperacion >= 34 ? '#f2b33d' : '#ef5b5b', go: () => irA('salud') }
       : { pct: H.descanso ? 0 : (H.puntaje || 0)/100, val: H.descanso ? '·' : String(H.puntaje || 0), lbl:'Puntaje', color:'var(--o-lime-ring)', go: () => irA('reps', 'p-stats') };
-    const sMin = S.suenoHoy != null ? S.suenoHoy : S.suenoProm;
-    const r2 = { pct: sMin != null ? sMin/480 : 0, val: fmtHoras(sMin), lbl: S.suenoHoy != null ? 'Sueño' : (sMin != null ? 'Sueño · prom.' : 'Registra sueño'), color:'#6fbbe8', go: () => click('suenoOpen') };
+    const wS = whoop && whoop.datos && whoop.datos.suenoMin != null ? whoop.datos.suenoMin : null;
+    const sMin = S.suenoHoy != null ? S.suenoHoy : (wS != null ? wS : S.suenoProm);
+    const r2 = { pct: sMin != null ? sMin/480 : 0, val: fmtHoras(sMin), lbl: S.suenoHoy != null || wS != null ? 'Sueño' : (sMin != null ? 'Sueño · prom.' : 'Registra sueño'), color:'#6fbbe8', go: () => wS != null && S.suenoHoy == null ? irA('salud') : click('suenoOpen') };
     const r3 = { pct: H.core.total ? H.core.hechos/H.core.total : 0, val:'🔥' + H.racha, lbl: H.descanso ? 'Racha · descanso' : 'Racha · ' + H.core.hechos + ' de ' + H.core.total, color:'var(--text)', go: () => irA('reps', 'p-hoy') };
     [r1, r2, r3].forEach(r => {
       const b = btn('o-ring', null, r.go);
@@ -336,9 +366,9 @@
     v.appendChild(mh);
     const mundo = el('div', 'o-mundo');
     mundo.append(
-      cxTile('youtube', 'o-rose', { periodo:'7 días', vacio:'Tus vistas, aquí' }),
-      cxTile('tiktok', 'o-ink', { periodo:'7 días', vacio:'Tus vistas, aquí' }),
-      cxTile('shopify', 'o-peach', { periodo:'semana', dinero:true, vacio:'Tus ventas, aquí' }));
+      cxTile('youtube', 'o-rose', { vacio:'Tus vistas, aquí', ir: () => irA('creador') }),
+      cxTile('tiktok', 'o-ink', { vacio:'Tus vistas, aquí', ir: () => irA('creador') }),
+      cxTile('shopify', 'o-peach', { vacio:'Cuando abras tu tienda' }));
     v.appendChild(mundo);
   }
   function filaHabito(h){
@@ -358,6 +388,7 @@
       const [h, m] = A.bloque.horaSiguiente.split(':').map(Number); let mm = h*60 + m; if(mm < ahora) mm += 1440;
       cands.push({ titulo:A.bloque.siguiente, detalle:'Tu rutina · en ' + enMin(A.bloque.resta), hora:A.bloque.horaSiguiente, min:mm });
     }
+    eventosHoy().filter(e => !e.todoElDia && !e.ahora).forEach(e => cands.push({ titulo:e.titulo, detalle:'Calendar · en ' + enMin(e.min - ahora) + (e.lugar ? ' · ' + e.lugar : ''), hora:e.hora, min:e.min }));
     cands.sort((a,b) => a.min - b.min);
     if(cands[0]) return cands[0];
     if(A.eventos[0]){ const e = A.eventos[0]; return { titulo:e.nombre, detalle:'Cuenta regresiva', hora: e.faltan === 0 ? 'Hoy' : e.faltan + ' d' }; }
@@ -373,6 +404,7 @@
       c.appendChild(f);
     };
     let n = 0;
+    eventosHoy().forEach(e => { if(n < max){ fila(e.titulo, e.ahora ? 'Ahora · Calendar' : 'Calendar' + (e.lugar ? ' · ' + e.lugar : ''), e.hora, e.ahora); n++; } });
     if(A.bloque && n < max){ fila(A.bloque.actual, 'Ahora · faltan ' + enMin(A.bloque.resta), A.bloque.horaActual, true); n++; }
     A.recordatorios.forEach(r => { if(n < max){ fila(r.texto, 'Recordatorio', r.hora); n++; } });
     if(A.bloque && n < max){ fila(A.bloque.siguiente, 'Sigue en tu rutina', A.bloque.horaSiguiente); n++; }
@@ -388,10 +420,18 @@
     // WHOOP
     const w = CX && CX.datos('whoop');
     if(w && w.datos){
+      const wd = w.datos;
       const c = card('o-lime o-whoop', 'Recuperación · WHOOP', 'rayo');
-      const r = el('span', 'o-ring-w o-ring-big'); r.innerHTML = anillo((w.datos.recuperacion || 0)/100, 'var(--o-ink)', 150);
-      r.appendChild(el('span', 'o-ring-v', Math.round(w.datos.recuperacion || 0) + '%'));
+      const r = el('span', 'o-ring-w o-ring-big'); r.innerHTML = anillo((wd.recuperacion || 0)/100, '#141414', 150);
+      r.appendChild(el('span', 'o-ring-v', wd.recuperacion != null ? wd.recuperacion + '%' : '—'));
       c.appendChild(r);
+      const met = el('div', 'o-met');
+      [['VFC', wd.vfc != null ? wd.vfc + ' ms' : '—'], ['FC reposo', wd.fcReposo != null ? wd.fcReposo : '—'],
+       ['Esfuerzo', wd.esfuerzo != null ? wd.esfuerzo : '—'], ['Sueño', wd.suenoRendimiento != null ? wd.suenoRendimiento + '%' : '—']].forEach(([k, val]) => {
+        const m = el('div', 'o-met-i'); m.append(el('b', null, String(val)), el('span', null, k)); met.appendChild(m);
+      });
+      c.appendChild(met);
+      c.appendChild(el('div', 'o-sub', 'Actualizado ' + haceCuanto(w.actualizado)));
       g.appendChild(c);
     } else {
       g.appendChild(cxTile('whoop', 'o-lime o-whoop', { vacio:'Recuperación, esfuerzo y variabilidad cardiaca de tu WHOOP.' }));
@@ -400,9 +440,11 @@
     const sn = el('button', 'o-card o-sky o-sueno'); sn.type = 'button';
     const sl = el('div', 'o-lbl'); sl.append(ic('luna', 14, 'o-lbl-ic'), document.createTextNode('Sueño'));
     sn.appendChild(sl);
-    const sMin = S.suenoHoy != null ? S.suenoHoy : null;
+    const wMin = w && w.datos && w.datos.suenoMin != null ? w.datos.suenoMin : null;
+    const sMin = S.suenoHoy != null ? S.suenoHoy : wMin;
     sn.appendChild(el('div', 'o-num o-num-l', fmtHoras(sMin)));
-    sn.appendChild(el('div', 'o-sub', sMin != null ? (S.suenoProm != null ? 'promedio ' + fmtHoras(S.suenoProm) : '') : 'Toca para registrar tu noche'));
+    sn.appendChild(el('div', 'o-sub', S.suenoHoy == null && wMin != null ? 'según WHOOP · toca para registrar a mano' :
+      sMin != null ? (S.suenoProm != null ? 'promedio ' + fmtHoras(S.suenoProm) : '') : 'Toca para registrar tu noche'));
     const bars = el('div', 'o-bars');
     S.noches.forEach(nn => { const i = el('i', nn.min == null ? 'vacia' : ''); i.style.height = nn.min == null ? '8%' : Math.min(100, Math.max(10, nn.min / 600 * 100)) + '%'; bars.appendChild(i); });
     sn.appendChild(bars);
@@ -481,15 +523,35 @@
   function pintarCreador(v){
     const B = R.bandeja();
     const g = el('div', 'o-grid o-grid-creador');
-    g.appendChild(cxTile('youtube', 'o-rose o-big', { periodo:'7 días', vacio:'Vistas, suscriptores y retención de tu canal.' }));
-    g.appendChild(cxTile('tiktok', 'o-ink o-big', { periodo:'7 días', vacio:'Vistas y seguidores de tus videos.' }));
+    g.appendChild(cxTile('youtube', 'o-rose o-big', { vacio:'Vistas, suscriptores y minutos vistos de tu canal.', ir: abrirConexiones, extra: (t, d) => {
+      if(Array.isArray(d.serie) && d.serie.length){
+        const top = Math.max(1, ...d.serie); const b = el('div', 'o-bars');
+        d.serie.forEach(x => { const i = el('i'); i.style.height = Math.max(6, x / top * 100) + '%'; b.appendChild(i); });
+        t.appendChild(b);
+      }
+      const met = el('div', 'o-met');
+      [['Suscriptores', d.subs != null ? fmtCorto(d.subs) : 'oculto'], ['Nuevos · 7d', d.subsGanados != null ? '+' + d.subsGanados : '—'],
+       ['Minutos vistos', d.minutos != null ? fmtCorto(d.minutos) : '—'], ['Videos', d.videos != null ? d.videos : '—']].forEach(([k, val]) => {
+        const m = el('div', 'o-met-i'); m.append(el('b', null, String(val)), el('span', null, k)); met.appendChild(m); });
+      t.appendChild(met);
+      t.appendChild(el('div', 'o-sub o-nota-dato', 'YouTube consolida las vistas con ~2 días de retraso.'));
+    } }));
+    g.appendChild(cxTile('tiktok', 'o-ink o-big', { vacio:'Seguidores, likes y vistas de tus videos.', ir: abrirConexiones, extra: (t, d) => {
+      const met = el('div', 'o-met');
+      [['Seguidores', d.seguidores != null ? fmtCorto(d.seguidores) : '—'], ['Likes', d.likes != null ? fmtCorto(d.likes) : '—'],
+       ['Videos · 7d', d.publicadosSemana != null ? d.publicadosSemana : '—'], ['Videos', d.videos != null ? d.videos : '—']].forEach(([k, val]) => {
+        const m = el('div', 'o-met-i'); m.append(el('b', null, String(val)), el('span', null, k)); met.appendChild(m); });
+      t.appendChild(met);
+      if(d.top && d.top.titulo) t.appendChild(el('div', 'o-sub', '🔥 Más visto: ' + d.top.titulo + ' · ' + fmtCorto(d.top.vistas)));
+    } }));
     const id = card('o-ideas', null);
     cardHead(id, 'Ideas pendientes · ' + B.pendientes, 'bandeja', 'Bandeja', () => irA('reps', 'p-bandeja'));
     if(B.top.length) B.top.forEach(t => id.appendChild(el('div', 'o-idea', t)));
     else id.appendChild(el('div', 'o-vacio', 'Captura ideas de videos en tu Bandeja y aparecen aquí.'));
     g.appendChild(id);
-    const nota = card('o-lav o-nota', 'Lo que viene', 'chispa');
-    nota.appendChild(el('p', null, 'Cuando conectes tus cuentas, tu IA cruzará tus estrenos con tu sueño, tus hábitos y tus horarios para decirte cuándo y qué publicar.'));
+    const nota = card('o-lav o-nota', 'Pregúntale a tu IA', 'chispa');
+    nota.appendChild(el('p', null, 'Tu IA ya ve tus vistas, tu sueño, tus hábitos y tu agenda. Pregúntale cuándo grabar, qué publicar o cómo te fue esta semana.'));
+    nota.appendChild(btn('o-cta-in', 'Preguntar', () => click('iaBtn')));
     g.appendChild(nota);
     v.appendChild(g);
   }
@@ -500,6 +562,24 @@
     const g = el('div', 'o-grid o-grid-agenda');
     const cal = CX && CX.datos('calendar');
     if(!cal) g.appendChild(cxTile('calendar', 'o-sky o-calcx', { vacio:'Tus eventos de Google Calendar junto a tu rutina.' }));
+    else {
+      const cc = card('o-calcx o-semana-cal', null);
+      cardHead(cc, 'Google Calendar · esta semana', 'cal', 'Abrir', () => window.open('https://calendar.google.com/', '_blank', 'noopener'));
+      const evs = Array.isArray(cal.datos.eventos) ? cal.datos.eventos : [];
+      let ultimoDia = '';
+      evs.slice(0, 14).forEach(e => {
+        const f = new Date(e.todoElDia ? e.inicio + 'T12:00:00' : e.inicio);
+        const dia = f.toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'short' });
+        if(dia !== ultimoDia){ cc.appendChild(el('div', 'o-dia', dia.charAt(0).toUpperCase() + dia.slice(1))); ultimoDia = dia; }
+        const fl = el('div', 'o-ev');
+        const tx = el('div', 'o-ev-tx'); tx.append(el('b', null, e.titulo), el('i', null, e.lugar || (e.todoElDia ? 'Todo el día' : '')));
+        fl.append(tx, el('span', 'o-hora', e.todoElDia ? 'Día' : String(f.getHours()).padStart(2,'0') + ':' + String(f.getMinutes()).padStart(2,'0')));
+        cc.appendChild(fl);
+      });
+      if(!evs.length) cc.appendChild(el('div', 'o-vacio', 'Sin eventos en los próximos 7 días.'));
+      cc.appendChild(el('div', 'o-sub', 'Actualizado ' + haceCuanto(cal.actualizado)));
+      g.appendChild(cc);
+    }
     if(A.bloque){
       const ah = card('o-ahora', 'Ahora', 'reloj');
       ah.appendChild(el('div', 'o-ahora-t', A.bloque.horaActual + ' · ' + A.bloque.actual));
@@ -546,11 +626,41 @@
       tools.appendChild(b);
     });
     g.appendChild(tools);
-    const loc = CX && CX.get('ia-local');
-    const lc = card('o-ink o-local', 'IA en tu Mac · Fase 3', 'pantalla');
-    lc.appendChild(el('p', null, loc ? loc.trae + '. ' + loc.como + '.' : ''));
-    g.appendChild(lc);
+    g.appendChild(tarjetaIALocal());
     v.appendChild(g);
+  }
+
+  // IA local (Ollama): pregunta directo a tu computadora, con el contexto de REPS
+  function tarjetaIALocal(){
+    const IA = CX && CX.ia;
+    const cfg = IA ? IA.config() : { activa:false };
+    const lc = card('o-ink o-local', 'IA en tu computadora', 'pantalla');
+    if(!cfg.activa){
+      lc.appendChild(el('p', null, 'Corre un modelo de IA en tu Mac con Ollama: lee tus datos sin que salgan de tu casa y funciona sin internet. Se configura desde el navegador de esa computadora.'));
+      lc.appendChild(btn('o-cta-in', 'Configurar', abrirConexiones));
+      return lc;
+    }
+    lc.appendChild(el('div', 'o-sub', 'Modelo: ' + cfg.modelo + ' · ' + cfg.url));
+    const ta = el('textarea', 'o-ia-in'); ta.rows = 2; ta.placeholder = 'Pregúntale algo a tu IA local…';
+    const out = el('div', 'o-ia-out'); out.hidden = true;
+    const go = btn('o-cta-in', 'Preguntar', async () => {
+      const q = ta.value.trim(); if(!q) return;
+      go.disabled = true; out.hidden = false; out.textContent = 'Pensando en tu computadora…';
+      try{ out.textContent = await IA.preguntar(q, R.contexto()); }
+      catch(e){ out.textContent = 'No pude hablar con Ollama: ' + (e.message || e) + ' Revisa que esté abierto.'; }
+      finally{ go.disabled = false; }
+    });
+    lc.append(ta, go, out);
+    return lc;
+  }
+  function haceCuanto(iso){
+    const t = Date.parse(iso); if(!t) return '';
+    const m = Math.round((Date.now() - t) / 60000);
+    if(m < 1) return 'justo ahora';
+    if(m < 60) return 'hace ' + m + ' min';
+    const h = Math.round(m / 60);
+    if(h < 24) return 'hace ' + h + ' h';
+    return 'hace ' + Math.round(h / 24) + ' d';
   }
 
   const PINTORES = { inicio:pintarInicio, salud:pintarSalud, dinero:pintarDinero, creador:pintarCreador, agenda:pintarAgenda, ia:pintarIA };
@@ -613,7 +723,7 @@
   if(mq.addEventListener) mq.addEventListener('change', aplicarVista); else mq.addListener(aplicarVista);
 
   // ---------- hoja de Conexiones ----------
-  let cxWrap = null;
+  let cxWrap = null, cxList = null, cxAct = null;
   function construirConexiones(){
     cxWrap = el('div', 'theme-wrap'); cxWrap.id = 'cxWrap'; cxWrap.hidden = true;
     const sh = el('div', 'theme-sheet');
@@ -622,24 +732,77 @@
     const x = btn(null, '✕', () => { cxWrap.hidden = true; }); x.setAttribute('aria-label', 'Cerrar');
     hd.appendChild(x);
     sh.appendChild(hd);
-    sh.appendChild(el('div', 't-note', 'Tu REPS junta aquí tus apps. Lo que ya vive en REPS (hábitos, dinero, sueño, agua) funciona hoy y sin internet. Las conexiones de abajo llegan por fases, una por una.'));
-    const list = el('div', 'cx-list');
-    (CX ? CX.lista() : []).forEach(c => {
-      const row = el('div', 'cx-row');
-      const i = el('span', 'cx-ic'); i.style.background = c.color; i.innerHTML = CX.icono(c.id, 20);
-      const tx = el('span', 'cx-tx');
-      tx.append(el('b', null, c.nombre), el('i', null, c.trae), el('small', null, c.como));
-      const on = CX.conectado(c.id);
-      row.append(i, tx, el('span', 'cx-st' + (on ? ' on' : ''), on ? 'Conectado' : 'Fase ' + c.fase));
-      list.appendChild(row);
+    sh.appendChild(el('div', 't-note', 'Conecta tus apps una sola vez. REPS solo LEE tus datos (nunca publica ni cambia nada) y guarda un resumen en este dispositivo para que funcione sin internet.'));
+    cxList = el('div', 'cx-list');
+    sh.appendChild(cxList);
+    cxAct = btn('o-cta-in cx-sync', 'Actualizar ahora', async () => {
+      cxAct.disabled = true; cxAct.textContent = 'Actualizando…';
+      const r = await CX.sincronizar(true);
+      cxAct.disabled = false; cxAct.textContent = 'Actualizar ahora';
+      R.toast(r.ok ? 'Listo: datos al día.' : r.motivo === 'sin-internet' ? 'Sin internet: muestro tus últimos datos.' : 'No pude actualizar ahora. Intenta en un rato.');
     });
-    sh.appendChild(list);
-    sh.appendChild(el('div', 't-note', 'Privacidad: las llaves de cada servicio vivirán en tu propio servidor (el Worker de Cloudflare que ya usa REPS), nunca dentro de la app.'));
+    sh.appendChild(cxAct);
+    sh.appendChild(el('div', 't-note', 'Privacidad: las llaves de cada servicio viven en tu propio servidor (el Worker de Cloudflare de REPS), nunca dentro de la app. Puedes desconectar cuando quieras.'));
     cxWrap.appendChild(sh);
     cxWrap.addEventListener('click', e => { if(e.target === cxWrap) cxWrap.hidden = true; });
     document.body.appendChild(cxWrap);
   }
-  function abrirConexiones(){ cerrarMas(); if(!cxWrap) construirConexiones(); cxWrap.hidden = false; }
+  function pintarConexiones(){
+    if(!cxList) return;
+    cxList.textContent = '';
+    CX.lista().forEach(c => {
+      const row = el('div', 'cx-row');
+      const i = el('span', 'cx-ic'); i.style.background = c.color; i.innerHTML = CX.icono(c.id, 20);
+      const tx = el('span', 'cx-tx');
+      tx.append(el('b', null, c.nombre), el('i', null, c.trae));
+      const on = CX.conectado(c.id);
+      const ent = CX.entrada(c.id);
+      const acc = el('span', 'cx-acc');
+      if(c.tipo === 'nube'){
+        tx.appendChild(el('small', null, on ? (ent && ent.error ? '⚠ ' + ent.error : 'Conectado · ' + haceCuanto(ent && ent.actualizado)) : c.como));
+        if(on){ acc.appendChild(btn('cx-b off', 'Desconectar', () => { if(confirm('¿Desconectar ' + c.nombre + '? Se borra su resumen de este dispositivo.')){ CX.desconectar(c.id); } })); }
+        else acc.appendChild(btn('cx-b', 'Conectar', () => CX.conectar(c.id)));
+      } else if(c.tipo === 'local'){
+        const cfg = CX.ia.config();
+        tx.appendChild(el('small', null, cfg.activa ? 'Activa · ' + cfg.modelo : c.como));
+        acc.appendChild(btn('cx-b' + (cfg.activa ? ' off' : ''), cfg.activa ? 'Ajustar' : 'Configurar', () => configIALocal(row)));
+      } else {
+        tx.appendChild(el('small', null, c.como));
+        acc.appendChild(el('span', 'cx-st', 'Con la tienda'));
+      }
+      row.append(i, tx, acc);
+      cxList.appendChild(row);
+    });
+  }
+  // configuración de la IA local, dentro de su fila
+  function configIALocal(row){
+    if(row.nextSibling && row.nextSibling.classList && row.nextSibling.classList.contains('cx-ia')){ row.nextSibling.remove(); return; }
+    const cfg = CX.ia.config();
+    const box = el('div', 'cx-ia');
+    box.appendChild(el('div', 't-note', 'En tu Mac: instala Ollama, descarga un modelo (por ejemplo «ollama pull llama3.2») y permite esta página (ver la guía). Esto solo funciona en el navegador de esa computadora.'));
+    const url = el('input'); url.type = 'url'; url.value = cfg.url; url.placeholder = 'http://localhost:11434';
+    const sel = el('select'); const opt = el('option', null, cfg.modelo || 'Primero prueba la conexión'); opt.value = cfg.modelo; sel.appendChild(opt);
+    const msg = el('div', 't-note');
+    const probar = btn('cx-b', 'Probar conexión', async () => {
+      msg.textContent = 'Buscando Ollama…';
+      const r = await CX.ia.probar(url.value.trim());
+      if(!r.ok){ msg.textContent = r.motivo; return; }
+      sel.textContent = '';
+      if(!r.modelos.length){ msg.textContent = 'Ollama responde, pero no tiene modelos. Descarga uno: ollama pull llama3.2'; return; }
+      r.modelos.forEach(m => { const o = el('option', null, m); o.value = m; if(m === cfg.modelo) o.selected = true; sel.appendChild(o); });
+      msg.textContent = '✓ Conectado. Elige el modelo y guarda.';
+    });
+    const guardar = btn('cx-b', 'Guardar', () => {
+      if(!sel.value){ msg.textContent = 'Primero prueba la conexión y elige un modelo.'; return; }
+      CX.ia.guardar({ url: url.value.trim() || 'http://localhost:11434', modelo: sel.value, activa: true });
+      R.toast('IA local lista: ' + sel.value);
+    });
+    const apagar = btn('cx-b off', 'Apagar', () => { CX.ia.guardar({ url: url.value.trim(), modelo: sel.value, activa: false }); });
+    const fila = el('div', 'cx-ia-acc'); fila.append(probar, guardar, apagar);
+    box.append(url, sel, fila, msg);
+    row.after(box);
+  }
+  function abrirConexiones(){ cerrarMas(); if(!cxWrap) construirConexiones(); pintarConexiones(); cxWrap.hidden = false; }
   window.REPS_OS.abrirConexiones = abrirConexiones;
 
   // Ajustes (hoja de siempre): sección "Life OS" con Conexiones y Vista
@@ -667,6 +830,21 @@
   aplicarVista();
 
   R.on('render', () => { pintarCabecera(); pintarVista(); });
+  // las conexiones cambian (sincronizó, conectaste, desconectaste): repintar
+  if(CX){
+    CX.onCambio(() => { pintarCabecera(); pintarVista(); if(cxWrap && !cxWrap.hidden) pintarConexiones(); });
+    // regreso de la pantalla de permiso del servicio
+    const reg = CX.leerRegreso();
+    if(reg){
+      const nom = (CX.get(reg.servicio) || {}).nombre || 'el servicio';
+      const MOTIVOS = { cancelado:'cancelaste el permiso', token:'el servicio no entregó el acceso', 'sin-configurar':'falta configurar sus llaves en el Worker (ver la guía)', expirado:'tardó demasiado; intenta de nuevo', peticion:'la petición no era válida' };
+      if(reg.ok){ R.toast('✓ ' + nom + ' conectado.'); CX.sincronizar(true); }
+      else R.toast('No se conectó ' + nom + ': ' + (MOTIVOS[reg.motivo] || 'error') + '.');
+      setTimeout(abrirConexiones, 400);
+    } else CX.sincronizar(false);
+    document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') CX.sincronizar(false); });
+    window.addEventListener('online', () => CX.sincronizar(true));
+  }
   // la hora avanza: "lo que sigue" y el saludo se refrescan cada minuto
   setInterval(() => { if(document.visibilityState === 'visible' && vista !== 'reps'){ pintarCabecera(); pintarVista(); } }, 60000);
 

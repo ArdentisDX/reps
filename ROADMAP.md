@@ -356,10 +356,12 @@ lo lee todo. Se construye por fases (la regla de siempre: una a la vez).
   "Hábitos". Detección PC/celular (menú lateral vs píldora) con opción
   manual. Inicio en celular reducido a lo esencial (decisión del usuario:
   "se ve muy saturado").
-- **Fase 2** — Conectores vía el Worker de Cloudflare (secretos allá, caché
-  `reps-cx` acá): Google Calendar → YouTube → Shopify → WHOOP → TikTok.
-  Cada uno: ruta en el Worker, botón "Conectar" (OAuth), tarjeta con datos
-  reales, entrada en el respaldo.
+- ✅ **Fase 2 (v118)** — Conexiones: WHOOP, Google Calendar, YouTube y
+  TikTok por el Worker (OAuth, tokens en KV por llave de dispositivo,
+  resúmenes en `reps-cx`) + IA local con Ollama. Los datos entran al
+  contexto de la IA. Guía: `workers/CONEXIONES.md`.
+  Pendiente: **Shopify** cuando exista la tienda (mismo patrón: lector en
+  `CX_LECTORES`, `tipo:'nube'` en conectores.js).
 - **Fase 3** — IA que cruza todo (sueño ↔ rachas ↔ vistas ↔ ventas) y te
   recomienda; opción de **IA local** en la Mac del usuario (Ollama/LM
   Studio) para que los datos no salgan de casa.

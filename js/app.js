@@ -4877,6 +4877,9 @@
     }
     const mp = metas.filter(m => !m.hecha).map(m => m.texto).slice(0, 6);
     if(mp.length) partes.push('Sus metas pendientes: ' + mp.join(' · '));
+    // Life OS: lo que traen sus apps conectadas (WHOOP, Calendar, YouTube,
+    // TikTok). Lo arma js/os/conectores.js; el motor solo lo pega.
+    try{ const extra = window.REPS_OS && window.REPS_OS.contextoExtra && window.REPS_OS.contextoExtra(); if(extra) partes.push(extra); }catch(e){}
     return partes.join('\n');
   }
   async function preguntarIA(pregunta){
@@ -7867,6 +7870,7 @@
     repintar: () => render(),
     toast: (t) => toast(t),
     hoyISO: () => today(),
+    worker: PUSH_WORKER, // servidor de REPS (push, IA y conexiones del Life OS)
   });
 
   // Estreno del diseño Bento (v116): UNA sola vez cambia al tema Bento.

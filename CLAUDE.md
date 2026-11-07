@@ -83,11 +83,26 @@ un CSS grid y el orden/tamaño de cada tarjeta se decide en `css/bento.css`
 nueva de Hoy: crearla en bento.js, darle `order` y tamaño en bento.css y
 (si debe poder ocultarse) agregar su id a `HOY_CARDS`.
 
-**Conectores (Fase 2):** las llaves de cada servicio viven como secretos en el
-Worker de Cloudflare (nunca en el JS del sitio). El Worker devuelve un
-resumen y la app lo guarda en `reps-cx`; las tarjetas leen ese caché para
-funcionar sin internet. Mientras no haya datos, la tarjeta muestra
-"Conectar" — **nunca números inventados**.
+**Conectores (v118, Fase 2):** WHOOP, Google Calendar, YouTube y TikTok vía
+el Worker (`workers/push-worker.js`, rutas `/cx/*`); IA local vía Ollama
+directo desde el navegador de la Mac. Shopify espera a la tienda. Guía de
+configuración para el usuario: `workers/CONEXIONES.md`.
+- Seguridad: cada dispositivo tiene una llave aleatoria (`reps-cx-llave`); el
+  Worker guarda los tokens en KV bajo `cxtok:<servicio>:<sha256(llave)>`
+  (nunca la llave cruda) y solo redirige de regreso a `APP_URL`. Los
+  secretos de cada servicio viven en Cloudflare, nunca en el JS del sitio.
+- Flujo: `conectar(id)` → `/cx/auth/<id>?llave` → pantalla oficial →
+  `/cx/callback/<proveedor>` → regreso a la app con `#cx=ok-<id>` (o
+  `#cx=error-<id>-<motivo>`), que `leerRegreso()` procesa y limpia.
+- `sincronizar()` (al abrir, al volver al frente, al recuperar internet;
+  máx. cada 15 min salvo forzado) pide `/cx/datos` → resúmenes pequeños
+  (los arman los `CX_LECTORES` del Worker) → `reps-cx`. Las tarjetas leen
+  ese caché: funcionan sin internet. Sin datos: "Conectar" — **nunca
+  números inventados**.
+- `REPS_OS.contextoExtra()` agrega los datos conectados a `contextoIA()`
+  (la IA de la nube y la local ven WHOOP, Calendar, YouTube y TikTok).
+- Al probar en local: simular el Worker con `page.route` (Playwright); el
+  regreso de OAuth es una CARGA nueva (no solo cambio de hash).
 
 ## localStorage — todas las claves
 
@@ -149,7 +164,9 @@ directo sobre un Date: corre el día en zonas horarias negativas.
 | `reps-sueno-rutina` | `{fecha:{pasoId:true}}` | **Higiene del sueño** (idea #95, hub Bienestar): checklist de bajada nocturna (`SR_PASOS`), estado por noche. Aditiva, va en el respaldo. |
 | `reps-checkin` | `{fecha:{mid}}` | **Chequeo de ánimo a media jornada** (idea #91): tarjeta en Hoy (`#checkinCard`) visible 11–17h si aún no lo hiciste; 1 tap (😊😐😔). Aditiva, va en el respaldo. |
 | `reps-ia-chat` | `[{who:'yo'\|'ia', text}]` | **Memoria del asistente** (idea #84): hilo completo del chat con la IA, guardado (cap 60 msgs) para que RECUERDE entre sesiones. El Worker `/ia` es stateless: cada turno le mandamos `contextoIA()` + los últimos ~16 mensajes. Sheet `#iaWrap` (chat `#iaChat`), botón "Olvidar" borra. Aparte: **Desatóralo** (#86, `#desatoraWrap`) da UN primer paso; **Reencuadre** (#87, `#reencuadreWrap`) mini-TCC; ambos one-shot con fallback offline. Va en el respaldo. |
-| `reps-cx` | `{conectorId: {datos:{...}, actualizado}}` | **Caché de conectores** (Life OS, Fase 2): último resumen que trajo el Worker de cada app externa (`whoop`, `calendar`, `youtube`, `tiktok`, `shopify`). Lo lee `js/os/conectores.js`; hoy nadie lo escribe todavía. Cuando se implemente: va en el respaldo y se sanea al importar. |
+| `reps-cx` | `{conectorId: {datos:{...}, actualizado, error?}}` | **Caché de conectores** (v118): último resumen que trajo el Worker de cada app (`whoop`, `calendar`, `youtube`, `tiktok`). Lo escribe y lee SOLO `js/os/conectores.js` (`sincronizar`); presencia = conectado en este dispositivo. Es regenerable: NO va en el respaldo. Formas de `datos` en los `CX_LECTORES` del Worker. |
+| `reps-cx-llave` | `"base64url"` (24 bytes) | Llave secreta del dispositivo para el Worker (los tokens quedan bajo su hash). Por dispositivo: **NUNCA** va en el respaldo ni se muestra. Borrarla = este dispositivo queda desconectado. |
+| `reps-ia-local` | `{url, modelo, activa}` | **IA local** (Ollama): `url` por defecto `http://localhost:11434`. Las llamadas usan `targetAddressSpace:'loopback'` (Chrome pide permiso de red local). Por dispositivo: NO va en el respaldo. |
 | `reps-bento-estreno` | `"YYYY-MM-DD"` | Marca transitoria del estreno del diseño Bento (v116): la primera vez cambia el tema a `bento`; después manda lo que elijas. NO va en el respaldo. |
 | `reps-vista` | `"pc"`, `"movil"` o ausente (= automática) | **Vista del Life OS** (v117): automática decide por el ancho (≥ 900 px = PC) y se re-evalúa al girar/redimensionar; se puede forzar desde Ajustes → Vista o la hoja Más (cicla Auto → PC → Celular). Preferencia por dispositivo: NO va en el respaldo. |
 | `reps-schema` | `"N"` (número como string) | Versión del FORMATO de los datos. La gestiona `migrate()`; no tocar a mano. |
