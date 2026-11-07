@@ -7871,6 +7871,22 @@
     toast: (t) => toast(t),
     hoyISO: () => today(),
     worker: PUSH_WORKER, // servidor de REPS (push, IA y conexiones del Life OS)
+    // datos crudos para la sincronización de la cuenta (js/os/cuenta.js).
+    // Solo las claves del respaldo (DATA_KEYS); el motor sigue siendo el dueño.
+    // Tras `escribir` hay que recargar la página: el motor vuelve a cargar
+    // (y sanear) todo desde localStorage.
+    datos: Object.freeze({
+      schema: SCHEMA,
+      claves: () => DATA_KEYS.slice(),
+      leer: (k) => { if(!DATA_KEYS.includes(k)) return null; try{ return localStorage.getItem(k); }catch(e){ return null; } },
+      escribir(cambios){
+        Object.keys(cambios || {}).forEach(k => {
+          if(!DATA_KEYS.includes(k)) return;
+          const v = cambios[k];
+          try{ if(v === null) localStorage.removeItem(k); else if(typeof v === 'string') localStorage.setItem(k, v); }catch(e){}
+        });
+      },
+    }),
   });
 
   // Estreno del diseño Bento (v116): UNA sola vez cambia al tema Bento.

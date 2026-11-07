@@ -337,3 +337,23 @@ body.os:not(.claro) .cx-b.off{background:var(--card-2);color:var(--muted)}
 .cx-ia :is(input,select){width:100%;height:44px;border:none;border-radius:12px;padding:0 12px;font:inherit;font-size:14px;background:var(--bg);color:var(--text)}
 .cx-ia-acc{display:flex;gap:8px;flex-wrap:wrap}
 .cx-sync{width:100%;justify-content:center;margin:4px 0 6px !important}
+
+/* ===== Tu cuenta (sincronización) ===== */
+.cu-body{display:flex;flex-direction:column;gap:10px;padding-bottom:8px}
+.cu-tabs{display:flex;gap:4px;background:var(--card-2);border:1px solid var(--line);border-radius:999px;padding:4px}
+body.os:not(.claro) .cu-tabs{background:var(--card-2)}
+.cu-tab{flex:1;height:38px;border:none;border-radius:999px;background:none;font:inherit;font-size:13.5px;font-weight:700;color:var(--muted);cursor:pointer}
+.cu-tab.on{background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.cu-form{display:flex;flex-direction:column;gap:8px}
+.cu-form input,.cu-body > input{width:100%;height:48px;border:1px solid var(--line);border-radius:14px;padding:0 14px;font:inherit;font-size:15px;background:var(--card);color:var(--text)}
+body.os:not(.claro) :is(.cu-form input,.cu-body > input){background:var(--card-2)}
+.cu-go{align-self:stretch;margin-top:4px;height:48px;font-size:15px}
+.cu-go:disabled{opacity:.6}
+.cu-msg:empty{display:none}
+.cu-olvide{align-self:center}
+.cu-ses{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:18px;padding:14px}
+body.os:not(.claro) .cu-ses{background:var(--card-2)}
+.cu-av{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--t-lime,#d7f36b);color:#141414;flex:none}
+.cu-tx{display:flex;flex-direction:column;min-width:0}
+.cu-tx b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cu-tx i{font-style:normal;font-size:12.5px;color:var(--muted)}

@@ -21,6 +21,7 @@
   const R = window.REPS;
   if(!R) return;
   const CX = (window.REPS_OS && window.REPS_OS.conectores) || null;
+  const CU = (window.REPS_OS && window.REPS_OS.cuenta) || null;
   const $ = id => document.getElementById(id);
   const body = document.body;
 
@@ -57,6 +58,7 @@
     flecha:'<path d="m9 6 6 6-6 6"/>',
     mas:'<path d="M12 5v14M5 12h14"/>',
     pantalla:'<rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',
+    nube:'<path d="M7 18.5h10.5a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.6 9.1 4.7 4.7 0 0 0 7 18.5z"/>',
     bolsa:'<path d="M5 8h14l-1.2 11.2a1.5 1.5 0 0 1-1.5 1.3H7.7a1.5 1.5 0 0 1-1.5-1.3z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/>',
   };
   const svg = (k, s) => '<svg width="' + (s||20) + '" height="' + (s||20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICON[k] || '') + '</svg>';
@@ -160,6 +162,7 @@
   nav.appendChild(el('div', 'os-grp', 'REPS · hábitos'));
   REPS_TABS.forEach(t => navItem('reps:' + t.panel, t.nombre, t.icon, () => irA('reps', t.panel), 'es-reps'));
   nav.appendChild(el('div', 'os-sp'));
+  navItem('cuenta', 'Tu cuenta', 'nube', () => abrirCuenta(), 'es-pie');
   navItem('cx', 'Conexiones', 'enlace', abrirConexiones, 'es-pie');
   navItem('ajustes', 'Ajustes', 'engrane', () => click('themeBtn'), 'es-pie');
   navItem('mas', 'Más', 'menu', abrirMas, 'es-mas');
@@ -692,6 +695,7 @@
   masS.appendChild(el('div', 'mas-sec', 'REPS · hábitos'));
   REPS_TABS.forEach(t => masItem(t.icon, t.nombre, { 'p-hoy':'Tus hábitos de hoy', 'p-dia':'Plan semanal y rutina', 'p-ruta':'Metas, recompensas y recordatorios', 'p-bandeja':'Captura de ideas', 'p-stats':'Tu progreso' }[t.panel], () => irA('reps', t.panel)));
   masS.appendChild(el('div', 'mas-sec', 'Sistema'));
+  const cuentaItem = masItem('nube', 'Tu cuenta', 'Guarda y sincroniza tu progreso', () => { cerrarMas(); abrirCuenta(); });
   masItem('enlace', 'Conexiones', 'WHOOP, Calendar, YouTube, TikTok, Shopify', () => { cerrarMas(); abrirConexiones(); });
   const vistaItem = masItem('pantalla', 'Vista', '', ciclarVista);
   masItem('engrane', 'Ajustes', 'Tema, avisos, datos y más', () => { cerrarMas(); click('themeBtn'); });
@@ -805,7 +809,136 @@
   function abrirConexiones(){ cerrarMas(); if(!cxWrap) construirConexiones(); pintarConexiones(); cxWrap.hidden = false; }
   window.REPS_OS.abrirConexiones = abrirConexiones;
 
-  // Ajustes (hoja de siempre): sección "Life OS" con Conexiones y Vista
+
+  // ---------- hoja de Tu cuenta (correo + contraseña, sincroniza) ----------
+  let cuWrap = null, cuBody = null, cuModo = 'entrar';
+  function construirCuenta(){
+    cuWrap = el('div', 'theme-wrap'); cuWrap.id = 'cuentaWrap'; cuWrap.hidden = true;
+    const sh = el('div', 'theme-sheet');
+    const hd = el('div', 't-head');
+    hd.appendChild(el('h2', null, 'Tu cuenta'));
+    const x = btn(null, '✕', () => { cuWrap.hidden = true; }); x.setAttribute('aria-label', 'Cerrar');
+    hd.appendChild(x);
+    cuBody = el('div', 'cu-body');
+    sh.append(hd, cuBody);
+    cuWrap.appendChild(sh);
+    cuWrap.addEventListener('click', e => { if(e.target === cuWrap) cuWrap.hidden = true; });
+    document.body.appendChild(cuWrap);
+  }
+  function campo(tipo, ph, auto){
+    const i = el('input'); i.type = tipo; i.placeholder = ph; i.autocomplete = auto;
+    if(tipo === 'email'){ i.autocapitalize = 'off'; i.spellcheck = false; i.inputMode = 'email'; }
+    return i;
+  }
+  function pintarCuenta(){
+    if(!cuBody) return;
+    cuBody.textContent = '';
+    if(!CU || !CU.configurada()){
+      cuBody.appendChild(el('div', 't-note', 'Las cuentas todavía no están activadas en esta versión de REPS. Mientras, tus datos siguen guardados en este dispositivo (y puedes usar Exportar respaldo).'));
+      return;
+    }
+    const msg = el('div', 't-note cu-msg');
+    const ses = CU.sesion();
+    const st = CU.estado();
+    if(cuModo === 'nueva' && ses){
+      cuBody.appendChild(el('div', 't-note', 'Escribe tu contraseña nueva.'));
+      const p1 = campo('password', 'Contraseña nueva (mín. 8)', 'new-password');
+      const go = btn('o-cta-in cu-go', 'Guardar contraseña', async () => {
+        if(p1.value.length < 8){ msg.textContent = 'Usa al menos 8 caracteres.'; return; }
+        go.disabled = true; msg.textContent = 'Guardando…';
+        try{ await CU.nuevaPassword(p1.value); cuModo = 'entrar'; R.toast('✓ Contraseña cambiada.'); pintarCuenta(); }
+        catch(e){ msg.textContent = e.message; go.disabled = false; }
+      });
+      cuBody.append(p1, go, msg);
+      return;
+    }
+    if(ses){
+      const box = el('div', 'cu-ses');
+      const ico = el('span', 'cu-av'); ico.innerHTML = svg('nube', 22);
+      const tx = el('span', 'cu-tx');
+      tx.append(el('b', null, ses.email), el('i', null,
+        st.sincronizando ? 'Sincronizando…' :
+        st.error ? '⚠ ' + st.error :
+        CU.ultimo() ? 'Sincronizado · ' + haceCuanto(CU.ultimo()) : 'Aún sin sincronizar'));
+      box.append(ico, tx);
+      cuBody.appendChild(box);
+      cuBody.appendChild(el('div', 't-note', 'Tus hábitos, días, rutina, metas, finanzas, diario y ajustes se guardan en tu cuenta y llegan solos a tus otros dispositivos al abrir la app. Las conexiones (WHOOP, Google, TikTok, IA local) se conectan en cada dispositivo.'));
+      const fila = el('div', 'cx-ia-acc');
+      const ya = btn('cx-b', 'Sincronizar ahora', async () => {
+        ya.disabled = true;
+        const r = await CU.sincronizar(true);
+        ya.disabled = false;
+        R.toast(r.ok ? '☁️ Todo al día.' : r.motivo === 'sin-internet' ? 'Sin internet: se sincroniza al volver.' : 'No se pudo sincronizar: ' + r.motivo);
+      });
+      const out = btn('cx-b off', 'Cerrar sesión', () => {
+        if(!confirm('¿Cerrar sesión en este dispositivo? Tus datos se quedan aquí y en tu cuenta; solo deja de sincronizar.')) return;
+        CU.salir(); R.toast('Sesión cerrada.');
+      });
+      const cambiar = btn('cx-b off', 'Cambiar contraseña', () => { cuModo = 'nueva'; pintarCuenta(); });
+      fila.append(ya, cambiar, out);
+      cuBody.appendChild(fila);
+      return;
+    }
+    // sin sesión: entrar / crear cuenta / recuperar
+    const tabs = el('div', 'cu-tabs');
+    [['entrar', 'Entrar'], ['crear', 'Crear cuenta']].forEach(([id, t]) => {
+      const b = btn('cu-tab' + (cuModo === id ? ' on' : ''), t, () => { cuModo = id; pintarCuenta(); });
+      tabs.appendChild(b);
+    });
+    if(cuModo !== 'recuperar') cuBody.appendChild(tabs);
+    cuBody.appendChild(el('div', 't-note',
+      cuModo === 'crear' ? 'Crea tu cuenta para que tu progreso viva en la nube: si cambias de celular o abres REPS en tu compu, todo te sigue. Lo que ya tienes en este dispositivo se sube a tu cuenta.' :
+      cuModo === 'recuperar' ? 'Te mandamos un correo con un enlace para poner una contraseña nueva.' :
+      'Entra para sincronizar este dispositivo con tu cuenta.'));
+    if(st.error) msg.textContent = '⚠ ' + st.error;
+    const em = campo('email', 'Tu correo', 'email');
+    const pw = campo('password', cuModo === 'crear' ? 'Contraseña (mín. 8)' : 'Contraseña', cuModo === 'crear' ? 'new-password' : 'current-password');
+    const form = el('form', 'cu-form');
+    form.appendChild(em);
+    if(cuModo !== 'recuperar') form.appendChild(pw);
+    const go = btn('o-cta-in cu-go', cuModo === 'crear' ? 'Crear cuenta' : cuModo === 'recuperar' ? 'Mandar correo' : 'Entrar');
+    go.type = 'submit';
+    form.appendChild(go);
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const correo = em.value.trim().toLowerCase();
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)){ msg.textContent = 'Escribe un correo válido.'; return; }
+      if(cuModo !== 'recuperar' && pw.value.length < (cuModo === 'crear' ? 8 : 1)){ msg.textContent = cuModo === 'crear' ? 'La contraseña debe tener al menos 8 caracteres.' : 'Escribe tu contraseña.'; return; }
+      go.disabled = true; msg.textContent = cuModo === 'crear' ? 'Creando tu cuenta…' : cuModo === 'recuperar' ? 'Mandando…' : 'Entrando…';
+      try{
+        if(cuModo === 'crear'){
+          const r = await CU.crearCuenta(correo, pw.value);
+          if(r.confirmar){ cuModo = 'entrar'; pintarCuenta(); cuBody.querySelector('.cu-msg').textContent = '📬 Te mandé un correo a ' + correo + '. Toca el enlace para confirmar tu cuenta (revisa spam).'; return; }
+          R.toast('✓ Cuenta creada. Tus datos ya están en la nube.');
+        } else if(cuModo === 'recuperar'){
+          await CU.recuperar(correo);
+          cuModo = 'entrar'; pintarCuenta(); cuBody.querySelector('.cu-msg').textContent = '📬 Si ese correo tiene cuenta, te llegó un enlace para cambiar la contraseña.'; return;
+        } else {
+          await CU.entrar(correo, pw.value);
+          R.toast('✓ Sesión iniciada.');
+        }
+        pintarCuenta();
+      }catch(err){ msg.textContent = err.message; go.disabled = false; }
+    });
+    cuBody.append(form, msg);
+    if(cuModo === 'entrar') cuBody.appendChild(btn('o-link cu-olvide', 'Olvidé mi contraseña', () => { cuModo = 'recuperar'; pintarCuenta(); }));
+    if(cuModo === 'recuperar') cuBody.appendChild(btn('o-link cu-olvide', '← Volver', () => { cuModo = 'entrar'; pintarCuenta(); }));
+  }
+  function abrirCuenta(modo){
+    cerrarMas(); if(!cuWrap) construirCuenta();
+    if(modo) cuModo = modo;
+    else if(cuModo === 'nueva' && !(CU && CU.sesion())) cuModo = 'entrar';
+    pintarCuenta(); cuWrap.hidden = false;
+  }
+  window.REPS_OS.abrirCuenta = abrirCuenta;
+  function pintarCuentaItem(){
+    const s = CU && CU.configurada() && CU.sesion();
+    const t = s ? s.email : 'Guarda y sincroniza tu progreso';
+    cuentaItem.querySelector('.mas-tx i').textContent = t;
+    const a = $('masCuenta'); if(a) a.querySelector('.mas-tx i').textContent = t;
+  }
+
+  // Ajustes (hoja de siempre): sección "Life OS" con Cuenta, Conexiones y Vista
   (function(){
     const fin = $('masFin'); if(!fin) return;
     const sec = el('div', 'mas-sec', 'Life OS');
@@ -817,9 +950,10 @@
       const go = el('span', 'mas-go'); go.innerHTML = svg('flecha', 18);
       b.append(i, tx, go); return b;
     };
+    const cu = mk('masCuenta', 'nube', 'Tu cuenta', 'Guarda y sincroniza tu progreso', () => { const w = $('masWrap'); if(w) w.hidden = true; abrirCuenta(); });
     const cx = mk('masCx', 'enlace', 'Conexiones', 'WHOOP, Calendar, YouTube, TikTok, Shopify, IA', () => { const w = $('masWrap'); if(w) w.hidden = true; abrirConexiones(); });
     const vi = mk('masVista', 'pantalla', 'Vista', '', ciclarVista);
-    fin.after(sec, cx, vi);
+    fin.after(sec, cu, cx, vi);
   })();
 
   // ---------- montaje ----------
@@ -844,6 +978,21 @@
     } else CX.sincronizar(false);
     document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') CX.sincronizar(false); });
     window.addEventListener('online', () => CX.sincronizar(true));
+  }
+  // cuenta: repintar su hoja; regreso desde el correo (confirmar / recuperar)
+  if(CU){
+    CU.onCambio(() => { pintarCuentaItem(); if(cuWrap && !cuWrap.hidden) pintarCuenta(); });
+    pintarCuentaItem();
+    const rg = CU.regreso();
+    if(rg){
+      CU.completarRegreso().then(r => {
+        if(!r || !r.ok){ R.toast('El enlace del correo no funcionó: ' + ((r && r.motivo) || 'pide otro.')); abrirCuenta('entrar'); return; }
+        if(r.tipo === 'recovery'){ abrirCuenta('nueva'); return; }
+        R.toast('✓ Correo confirmado. Ya tienes cuenta.');
+        abrirCuenta();
+        CU.sincronizar(true);
+      });
+    }
   }
   // la hora avanza: "lo que sigue" y el saludo se refrescan cada minuto
   setInterval(() => { if(document.visibilityState === 'visible' && vista !== 'reps'){ pintarCabecera(); pintarVista(); } }, 60000);

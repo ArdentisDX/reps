@@ -29,6 +29,9 @@ css/bento.css   (v116) Diseño Bento. Va DESPUÉS de styles.css y todo cuelga
                 de `body.bento`: quitar el archivo devuelve el diseño anterior.
 js/os/          (v116) REPS OS: módulos del Life OS que leen el motor SOLO
                 por `window.REPS` (ver "API interna" abajo).
+  cuenta.js     (v120) Cuenta con correo/contraseña (Supabase, REST con fetch,
+                sin librería) y sincronización por clave. Lee/escribe los
+                datos SOLO por `REPS.datos` (claves del respaldo).
   conectores.js Catálogo de apps externas (WHOOP, Calendar, YouTube, TikTok,
                 Shopify, IA local) y lectura del caché `reps-cx`.
   bento.js      Viste la pestaña Hoy de REPS como retícula + recuadro del puntaje.
@@ -164,6 +167,8 @@ directo sobre un Date: corre el día en zonas horarias negativas.
 | `reps-sueno-rutina` | `{fecha:{pasoId:true}}` | **Higiene del sueño** (idea #95, hub Bienestar): checklist de bajada nocturna (`SR_PASOS`), estado por noche. Aditiva, va en el respaldo. |
 | `reps-checkin` | `{fecha:{mid}}` | **Chequeo de ánimo a media jornada** (idea #91): tarjeta en Hoy (`#checkinCard`) visible 11–17h si aún no lo hiciste; 1 tap (😊😐😔). Aditiva, va en el respaldo. |
 | `reps-ia-chat` | `[{who:'yo'\|'ia', text}]` | **Memoria del asistente** (idea #84): hilo completo del chat con la IA, guardado (cap 60 msgs) para que RECUERDE entre sesiones. El Worker `/ia` es stateless: cada turno le mandamos `contextoIA()` + los últimos ~16 mensajes. Sheet `#iaWrap` (chat `#iaChat`), botón "Olvidar" borra. Aparte: **Desatóralo** (#86, `#desatoraWrap`) da UN primer paso; **Reencuadre** (#87, `#reencuadreWrap`) mini-TCC; ambos one-shot con fallback offline. Va en el respaldo. |
+| `reps-cuenta` | `{access_token, refresh_token, expires_at, user_id, email}` | **Sesión de la cuenta** (v120, `js/os/cuenta.js`, Supabase). Por dispositivo: **NUNCA** va en el respaldo. Cerrar sesión la borra (los datos locales se quedan). |
+| `reps-sync` | `{hashes:{clave:sha256-corto}, ultimo, user}` | Estado de sincronización (v120): hash de cada clave tal como quedó en la última sync. 3 hashes (aquí / nube / base) deciden: bajar, subir o — si cambiaron ambos — **fusionar** las claves por fecha (`MAPAS` en cuenta.js; en la misma fecha gana este dispositivo, salvo la primera vez que entra a la cuenta: gana la nube) y en las demás gana este dispositivo (o la nube la primera vez). Si se bajó algo: `REPS.datos.escribir` + recarga. Tabla `reps_datos` (ver `supabase/tabla.sql`, RLS por usuario). Por dispositivo: NO va en el respaldo. Una clave nueva de datos se sincroniza sola al sumarla a `DATA_KEYS`; si es "por fecha", súmala también a `MAPAS`. |
 | `reps-cx` | `{conectorId: {datos:{...}, actualizado, error?}}` | **Caché de conectores** (v118): último resumen que trajo el Worker de cada app (`whoop`, `calendar`, `youtube`, `tiktok`). Lo escribe y lee SOLO `js/os/conectores.js` (`sincronizar`); presencia = conectado en este dispositivo. Es regenerable: NO va en el respaldo. Formas de `datos` en los `CX_LECTORES` del Worker. |
 | `reps-cx-llave` | `"base64url"` (24 bytes) | Llave secreta del dispositivo para el Worker (los tokens quedan bajo su hash). Por dispositivo: **NUNCA** va en el respaldo ni se muestra. Borrarla = este dispositivo queda desconectado. |
 | `reps-ia-local` | `{url, modelo, activa}` | **IA local** (Ollama): `url` por defecto `http://localhost:11434`. Las llamadas usan `targetAddressSpace:'loopback'` (Chrome pide permiso de red local). Por dispositivo: NO va en el respaldo. |
